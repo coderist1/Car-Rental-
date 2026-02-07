@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CarRental - Login</title>
+    <link rel="stylesheet" href="../styles/auth.css">
+</head>
+<body>
+    <div class="container">
+        <main class="form-container">
+            <div class="login-card">
+                <h2 class="form-title">Welcome Back</h2>
+                <p class="form-subtitle">Sign in to your account</p>
+
+                <div id="error-message" class="error-text" style="display: none;"></div>
+
+                <form id="login-form">
+                    <input
+                        type="email"
+                        id="email"
+                        class="input"
+                        placeholder="Email"
+                        required
+                    >
+
+                    <input
+                        type="password"
+                        id="password"
+                        class="input"
+                        placeholder="Password"
+                        required
+                    >
+
+                    <button type="submit" class="btn btn-primary" id="login-btn">
+                        Sign In
+                    </button>
+                </form>
+
+                <button class="link-button" onclick="navigateTo('register.html')">
+                    Don't have an account? <span class="link-bold">Sign Up</span>
+                </button>
+
+                <div class="demo-credentials">
+                    <h4 class="demo-title">Demo Credentials:</h4>
+                    <p class="demo-text">Owner: owner@test.com / password</p>
+                    <p class="demo-text">Renter: renter@test.com / password</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function navigateTo(page) {
+            window.location.href = page;
+        }
+
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('login-btn');
+            const errorDiv = document.getElementById('error-message');
+
+            if (!email || !password) {
+                showError('Please fill in all fields');
+                return;
+            }
+
+            loginBtn.textContent = 'Signing In...';
+            loginBtn.disabled = true;
+
+            setTimeout(() => {
+                if ((email === 'owner@test.com' && password === 'password') ||
+                    (email === 'renter@test.com' && password === 'password')) {
+                    if (email === 'owner@test.com') {
+                        navigateTo('dashboard.html');
+                    } else {
+                        navigateTo('renter-dashboard.html');
+                    }
+                } else {
+                    showError('Invalid email or password');
+                    loginBtn.textContent = 'Sign In';
+                    loginBtn.disabled = false;
+                }
+            }, 1000);
+        });
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

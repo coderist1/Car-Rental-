@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CarRental - Welcome</title>
+    <link rel="stylesheet" href="styles/auth.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">🚗</div>
+            <h1 class="title">CarRental</h1>
+            <p class="subtitle">Find your perfect ride</p>
+        </header>
+
+        <main class="button-container">
+            <div class="button-column">
+                <button class="btn btn-primary" onclick="navigateTo('pages/login.html')">
+                    Login
+                </button>
+
+                <button class="btn btn-secondary" onclick="navigateTo('pages/register.html')">
+                    Create Account
+                </button>
+
+                <button class="btn btn-admin" onclick="navigateTo('pages/admin-login.html')">
+                    Admin Login
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function navigateTo(page) {
+            window.location.href = page;
+        }
+    </script>
+</body>
+</html>

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Car Rental - Owner Dashboard</title>
-    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="../styles/dashboard.css">
 </head>
 <body>
     <div class="container">
@@ -13,7 +13,7 @@
                 <h1>Owner Dashboard</h1>
                 <div class="user-info">
                     <span>Welcome, John Doe</span>
-                    <button class="btn btn-secondary">Logout</button>
+                    <button class="btn btn-secondary" onclick="window.location.href='../index.html'">Logout</button>
                 </div>
             </div>
         </header>
@@ -32,6 +32,64 @@
                 <div class="stat-label">Rented</div>
             </div>
         </section>
+
+                <!-- Car Details Modal (overlay) -->
+                <div id="car-detail-modal" class="car-detail-modal modal">
+                        <div class="car-detail-modal-content">
+                                <div class="car-detail-container">
+                                        <section class="detail-panel">
+                                            <header class="detail-header">
+                                                <h2 id="modal-car-title">Car Model — Details</h2>
+                                                <div class="actions">
+                                                    <button id="modal-edit-btn" class="btn">Edit</button>
+                                                    <button id="modal-save-btn" class="btn btn-primary" disabled>Save</button>
+                                                </div>
+                                            </header>
+
+                                            <form id="modal-car-form" class="car-form" autocomplete="off">
+                                                <label>Make
+                                                    <input name="make" id="modal-make" type="text" />
+                                                </label>
+
+                                                <label>Model
+                                                    <input name="model" id="modal-model" type="text" />
+                                                </label>
+
+                                                <label>Year
+                                                    <input name="year" id="modal-year" type="number" min="1900" max="2099" />
+                                                </label>
+
+                                                <label>Price per day ($)
+                                                    <input name="price" id="modal-price" type="number" step="0.01" />
+                                                </label>
+
+                                                <label>Availability
+                                                    <select id="modal-availability" name="availability">
+                                                        <option value="available">Available</option>
+                                                        <option value="rented">Rented</option>
+                                                        <option value="maintenance">Maintenance</option>
+                                                    </select>
+                                                </label>
+
+                                                <label>Description
+                                                    <textarea id="modal-description" name="description" rows="5"></textarea>
+                                                </label>
+
+                                                <div class="form-note" id="modal-save-note" aria-live="polite"></div>
+                                            </form>
+                                            <div style="margin-top:10px;">
+                                                <input id="modal-image-input" type="file" accept="image/*" style="display:none" />
+                                                <button id="modal-add-image-btn" class="btn btn-secondary" style="margin-top:6px;">Add / Change Image</button>
+                                            </div>
+                                        </section>
+
+                                        <section class="image-panel">
+                                            <img id="modal-car-image" src="../assets/car-placeholder.jpg" alt="Car image" />
+                                        </section>
+                                </div>
+                                <button class="modal-close-x" onclick="closeCarDetailModal()">✕</button>
+                        </div>
+                </div>
 
         <section class="search-section">
             <div class="search-container">
@@ -112,6 +170,6 @@
         </div>
     </div>
 
-    <script src="dashboard.js"></script>
+    <script src="../scripts/dashboard.js"></script>
 </body>
 </html>

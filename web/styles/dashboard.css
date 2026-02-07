@@ -15,15 +15,15 @@ body {
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 12px 16px;
 }
 
 header {
     background: white;
-    padding: 20px;
-    border-radius: 12px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 12px 16px; /* reduced padding to save vertical space */
+    border-radius: 10px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
 }
 
 .header-content {
@@ -33,8 +33,9 @@ header {
 }
 
 h1 {
-    font-size: 2rem;
+    font-size: 1.6rem;
     color: #1a2c5e;
+    margin: 0; /* ensure no extra spacing */
 }
 
 .user-info {
@@ -45,24 +46,27 @@ h1 {
 
 .stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-    margin-bottom: 30px;
+    /* Limit cards so they don't stretch full width on large screens */
+    grid-template-columns: repeat(auto-fit, minmax(220px, 320px));
+    gap: 18px;
+    justify-content: center; /* center the grid within container */
+    margin-bottom: 22px;
 }
 
 .stat-card {
     background: white;
-    padding: 20px;
+    padding: 14px 18px;
     border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
     text-align: center;
+    max-width: 340px; /* enforce a sensible maximum */
 }
 
 .stat-number {
-    font-size: 2rem;
-    font-weight: bold;
+    font-size: 1.6rem;
+    font-weight: 700;
     color: #3F9B84;
-    margin-bottom: 5px;
+    margin-bottom: 6px;
 }
 
 .stat-label {
@@ -72,10 +76,10 @@ h1 {
 
 .search-section {
     background: white;
-    padding: 20px;
-    border-radius: 12px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 12px 14px;
+    border-radius: 10px;
+    margin-bottom: 18px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
 }
 
 .search-container {
@@ -140,6 +144,8 @@ h1 {
     font-size: 3rem;
     border-bottom: 1px solid #e5e7eb;
 }
+
+.vehicle-image img{width:100%;height:150px;object-fit:cover;display:block}
 
 .vehicle-info {
     padding: 15px;
@@ -314,6 +320,19 @@ h1 {
     justify-content: flex-end;
 }
 
+@media (max-width: 992px) {
+    .stats {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+    }
+
+    .header-content {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+    }
+}
+
 @media (max-width: 768px) {
     .vehicles-grid {
         grid-template-columns: 1fr;
@@ -323,9 +342,50 @@ h1 {
         flex-direction: column;
     }
 
-    .header-content {
-        flex-direction: column;
-        gap: 15px;
-        text-align: center;
+    .stats {
+        grid-template-columns: 1fr;
     }
+}
+
+/* Car details modal overrides */
+.car-detail-modal .car-detail-modal-content{position:relative;max-width:1200px;margin:6vh auto;background:transparent;border-radius:12px;width:96%;padding:8px}
+.car-detail-modal .car-detail-container{background:#fff;border-radius:12px;padding:0;display:flex;gap:24px;align-items:stretch}
+.car-detail-modal .image-panel{flex:0 0 560px;width:560px;min-width:560px;max-width:560px;overflow:hidden;border-radius:12px;background:#fff;display:flex;align-items:stretch;justify-content:center}
+.car-detail-modal .image-panel img{width:100%;height:100%;object-fit:cover;display:block}
+.car-detail-modal .detail-panel{flex:1 1 auto;min-width:420px;overflow:auto;padding:24px}
+.car-detail-modal .detail-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.car-detail-modal .detail-header h2{font-size:1.6rem;margin:0}
+.car-detail-modal .modal-close-x{position:absolute;right:12px;top:12px;background:#fff;border-radius:999px;border:none;width:44px;height:44px;box-shadow:0 4px 12px rgba(0,0,0,0.12);cursor:pointer}
+
+/* Form layout inside modal */
+.car-detail-modal .car-form{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;align-items:start}
+.car-detail-modal .car-form label{display:flex;flex-direction:column;font-size:0.95rem;color:#21325b}
+.car-detail-modal .car-form input,.car-detail-modal .car-form select,.car-detail-modal .car-form textarea{margin-top:6px;padding:10px 12px;border-radius:8px;border:1px solid #e6edf3;background:#fbfdff}
+.car-detail-modal .car-form input[type=number]{max-width:200px}
+.car-detail-modal .car-form textarea{grid-column:1 / -1;min-height:140px}
+.car-detail-modal .car-form .form-note{grid-column:1 / -1;margin-top:8px;color:#2d6b5f}
+
+/* Larger action buttons */
+.car-detail-modal .detail-header .btn{padding:12px 18px;border-radius:10px}
+.car-detail-modal .detail-header .btn.btn-primary{background:#2b8a6b;color:#fff}
+
+@media (max-width:900px){
+    .car-detail-modal .car-detail-container{flex-direction:column}
+    .car-detail-modal .image-panel{order:2;max-height:360px;width:100%;flex:0 0 auto;height:320px}
+    .car-detail-modal .detail-panel{order:1}
+    .car-detail-modal .car-form{grid-template-columns:1fr}
+    .car-detail-modal .image-panel img{max-height:320px;object-fit:cover}
+}
+
+/* Add image button styles */
+.car-detail-modal #modal-add-image-btn{border-radius:8px;padding:8px 12px}
+.car-detail-modal #modal-image-input{display:none}
+
+/* make sure modal leverages existing .modal behavior */
+.car-detail-modal.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1200;padding:32px;overflow:auto}
+
+@media (max-width:900px){
+    .car-detail-modal .car-detail-container{flex-direction:column}
+    .car-detail-modal .image-panel{order:2;max-height:360px}
+    .car-detail-modal .detail-panel{order:1}
 }
