@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Car Details — Owner</title>
+  <link rel="stylesheet" href="../styles/car-details.css">
+</head>
+<body>
+  <main class="car-detail-container">
+    <section class="detail-panel">
+      <header class="detail-header">
+        <h2 id="car-title">Car Model — Details</h2>
+        <div class="actions">
+          <button id="edit-btn" class="btn">Edit</button>
+          <button id="save-btn" class="btn primary" disabled>Save</button>
+        </div>
+      </header>
+
+      <form id="car-form" class="car-form" autocomplete="off">
+        <label>Make
+          <input name="make" id="make" type="text" />
+        </label>
+
+        <label>Model
+          <input name="model" id="model" type="text" />
+        </label>
+
+        <label>Year
+          <input name="year" id="year" type="number" min="1900" max="2099" />
+        </label>
+
+        <label>Price per day ($)
+          <input name="price" id="price" type="number" step="0.01" />
+        </label>
+
+        <label>Availability
+          <select id="availability" name="availability">
+            <option value="available">Available</option>
+            <option value="rented">Rented</option>
+            <option value="maintenance">Maintenance</option>
+          </select>
+        </label>
+
+        <label>Description
+          <textarea id="description" name="description" rows="5"></textarea>
+        </label>
+
+        <div class="form-note" id="save-note" aria-live="polite"></div>
+      </form>
+    </section>
+
+    <section class="image-panel">
+      <img id="car-image" src="../assets/car-placeholder.jpg" alt="Car image" />
+    </section>
+  </main>
+
+  <script src="../scripts/car-details.js"></script>
+</body>
+</html>
