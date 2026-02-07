@@ -7,8 +7,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "predeploy": "npx expo build:web",
-    "deploy": "gh-pages -d web-build"
+    "predeploy": "echo \"Skipping export; deploying existing web/ folder\"",
+    "deploy": "gh-pages -d web"
   },
   "dependencies": {
     "@expo/metro-runtime": "~4.0.0",

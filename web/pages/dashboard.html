@@ -162,6 +162,11 @@
                         </select>
                     </div>
                 </form>
+                <div class="form-group">
+                    <label class="form-label">Vehicle Image</label>
+                    <input type="file" id="vehicle-image-input" accept="image/*" class="form-input">
+                    <div class="image-preview"><img id="vehicle-image-preview" src="../assets/car-placeholder.jpg" alt="Preview"></div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
@@ -171,5 +176,15 @@
     </div>
 
     <script src="../scripts/dashboard.js"></script>
+        <!-- Confirmation modal -->
+        <div id="confirm-modal" class="modal" style="display:none">
+            <div class="modal-content" style="max-width:360px;margin:80px auto;padding:16px;">
+                <div style="margin-bottom:12px" id="confirm-message">Are you sure?</div>
+                <div style="display:flex;gap:8px;justify-content:flex-end">
+                    <button id="confirm-no" class="btn btn-secondary">No</button>
+                    <button id="confirm-yes" class="btn btn-primary">Yes</button>
+                </div>
+            </div>
+        </div>
 </body>
 </html>

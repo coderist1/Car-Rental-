@@ -171,25 +171,25 @@ function modalSaveHandler(e){
         description: document.getElementById('modal-description').value,
         image: document.getElementById('modal-car-image').src
     };
-
-    // ask user for permission before saving
-    const ok = window.confirm('Save changes to this vehicle?');
-    if (!ok) {
+    // ask user for permission before saving using custom confirm
+    showConfirm('Save changes to this vehicle?').then(ok =>{
+      if(!ok){
         document.getElementById('modal-save-note').textContent = 'Save cancelled.';
         return;
-    }
+      }
 
-    // find and update original vehicles array by tracked id
-    const idx = vehicles.findIndex(v => v.id === window._currentModalVehicleId);
-    if(idx >= 0){
-        vehicles[idx] = { ...vehicles[idx], ...data };
-    }
+      // find and update original vehicles array by tracked id
+      const idx = vehicles.findIndex(v => v.id === window._currentModalVehicleId);
+      if(idx >= 0){
+          vehicles[idx] = { ...vehicles[idx], ...data };
+      }
 
-    // refresh UI
-    updateStats();
-    renderVehicles();
-    setModalReadonly(true);
-    document.getElementById('modal-save-note').textContent = 'Saved locally.';
+      // refresh UI
+      updateStats();
+      renderVehicles();
+      setModalReadonly(true);
+      document.getElementById('modal-save-note').textContent = 'Saved locally.';
+    });
 }
 
 function showCarDetailModal(){
@@ -218,6 +218,10 @@ function openAddModal() {
     editingVehicleId = null;
     document.getElementById('modal-title').textContent = 'Add New Vehicle';
     document.getElementById('vehicle-form').reset();
+    // reset image preview and internal image data
+    const preview = document.getElementById('vehicle-image-preview');
+    if(preview) preview.src = '../assets/car-placeholder.jpg';
+    window._vehicleImageDataUrl = null;
     document.getElementById('vehicle-modal').style.display = 'block';
 }
 
@@ -237,6 +241,10 @@ function editVehicle(id) {
     document.getElementById('vehicle-seats').value = vehicle.seats;
     document.getElementById('vehicle-transmission').value = vehicle.transmission;
     document.getElementById('vehicle-type').value = vehicle.type;
+    // populate image preview & internal data
+    const preview = document.getElementById('vehicle-image-preview');
+    if(preview && vehicle.image) preview.src = vehicle.image;
+    window._vehicleImageDataUrl = vehicle.image || null;
 
     document.getElementById('vehicle-modal').style.display = 'block';
 }
@@ -257,7 +265,8 @@ function saveVehicle() {
         transmission: document.getElementById('vehicle-transmission').value,
         type: document.getElementById('vehicle-type').value,
         available: true,
-        image: getVehicleImage(document.getElementById('vehicle-type').value)
+        // prefer user-selected image (data URL) when available, otherwise fallback by type
+        image: window._vehicleImageDataUrl || getVehicleImage(document.getElementById('vehicle-type').value)
     };
 
     if (!formData.name || !formData.brand || !formData.pricePerDay) {
@@ -281,11 +290,12 @@ function saveVehicle() {
 }
 
 function deleteVehicle(id) {
-    if (confirm('Are you sure you want to delete this vehicle?')) {
+    showConfirm('Are you sure you want to delete this vehicle?').then(ok=>{
+        if(!ok) return;
         vehicles = vehicles.filter(v => v.id !== id);
         updateStats();
         renderVehicles();
-    }
+    });
 }
 
 function getVehicleImage(type){
@@ -301,6 +311,32 @@ function getVehicleImage(type){
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', initDashboard);
 
+// Generic showConfirm that returns a Promise<boolean>
+function showConfirm(message){
+    return new Promise(resolve=>{
+        const modal = document.getElementById('confirm-modal');
+        const msg = document.getElementById('confirm-message');
+        const yes = document.getElementById('confirm-yes');
+        const no = document.getElementById('confirm-no');
+        if(!modal || !msg || !yes || !no){
+            // fallback to native confirm if modal not present
+            resolve(window.confirm(message));
+            return;
+        }
+        msg.textContent = message;
+        modal.style.display = 'block';
+        const cleanup = ()=>{
+            modal.style.display = 'none';
+            yes.removeEventListener('click', onYes);
+            no.removeEventListener('click', onNo);
+        };
+        const onYes = ()=>{ cleanup(); resolve(true); };
+        const onNo = ()=>{ cleanup(); resolve(false); };
+        yes.addEventListener('click', onYes);
+        no.addEventListener('click', onNo);
+    });
+}
+
 // Close modal when clicking outside
 window.onclick = function(event) {
     const addModal = document.getElementById('vehicle-modal');
@@ -312,3 +348,21 @@ window.onclick = function(event) {
         closeCarDetailModal();
     }
 }
+
+// handle vehicle image input preview and data URL storage
+document.addEventListener('DOMContentLoaded', ()=>{
+    const input = document.getElementById('vehicle-image-input');
+    const preview = document.getElementById('vehicle-image-preview');
+    if(!input || !preview) return;
+    input.addEventListener('change', (ev)=>{
+        const file = ev.target.files && ev.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e){
+            const url = e.target.result;
+            preview.src = url;
+            window._vehicleImageDataUrl = url; // store for saving
+        };
+        reader.readAsDataURL(file);
+    });
+});

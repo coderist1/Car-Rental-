@@ -125,28 +125,29 @@ body {
 
 .stats-section {
     display: flex;
-    gap: 10px;
-    padding: 0 15px;
-    margin-bottom: 10px;
+    gap: 8px;
+    padding: 0 10px;
+    margin-bottom: 8px;
 }
 
 .stat-card {
     flex: 1;
-    background-color: #fff;
-    border-radius: 12px;
-    padding: 15px;
+    background-color: transparent;
+    border-radius: 8px;
+    padding: 8px;
     text-align: center;
+    border: 1px solid transparent;
 }
 
 .stat-number {
-    font-size: 24px;
-    font-weight: bold;
+    font-size: 16px;
+    font-weight: 700;
     color: #e94560;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
 }
 
 .stat-label {
-    font-size: 12px;
+    font-size: 11px;
     color: #666;
 }
 
@@ -163,6 +164,7 @@ body {
     display: flex;
     cursor: pointer;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid #e6edf2;
 }
 
 .vehicle-card:hover {
