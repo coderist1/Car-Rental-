@@ -1,79 +1,6 @@
 // Renter Dashboard JavaScript
 document.addEventListener('DOMContentLoaded', function() {
-    // Mock data for vehicles
-    const vehicles = [
-        {
-            id: 1,
-            name: 'BMW X5',
-            brand: 'BMW',
-            type: 'SUV',
-            seats: 5,
-            transmission: 'Automatic',
-            fuel: 'Petrol',
-            features: ['GPS', 'Air Conditioning', 'Bluetooth'],
-            price: 85,
-            owner: 'John Smith',
-            available: true,
-            image: '🚗',
-            imageUri: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=800&q=80'
-        },
-        {
-            id: 2,
-            name: 'Honda Civic',
-            brand: 'Honda',
-            type: 'Sedan',
-            seats: 5,
-            transmission: 'Manual',
-            fuel: 'Petrol',
-            features: ['Air Conditioning', 'Bluetooth'],
-            price: 45,
-            owner: 'Sarah Johnson',
-            available: true,
-            image: '🚙'
-        },
-        {
-            id: 3,
-            name: 'Ford Mustang',
-            brand: 'Ford',
-            type: 'Sports',
-            seats: 4,
-            transmission: 'Automatic',
-            fuel: 'Petrol',
-            features: ['GPS', 'Air Conditioning', 'Bluetooth', 'Leather Seats'],
-            price: 120,
-            owner: 'Mike Davis',
-            available: false,
-            image: '🏎️'
-        },
-        {
-            id: 4,
-            name: 'Toyota Prius',
-            brand: 'Toyota',
-            type: 'Hybrid',
-            seats: 5,
-            transmission: 'Automatic',
-            fuel: 'Hybrid',
-            features: ['GPS', 'Air Conditioning', 'Bluetooth'],
-            price: 55,
-            owner: 'Emma Wilson',
-            available: true,
-            image: '🚐'
-        },
-        {
-            id: 5,
-            name: 'Mercedes C-Class',
-            brand: 'Mercedes',
-            type: 'Luxury',
-            seats: 5,
-            transmission: 'Automatic',
-            fuel: 'Diesel',
-            features: ['GPS', 'Air Conditioning', 'Bluetooth', 'Leather Seats', 'Sunroof'],
-            price: 95,
-            owner: 'David Brown',
-            available: true,
-            image: '🚗'
-        }
-    ];
+    let vehicles = [];
 
     // DOM Elements
     const searchInput = document.getElementById('searchInput');
@@ -105,8 +32,43 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // Initialize
+    const storedListings = loadOwnerListings();
+    vehicles = storedListings !== null ? storedListings : [];
     renderVehicles(vehicles);
     updateStats(vehicles);
+
+    function loadOwnerListings() {
+        try {
+            const raw = localStorage.getItem('ownerVehicles');
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            if (!Array.isArray(parsed)) return null;
+
+            return parsed.map(vehicle => {
+                const status = vehicle.status || (vehicle.available ? 'available' : 'rented');
+                return {
+                id: vehicle.id,
+                name: vehicle.name || 'Vehicle',
+                brand: vehicle.brand || 'Unknown',
+                type: vehicle.type || 'SUV',
+                seats: vehicle.seats || 4,
+                transmission: vehicle.transmission || 'Automatic',
+                fuel: vehicle.fuel || 'Gasoline',
+                features: Array.isArray(vehicle.features)
+                    ? vehicle.features
+                    : ['GPS', 'Air Conditioning', 'Bluetooth'],
+                price: vehicle.pricePerDay || 0,
+                owner: vehicle.owner || 'Owner',
+                status,
+                available: status === 'available',
+                image: '🚗',
+                imageUri: vehicle.image || ''
+            };
+            });
+        } catch (err) {
+            return null;
+        }
+    }
 
     // Event Listeners
     searchInput.addEventListener('input', handleSearch);
@@ -200,9 +162,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Search filter
             if (currentFilters.search) {
                 const searchTerm = currentFilters.search.toLowerCase();
-                if (!vehicle.name.toLowerCase().includes(searchTerm) &&
-                    !vehicle.brand.toLowerCase().includes(searchTerm) &&
-                    !vehicle.owner.toLowerCase().includes(searchTerm)) {
+                const name = (vehicle.name || '').toLowerCase();
+                const brand = (vehicle.brand || '').toLowerCase();
+                const owner = (vehicle.owner || '').toLowerCase();
+                if (!name.includes(searchTerm) &&
+                    !brand.includes(searchTerm) &&
+                    !owner.includes(searchTerm)) {
                     return false;
                 }
             }
@@ -252,7 +217,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderVehicles(vehiclesToRender) {
-        if (vehiclesToRender.length === 0) {
+        const visibleVehicles = vehiclesToRender.filter(vehicle => vehicle.available);
+
+        if (visibleVehicles.length === 0) {
             vehiclesContainer.innerHTML = `
                 <div class="empty-container">
                     <div class="empty-emoji">🔍</div>
@@ -266,7 +233,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Wait for custom element to be defined before rendering
         customElements.whenDefined('vehicle-card').then(() => {
             vehiclesContainer.innerHTML = '';
-            vehiclesToRender.forEach(vehicle => {
+            visibleVehicles.forEach(vehicle => {
                 const card = document.createElement('vehicle-card');
                 card.setAttribute('vehicle-id', vehicle.id);
                 card.setAttribute('name', vehicle.name);
@@ -275,6 +242,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 card.setAttribute('image', vehicle.imageUri || 'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?auto=format&fit=crop&w=800&q=80');
                 card.setAttribute('seats', vehicle.seats);
                 card.setAttribute('transmission', vehicle.transmission);
+                if (vehicle.status) {
+                    card.setAttribute('status', vehicle.status);
+                }
                 card.setAttribute('mode', 'renter');
                 
                 card.addEventListener('vehicle-click', (e) => {
@@ -295,7 +265,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.getElementById('totalVehicles').textContent = totalVehicles;
         document.getElementById('availableVehicles').textContent = availableVehicles;
-        document.getElementById('avgPrice').textContent = `$${avgPrice}`;
+        document.getElementById('avgPrice').textContent = `₱${avgPrice}`;
     }
 
     // Global function for vehicle detail (called from onclick)
@@ -314,7 +284,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             <div class="detail-price-container">
                 <div class="detail-price-label">Price per day</div>
-                <div class="detail-price">$${vehicle.price}</div>
+                <div class="detail-price">₱${vehicle.price}</div>
             </div>
 
             <div class="detail-section">
@@ -355,9 +325,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="owner-info">${vehicle.owner}</div>
             </div>
 
-            ${vehicle.available ?
-                '<button class="rent-button" onclick="rentVehicle(' + vehicle.id + ')">Rent This Vehicle</button>' :
-                '<div class="unavailable-button">Currently Unavailable</div>'
+            ${vehicle.available
+                ? '<button class="rent-button" onclick="rentVehicle(' + vehicle.id + ')">Rent This Vehicle</button>'
+                : `<div class="unavailable-button">${vehicle.status === 'maintenance' ? 'Under Maintenance' : 'Currently Unavailable'}</div>`
             }
         `;
 
@@ -379,9 +349,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function handleLogout() {
-        if (confirm('Are you sure you want to logout?')) {
-            // In a real app, this would clear authentication tokens
-            window.location.href = '../index.html';
-        }
+        window.location.href = '../index.html';
     }
 });

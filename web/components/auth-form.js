@@ -69,16 +69,6 @@ class AuthForm extends HTMLElement {
                     text-align: center;
                 }
 
-                .error-text {
-                    background-color: #fee;
-                    color: #c33;
-                    padding: 12px;
-                    border-radius: 8px;
-                    margin-bottom: 16px;
-                    font-size: 14px;
-                    display: none;
-                }
-
                 .input {
                     width: 100%;
                     padding: 14px;
@@ -149,8 +139,6 @@ class AuthForm extends HTMLElement {
                 ${adminBadge}
                 <h2 class="form-title">${title}</h2>
                 <p class="form-subtitle">${subtitle}</p>
-
-                <div class="error-text" id="error-message"></div>
 
                 <form id="auth-form">
                     <input

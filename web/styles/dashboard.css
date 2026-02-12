@@ -19,12 +19,12 @@ body {
 }
 
 header {
-    background: white;
-    padding: 16px 20px;
-    border-radius: 12px;
-    margin-bottom: 15px;
-    border: 1px solid #e5e7eb;
-    box-shadow: none;
+    background: #ffffff;
+    padding: 26px 28px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
 }
 
 .header-content {
@@ -34,9 +34,10 @@ header {
 }
 
 h1 {
-    font-size: 1.6rem;
-    color: #1a2c5e;
-    margin: 0; /* ensure no extra spacing */
+    font-size: 28px;
+    color: #0f172a;
+    margin: 0;
+    font-weight: 700;
 }
 
 .user-info {
@@ -233,14 +234,16 @@ h1 {
 }
 
 .btn-secondary {
-    background: #f8fafc;
-    color: #3F9B84;
-    border: 1px solid #e5e7eb;
+    background: #f1f5f9;
+    color: #0f172a;
+    border: none;
     flex: 1;
+    font-weight: 600;
 }
 
 .btn-secondary:hover {
-    background: #e5e7eb;
+    background: #e2e8f0;
+    transform: translateY(-1px);
 }
 
 .btn-danger {

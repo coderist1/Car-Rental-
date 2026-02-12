@@ -1,6 +1,7 @@
 // Dashboard JavaScript
 // Sample data - simulating system data
-let vehicles = [
+const STORAGE_KEY = 'ownerVehicles';
+const defaultVehicles = [
     {
         id: 2,
         name: "BMW X5",
@@ -14,6 +15,7 @@ let vehicles = [
         fuel: "Diesel",
         plate: "ABC 1234",
         color: "White",
+        status: "rented",
         available: false,
         image: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=800&q=80"
     },
@@ -30,18 +32,54 @@ let vehicles = [
         fuel: "Gasoline",
         plate: "XYZ 5678",
         color: "Red",
+        status: "available",
         available: true,
         image: "https://images.unsplash.com/photo-1502877338535-766e1452684a?auto=format&fit=crop&w=800&q=80"
     }
 ];
 
+let vehicles = [];
+
 let editingVehicleId = null;
 
 // Initialize the dashboard
 function initDashboard() {
+    const storedVehicles = loadStoredVehicles();
+    vehicles = storedVehicles !== null ? storedVehicles.map(normalizeVehicle) : defaultVehicles.slice();
+    if (storedVehicles === null) {
+        saveStoredVehicles();
+    }
     updateStats();
     renderVehicles();
     setupSearch();
+}
+
+function normalizeVehicle(vehicle) {
+    const status = vehicle.status || (vehicle.available ? 'available' : 'rented');
+    return {
+        ...vehicle,
+        status,
+        available: status === 'available'
+    };
+}
+
+function loadStoredVehicles() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : null;
+    } catch (err) {
+        return null;
+    }
+}
+
+function saveStoredVehicles() {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(vehicles));
+    } catch (err) {
+        // Ignore storage errors (private mode, quota).
+    }
 }
 
 // Update statistics
@@ -84,6 +122,7 @@ function renderVehicles(filteredVehicles = vehicles) {
             card.setAttribute('location', vehicle.location);
             card.setAttribute('seats', vehicle.seats);
             card.setAttribute('transmission', vehicle.transmission);
+            card.setAttribute('status', vehicle.status || (vehicle.available ? 'available' : 'rented'));
             card.setAttribute('mode', 'owner');
             
             card.addEventListener('vehicle-click', (e) => {
@@ -119,7 +158,7 @@ function populateCarDetailModal(vehicle){
     document.getElementById('modal-model').value = vehicle.name || '';
     document.getElementById('modal-year').value = vehicle.year || '';
     document.getElementById('modal-price').value = vehicle.pricePerDay || '';
-    document.getElementById('modal-availability').value = vehicle.available ? 'available' : 'rented';
+    document.getElementById('modal-availability').value = vehicle.status || (vehicle.available ? 'available' : 'rented');
     if(document.getElementById('modal-location')) document.getElementById('modal-location').value = vehicle.location || 'Manila';
     document.getElementById('modal-description').value = vehicle.description || '';
     // image
@@ -175,6 +214,7 @@ function modalSaveHandler(e){
         name: document.getElementById('modal-model').value,
         year: parseInt(document.getElementById('modal-year').value),
         pricePerDay: parseFloat(document.getElementById('modal-price').value),
+        status: document.getElementById('modal-availability').value,
         available: document.getElementById('modal-availability').value === 'available',
         location: document.getElementById('modal-location') ? document.getElementById('modal-location').value : '',
         description: document.getElementById('modal-description').value,
@@ -192,6 +232,7 @@ function modalSaveHandler(e){
       if(idx >= 0){
           vehicles[idx] = { ...vehicles[idx], ...data };
       }
+      saveStoredVehicles();
 
       // refresh UI
       updateStats();
@@ -227,6 +268,8 @@ function openAddModal() {
     editingVehicleId = null;
     document.getElementById('modal-title').textContent = 'Add New Vehicle';
     document.getElementById('vehicle-form').reset();
+    const availabilitySelect = document.getElementById('vehicle-availability');
+    if (availabilitySelect) availabilitySelect.value = 'available';
     // reset image preview and internal image data
     const preview = document.getElementById('vehicle-image-preview');
     if(preview) preview.src = '../assets/car-placeholder.jpg';
@@ -250,6 +293,9 @@ function editVehicle(id) {
     document.getElementById('vehicle-seats').value = vehicle.seats;
     document.getElementById('vehicle-transmission').value = vehicle.transmission;
     document.getElementById('vehicle-type').value = vehicle.type;
+    if (document.getElementById('vehicle-availability')) {
+        document.getElementById('vehicle-availability').value = vehicle.status || (vehicle.available ? 'available' : 'rented');
+    }
     if(document.getElementById('vehicle-fuel')) document.getElementById('vehicle-fuel').value = vehicle.fuel || '';
     if(document.getElementById('vehicle-plate')) document.getElementById('vehicle-plate').value = vehicle.plate || '';
     if(document.getElementById('vehicle-color')) document.getElementById('vehicle-color').value = vehicle.color || '';
@@ -281,7 +327,12 @@ function saveVehicle() {
         plate: document.getElementById('vehicle-plate') ? document.getElementById('vehicle-plate').value : '',
         color: document.getElementById('vehicle-color') ? document.getElementById('vehicle-color').value : '',
         description: document.getElementById('vehicle-description') ? document.getElementById('vehicle-description').value : '',
-        available: true,
+        status: document.getElementById('vehicle-availability')
+            ? document.getElementById('vehicle-availability').value
+            : 'available',
+        available: document.getElementById('vehicle-availability')
+            ? document.getElementById('vehicle-availability').value === 'available'
+            : true,
         image: window._vehicleImageDataUrl || getVehicleImage(document.getElementById('vehicle-type').value)
     };
 
@@ -298,6 +349,7 @@ function saveVehicle() {
             // Update existing vehicle
             const index = vehicles.findIndex(v => v.id === editingVehicleId);
             vehicles[index] = { ...vehicles[index], ...formData };
+            saveStoredVehicles();
 
             updateStats();
             renderVehicles();
@@ -307,6 +359,7 @@ function saveVehicle() {
         // Add new vehicle (no confirmation needed for new items)
         const newId = Math.max(...vehicles.map(v => v.id), 0) + 1;
         vehicles.push({ id: newId, ...formData });
+        saveStoredVehicles();
 
         updateStats();
         renderVehicles();
@@ -318,6 +371,7 @@ function deleteVehicle(id) {
     showConfirm('Are you sure you want to delete this vehicle?').then(ok=>{
         if(!ok) return;
         vehicles = vehicles.filter(v => v.id !== id);
+        saveStoredVehicles();
         updateStats();
         renderVehicles();
     });
