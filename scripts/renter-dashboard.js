@@ -14,7 +14,8 @@ document.addEventListener('DOMContentLoaded', function() {
             price: 85,
             owner: 'John Smith',
             available: true,
-            image: '🚗'
+            image: '🚗',
+            imageUri: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=800&q=80'
         },
         {
             id: 2,
@@ -262,36 +263,27 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        vehiclesContainer.innerHTML = vehiclesToRender.map(vehicle => `
-            <div class="vehicle-card" onclick="showVehicleDetail(${vehicle.id})">
-                <div class="vehicle-image-container">
-                    <div class="vehicle-emoji">${vehicle.image}</div>
-                </div>
-                <div class="vehicle-info">
-                    <div class="vehicle-header">
-                        <div class="vehicle-name">${vehicle.name}</div>
-                        <div class="availability-badge ${vehicle.available ? '' : 'unavailable-badge'}">
-                            ${vehicle.available ? 'Available' : 'Unavailable'}
-                        </div>
-                    </div>
-                    <div class="vehicle-brand">${vehicle.brand}</div>
-                    <div class="vehicle-details">
-                        <div class="vehicle-detail">👥 ${vehicle.seats} seats</div>
-                        <div class="vehicle-detail">⚙️ ${vehicle.transmission}</div>
-                        <div class="vehicle-detail">⛽ ${vehicle.fuel}</div>
-                    </div>
-                    <div class="vehicle-features">
-                        ${vehicle.features.slice(0, 3).map(feature => `<span class="feature-tag">${feature}</span>`).join('')}
-                        ${vehicle.features.length > 3 ? `<span class="feature-tag">+${vehicle.features.length - 3}</span>` : ''}
-                    </div>
-                    <div class="price-row">
-                        <div class="price-label">per day</div>
-                        <div class="price">$${vehicle.price}</div>
-                    </div>
-                    <div class="owner-name">by ${vehicle.owner}</div>
-                </div>
-            </div>
-        `).join('');
+        // Wait for custom element to be defined before rendering
+        customElements.whenDefined('vehicle-card').then(() => {
+            vehiclesContainer.innerHTML = '';
+            vehiclesToRender.forEach(vehicle => {
+                const card = document.createElement('vehicle-card');
+                card.setAttribute('vehicle-id', vehicle.id);
+                card.setAttribute('name', vehicle.name);
+                card.setAttribute('type', vehicle.type);
+                card.setAttribute('price', vehicle.price);
+                card.setAttribute('image', vehicle.imageUri || 'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?auto=format&fit=crop&w=800&q=80');
+                card.setAttribute('seats', vehicle.seats);
+                card.setAttribute('transmission', vehicle.transmission);
+                card.setAttribute('mode', 'renter');
+                
+                card.addEventListener('vehicle-click', (e) => {
+                    showVehicleDetail(e.detail.vehicleId);
+                });
+                
+                vehiclesContainer.appendChild(card);
+            });
+        });
     }
 
     function updateStats(vehiclesToCount) {
@@ -314,7 +306,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const detailContent = document.getElementById('detailContent');
         detailContent.innerHTML = `
             <div class="detail-image-container">
-                <div class="detail-emoji">${vehicle.image}</div>
+                ${vehicle.imageUri ? `<img src="${vehicle.imageUri}" alt="${vehicle.name}" class="detail-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : ''}
+                <div class="detail-emoji" style="${vehicle.imageUri ? 'display:none;' : ''}">${vehicle.image}</div>
             </div>
             <div class="detail-name">${vehicle.name}</div>
             <div class="detail-brand">${vehicle.brand}</div>
