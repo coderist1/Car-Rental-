@@ -14,7 +14,8 @@ document.addEventListener('DOMContentLoaded', function() {
             price: 85,
             owner: 'John Smith',
             available: true,
-            image: '🚗'
+            image: '🚗',
+            imageUri: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=800&q=80'
         },
         {
             id: 2,
@@ -265,7 +266,8 @@ document.addEventListener('DOMContentLoaded', function() {
         vehiclesContainer.innerHTML = vehiclesToRender.map(vehicle => `
             <div class="vehicle-card" onclick="showVehicleDetail(${vehicle.id})">
                 <div class="vehicle-image-container">
-                    <div class="vehicle-emoji">${vehicle.image}</div>
+                    ${vehicle.imageUri ? `<img src="${vehicle.imageUri}" alt="${vehicle.name}" class="vehicle-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">` : ''}
+                    <div class="vehicle-emoji" style="${vehicle.imageUri ? 'display:none;' : ''}">${vehicle.image}</div>
                 </div>
                 <div class="vehicle-info">
                     <div class="vehicle-header">
@@ -314,7 +316,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const detailContent = document.getElementById('detailContent');
         detailContent.innerHTML = `
             <div class="detail-image-container">
-                <div class="detail-emoji">${vehicle.image}</div>
+                ${vehicle.imageUri ? `<img src="${vehicle.imageUri}" alt="${vehicle.name}" class="detail-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : ''}
+                <div class="detail-emoji" style="${vehicle.imageUri ? 'display:none;' : ''}">${vehicle.image}</div>
             </div>
             <div class="detail-name">${vehicle.name}</div>
             <div class="detail-brand">${vehicle.brand}</div>

@@ -158,6 +158,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const renters = mockUsers.filter(u => u.role === 'renter').length;
         const totalVehicles = mockVehicles.length;
         const availableVehicles = mockVehicles.filter(v => v.available).length;
+        const rentedVehicles = totalVehicles - availableVehicles;
         const activeRentals = mockRentals.filter(r => r.status === 'active').length;
         const totalRevenue = mockVehicles.reduce((sum, v) => sum + v.pricePerDay, 0) * 30;
 
@@ -165,6 +166,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('totalVehicles').textContent = totalVehicles;
         document.getElementById('activeRentals').textContent = activeRentals;
         document.getElementById('availableVehicles').textContent = availableVehicles;
+        document.getElementById('rentedVehicles').textContent = rentedVehicles;
         document.getElementById('ownersCount').textContent = owners;
         document.getElementById('rentersCount').textContent = renters;
         document.getElementById('revenueAmount').textContent = `$${totalRevenue.toLocaleString()}`;
@@ -468,7 +470,11 @@ document.addEventListener('DOMContentLoaded', function() {
         renderRecentVehicles();
         updateOverviewStats();
 
-        alert('Vehicle details updated successfully!');
+        // Close modal before showing alert to ensure it appears in front
+        closeModal(vehicleDetailModal);
+        setTimeout(() => {
+            alert('Vehicle details updated successfully!');
+        }, 100);
     };
 
     function closeModal(modal) {

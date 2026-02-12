@@ -184,6 +184,13 @@ body {
     font-size: 50px;
 }
 
+.vehicle-image {
+    width: 100%;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
 .vehicle-info {
     flex: 1;
     padding: 15px;
@@ -483,6 +490,13 @@ body {
 
 .detail-emoji {
     font-size: 80px;
+}
+
+.detail-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 20px;
 }
 
 .detail-name {

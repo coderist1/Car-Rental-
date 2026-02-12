@@ -1,22 +1,6 @@
 // Mock vehicle data for the car rental app
 export const vehicles = [
   {
-    id: '1',
-    name: 'Tesla Model 3',
-    brand: 'Tesla',
-    type: 'Electric',
-    year: 2024,
-    pricePerDay: 120,
-    image: '🚗',
-    features: ['Autopilot', 'Electric', 'Premium Sound'],
-    available: true,
-    ownerId: 'owner1',
-    ownerName: 'John Smith',
-    location: 'New York',
-    seats: 5,
-    transmission: 'Automatic',
-  },
-  {
     id: '2',
     name: 'BMW X5',
     brand: 'BMW',
