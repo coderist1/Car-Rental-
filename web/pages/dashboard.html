@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Car Rental - Owner Dashboard</title>
     <link rel="stylesheet" href="../styles/dashboard.css">
+    <script type="module" src="../components/vehicle-card.js"></script>
+    <script type="module" src="../components/confirm-modal.js"></script>
 </head>
 <body>
     <div class="container">
@@ -229,15 +231,7 @@
     </div>
 
     <script src="../scripts/dashboard.js"></script>
-        <!-- Confirmation modal -->
-        <div id="confirm-modal" class="modal" style="display:none">
-            <div class="modal-content" style="max-width:360px;margin:80px auto;padding:16px;">
-                <div style="margin-bottom:12px" id="confirm-message">Are you sure?</div>
-                <div style="display:flex;gap:10px;">
-                    <button id="confirm-no" class="btn btn-secondary" style="flex:1;">No</button>
-                    <button id="confirm-yes" class="btn btn-primary" style="flex:1;">Yes</button>
-                </div>
-            </div>
-        </div>
+    <!-- Confirmation modal -->
+    <confirm-modal id="confirm-modal"></confirm-modal>
 </body>
 </html>

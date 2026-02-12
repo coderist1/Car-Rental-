@@ -71,24 +71,37 @@ function renderVehicles(filteredVehicles = vehicles) {
         return;
     }
 
-    grid.innerHTML = filteredVehicles.map(vehicle => `
-        <div class="vehicle-card" onclick="openCarDetails(${vehicle.id})" role="button" tabindex="0">
-            <div class="vehicle-image"><img src="${vehicle.image}" alt="${vehicle.name}"></div>
-            <div class="vehicle-info">
-                <h3 class="vehicle-name">${vehicle.name}</h3>
-                <div class="vehicle-details">${vehicle.brand} • ${vehicle.year} • ${vehicle.type}</div>
-                <div class="vehicle-meta">📍 ${vehicle.location} • 👥 ${vehicle.seats} seats • ⚙️ ${vehicle.transmission}</div>
-                <div class="vehicle-price">₱${vehicle.pricePerDay.toLocaleString()}/day</div>
-                <span class="vehicle-status ${vehicle.available ? 'status-available' : 'status-rented'}">
-                    ${vehicle.available ? 'Available' : 'Rented'}
-                </span>
-                <div class="vehicle-actions">
-                    <button class="btn btn-secondary" onclick="event.stopPropagation(); editVehicle(${vehicle.id})">Edit</button>
-                    <button class="btn btn-danger" onclick="event.stopPropagation(); deleteVehicle(${vehicle.id})">Delete</button>
-                </div>
-            </div>
-        </div>
-    `).join('');
+    // Wait for custom element to be defined before rendering
+    customElements.whenDefined('vehicle-card').then(() => {
+        grid.innerHTML = '';
+        filteredVehicles.forEach(vehicle => {
+            const card = document.createElement('vehicle-card');
+            card.setAttribute('vehicle-id', vehicle.id);
+            card.setAttribute('name', `${vehicle.brand} ${vehicle.name}`);
+            card.setAttribute('type', vehicle.type);
+            card.setAttribute('price', vehicle.pricePerDay.toLocaleString());
+            card.setAttribute('image', vehicle.image);
+            card.setAttribute('location', vehicle.location);
+            card.setAttribute('seats', vehicle.seats);
+            card.setAttribute('transmission', vehicle.transmission);
+            card.setAttribute('mode', 'owner');
+            
+            card.addEventListener('vehicle-click', (e) => {
+                openCarDetails(e.detail.vehicleId);
+            });
+            
+            card.addEventListener('vehicle-action', (e) => {
+                const { action, vehicleId } = e.detail;
+                if (action === 'edit') {
+                    editVehicle(vehicleId);
+                } else if (action === 'delete') {
+                    deleteVehicle(vehicleId);
+                }
+            });
+            
+            grid.appendChild(card);
+        });
+    });
 }
 
 // Open car details page: store selected vehicle and navigate
@@ -330,29 +343,13 @@ document.addEventListener('DOMContentLoaded', initDashboard);
 
 // Generic showConfirm that returns a Promise<boolean>
 function showConfirm(message){
-    return new Promise(resolve=>{
+    return customElements.whenDefined('confirm-modal').then(() => {
         const modal = document.getElementById('confirm-modal');
-        const msg = document.getElementById('confirm-message');
-        const yes = document.getElementById('confirm-yes');
-        const no = document.getElementById('confirm-no');
-        if(!modal || !msg || !yes || !no){
-            console.log('Confirm modal elements not found, using native confirm');
-            // fallback to native confirm if modal not present
-            resolve(window.confirm(message));
-            return;
+        if (!modal) {
+            console.log('Confirm modal not found, using native confirm');
+            return Promise.resolve(window.confirm(message));
         }
-        console.log('Showing confirm modal with message:', message);
-        msg.textContent = message;
-        modal.style.display = 'flex'; // Changed to flex to match CSS
-        const cleanup = ()=>{
-            modal.style.display = 'none';
-            yes.removeEventListener('click', onYes);
-            no.removeEventListener('click', onNo);
-        };
-        const onYes = ()=>{ console.log('Yes clicked'); cleanup(); resolve(true); };
-        const onNo = ()=>{ console.log('No clicked'); cleanup(); resolve(false); };
-        yes.addEventListener('click', onYes);
-        no.addEventListener('click', onNo);
+        return modal.show(message);
     });
 }
 
