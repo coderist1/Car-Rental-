@@ -1,4 +1,46 @@
 // Renter Dashboard JavaScript
+// Default sample vehicles
+const defaultVehicles = [
+    {
+        id: 2,
+        name: "BMW X5",
+        brand: "BMW",
+        year: 2022,
+        price: 5500,
+        location: "Makati",
+        seats: 7,
+        transmission: "Automatic",
+        type: "SUV",
+        fuel: "Diesel",
+        plate: "XYZ 5678",
+        color: "White",
+        status: "rented",
+        available: false,
+        owner: "Jane Smith",
+        features: ["Leather Seats", "Sunroof", "Navigation", "Premium Sound"],
+        imageUri: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=800&q=80"
+    },
+    {
+        id: 3,
+        name: "Ferrari 488",
+        brand: "Ferrari",
+        year: 2021,
+        price: 25000,
+        location: "Taguig",
+        seats: 2,
+        transmission: "Manual",
+        type: "Sports",
+        fuel: "Gasoline",
+        plate: "FER 2021",
+        color: "Red",
+        status: "available",
+        available: true,
+        owner: "Mike Johnson",
+        features: ["Sport Mode", "Carbon Fiber Interior", "Launch Control", "Track Pack"],
+        imageUri: "https://images.unsplash.com/photo-1502877338535-766e1452684a?auto=format&fit=crop&w=800&q=80"
+    }
+];
+
 document.addEventListener('DOMContentLoaded', function() {
     let vehicles = [];
 
@@ -31,44 +73,10 @@ document.addEventListener('DOMContentLoaded', function() {
         maxPrice: ''
     };
 
-    // Initialize
-    const storedListings = loadOwnerListings();
-    vehicles = storedListings !== null ? storedListings : [];
+    // Initialize with default vehicles
+    vehicles = defaultVehicles.slice();
     renderVehicles(vehicles);
     updateStats(vehicles);
-
-    function loadOwnerListings() {
-        try {
-            const raw = localStorage.getItem('ownerVehicles');
-            if (!raw) return null;
-            const parsed = JSON.parse(raw);
-            if (!Array.isArray(parsed)) return null;
-
-            return parsed.map(vehicle => {
-                const status = vehicle.status || (vehicle.available ? 'available' : 'rented');
-                return {
-                id: vehicle.id,
-                name: vehicle.name || 'Vehicle',
-                brand: vehicle.brand || 'Unknown',
-                type: vehicle.type || 'SUV',
-                seats: vehicle.seats || 4,
-                transmission: vehicle.transmission || 'Automatic',
-                fuel: vehicle.fuel || 'Gasoline',
-                features: Array.isArray(vehicle.features)
-                    ? vehicle.features
-                    : ['GPS', 'Air Conditioning', 'Bluetooth'],
-                price: vehicle.pricePerDay || 0,
-                owner: vehicle.owner || 'Owner',
-                status,
-                available: status === 'available',
-                image: '🚗',
-                imageUri: vehicle.image || ''
-            };
-            });
-        } catch (err) {
-            return null;
-        }
-    }
 
     // Event Listeners
     searchInput.addEventListener('input', handleSearch);

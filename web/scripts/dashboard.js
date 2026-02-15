@@ -44,11 +44,7 @@ let editingVehicleId = null;
 
 // Initialize the dashboard
 function initDashboard() {
-    const storedVehicles = loadStoredVehicles();
-    vehicles = storedVehicles !== null ? storedVehicles.map(normalizeVehicle) : defaultVehicles.slice();
-    if (storedVehicles === null) {
-        saveStoredVehicles();
-    }
+    vehicles = defaultVehicles.slice();
     updateStats();
     renderVehicles();
     setupSearch();
@@ -124,10 +120,6 @@ function renderVehicles(filteredVehicles = vehicles) {
             card.setAttribute('transmission', vehicle.transmission);
             card.setAttribute('status', vehicle.status || (vehicle.available ? 'available' : 'rented'));
             card.setAttribute('mode', 'owner');
-            
-            card.addEventListener('vehicle-click', (e) => {
-                openCarDetails(e.detail.vehicleId);
-            });
             
             card.addEventListener('vehicle-action', (e) => {
                 const { action, vehicleId } = e.detail;
@@ -232,7 +224,6 @@ function modalSaveHandler(e){
       if(idx >= 0){
           vehicles[idx] = { ...vehicles[idx], ...data };
       }
-      saveStoredVehicles();
 
       // refresh UI
       updateStats();
@@ -349,7 +340,6 @@ function saveVehicle() {
             // Update existing vehicle
             const index = vehicles.findIndex(v => v.id === editingVehicleId);
             vehicles[index] = { ...vehicles[index], ...formData };
-            saveStoredVehicles();
 
             updateStats();
             renderVehicles();
@@ -359,7 +349,6 @@ function saveVehicle() {
         // Add new vehicle (no confirmation needed for new items)
         const newId = Math.max(...vehicles.map(v => v.id), 0) + 1;
         vehicles.push({ id: newId, ...formData });
-        saveStoredVehicles();
 
         updateStats();
         renderVehicles();
@@ -371,7 +360,6 @@ function deleteVehicle(id) {
     showConfirm('Are you sure you want to delete this vehicle?').then(ok=>{
         if(!ok) return;
         vehicles = vehicles.filter(v => v.id !== id);
-        saveStoredVehicles();
         updateStats();
         renderVehicles();
     });
