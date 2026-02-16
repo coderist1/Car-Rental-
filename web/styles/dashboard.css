@@ -12,6 +12,15 @@ body {
     line-height: 1.6;
 }
 
+footer {
+    text-align: center;
+    color: black;
+    padding: 40px;
+    border-top: grey;
+    background: #e9eaeb;
+    margin-top: 40px;
+}
+
 .container {
     max-width: 1200px;
     margin: 0 auto;

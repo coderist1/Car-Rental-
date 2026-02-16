@@ -63,20 +63,20 @@ class VehicleCard extends HTMLElement {
                 .vehicle-image {
                     width: 100%;
                     height: 200px;
-                    object-fit: contain;
+                    object-fit: cover;
                     background: #f8f9fa;
-                    padding: 16px;
-                    display: block;
+                    padding: 1px;
+                    display: inherit;
                 }
 
                 :host([mode="renter"]) .vehicle-image {
                     width: 100%;
                     height: 155px;
-                    padding: 8px;
+                    padding: 1px;
                     border-radius: 10px;
                     background: #f1f5f9;
-                    object-fit: contain;
-                    display: block;
+                    object-fit: cover;
+                    display: inherit;
                     margin: auto;
                 }
 

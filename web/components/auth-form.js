@@ -11,7 +11,7 @@ class AuthForm extends HTMLElement {
     }
 
     static get observedAttributes() {
-        return ['type', 'title', 'subtitle'];
+        return ['type', 'title', 'subtitle', 'img-src'];
     }
 
     attributeChangedCallback() {
@@ -23,9 +23,11 @@ class AuthForm extends HTMLElement {
         const type = this.getAttribute('type') || 'login';
         const title = this.getAttribute('title') || 'Welcome Back';
         const subtitle = this.getAttribute('subtitle') || 'Sign in to your account';
+        const imgSrc = this.getAttribute('img-src');
         const isAdmin = this.getAttribute('admin') !== null;
 
         const adminBadge = isAdmin ? '<div class="admin-badge">👨‍💼 ADMIN</div>' : '';
+        const logoImage = imgSrc ? `<img src="${imgSrc}" class="login-logo" alt="Logo" />` : '';
         const emailPlaceholder = isAdmin ? 'Admin Email' : 'Email';
 
         this.shadowRoot.innerHTML = `
@@ -41,6 +43,16 @@ class AuthForm extends HTMLElement {
                     max-width: 400px;
                     width: 100%;
                     box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+                }
+
+                .login-logo {
+                    width: 120px;
+                    height: 120px;
+                    border-radius: 12px;
+                    object-fit: cover;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                    margin: 0 auto 20px;
+                    display: block;
                 }
 
                 .admin-badge {
@@ -136,6 +148,7 @@ class AuthForm extends HTMLElement {
                 }
             </style>
             <div class="form-card">
+                ${logoImage}
                 ${adminBadge}
                 <h2 class="form-title">${title}</h2>
                 <p class="form-subtitle">${subtitle}</p>
