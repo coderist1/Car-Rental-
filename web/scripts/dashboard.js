@@ -129,6 +129,13 @@ function renderVehicles(filteredVehicles = vehicles) {
                     deleteVehicle(vehicleId);
                 }
             });
+
+            card.addEventListener('vehicle-click', (e) => {
+                const { vehicleId } = e.detail;
+                if (vehicleId !== null && !Number.isNaN(vehicleId)) {
+                    openCarDetails(vehicleId);
+                }
+            });
             
             grid.appendChild(card);
         });
