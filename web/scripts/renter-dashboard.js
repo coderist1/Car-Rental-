@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const vehiclesContainer = document.getElementById('vehiclesContainer');
     const detailModal = document.getElementById('detailModal');
     const closeDetail = document.getElementById('closeDetail');
-    const logoutButton = document.getElementById('logoutButton');
+    const profileMenu = document.getElementById('profileMenu');
 
     // Filter elements
     const typeFilters = document.querySelectorAll('.filter-option[data-filter="type"]');
@@ -85,7 +85,11 @@ document.addEventListener('DOMContentLoaded', function() {
     closeDetail.addEventListener('click', closeDetailModal);
     applyFilters.addEventListener('click', applyFiltersHandler);
     clearFilters.addEventListener('click', clearFiltersHandler);
-    logoutButton.addEventListener('click', handleLogout);
+
+    // Profile Menu Event Listener
+    profileMenu.addEventListener('menu-action', (e) => {
+        handleMenuAction(e.detail.action);
+    });
 
     // Close modals when clicking outside
     window.addEventListener('click', function(event) {
@@ -97,12 +101,44 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Functions
+    // ===== Profile Menu Actions =====
+    function handleMenuAction(action) {
+        switch(action) {
+            case 'profile':
+                navigateToPage('../pages/profile.html');
+                break;
+            case 'change-password':
+                navigateToPage('../pages/change-password.html');
+                break;
+            case 'logout':
+                handleLogout();
+                break;
+            default:
+                console.log('Unknown action:', action);
+        }
+    }
+
+    function navigateToPage(page) {
+        window.location.href = page;
+    }
+
+    function handleLogout() {
+        // Show confirmation before logout
+        const confirmed = confirm('Are you sure you want to logout?');
+        if (confirmed) {
+            // Clear any session data if needed
+            sessionStorage.clear();
+            navigateToPage('../index.html');
+        }
+    }
+
+    // ===== Search Functionality =====
     function handleSearch() {
         currentFilters.search = searchInput.value.toLowerCase();
         filterVehicles();
     }
 
+    // ===== Filter Modal Functions =====
     function openFilterModal() {
         filterModal.style.display = 'block';
         document.body.style.overflow = 'hidden';
@@ -355,8 +391,4 @@ document.addEventListener('DOMContentLoaded', function() {
             this.classList.toggle('active');
         });
     });
-
-    function handleLogout() {
-        window.location.href = '../index.html';
-    }
 });
