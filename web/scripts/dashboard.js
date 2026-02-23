@@ -44,7 +44,13 @@ let editingVehicleId = null;
 
 // Initialize the dashboard
 function initDashboard() {
-    vehicles = defaultVehicles.slice();
+    const storedVehicles = loadStoredVehicles();
+    if (storedVehicles && storedVehicles.length > 0) {
+        vehicles = storedVehicles.map(normalizeVehicle);
+    } else {
+        vehicles = defaultVehicles.map(normalizeVehicle);
+        saveStoredVehicles();
+    }
     updateStats();
     renderVehicles();
     setupSearch();
@@ -72,7 +78,7 @@ function loadStoredVehicles() {
 
 function saveStoredVehicles() {
     try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(vehicles));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(vehicles.map(normalizeVehicle)));
     } catch (err) {
         // Ignore storage errors (private mode, quota).
     }
@@ -277,6 +283,7 @@ function saveVehicle() {
             // Update existing vehicle
             const index = vehicles.findIndex(v => v.id === editingVehicleId);
             vehicles[index] = { ...vehicles[index], ...formData };
+            saveStoredVehicles();
 
             updateStats();
             renderVehicles();
@@ -286,6 +293,7 @@ function saveVehicle() {
         // Add new vehicle (no confirmation needed for new items)
         const newId = Math.max(...vehicles.map(v => v.id), 0) + 1;
         vehicles.push({ id: newId, ...formData });
+        saveStoredVehicles();
 
         updateStats();
         renderVehicles();
@@ -297,6 +305,7 @@ function deleteVehicle(id) {
     showConfirm('Are you sure you want to delete this vehicle?').then(ok=>{
         if(!ok) return;
         vehicles = vehicles.filter(v => v.id !== id);
+        saveStoredVehicles();
         updateStats();
         renderVehicles();
     });

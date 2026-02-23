@@ -1,5 +1,7 @@
 // Renter Dashboard JavaScript
 // Default sample vehicles
+const VEHICLE_STORAGE_KEY = 'ownerVehicles';
+const SAVED_CARS_STORAGE_KEY = 'renterSavedCars';
 const defaultVehicles = [
     {
         id: 2,
@@ -41,8 +43,79 @@ const defaultVehicles = [
     }
 ];
 
+function normalizeVehicle(vehicle) {
+    const status = vehicle.status || (vehicle.available ? 'available' : 'rented');
+    const priceValue = Number(vehicle.pricePerDay ?? vehicle.price ?? 0);
+    return {
+        ...vehicle,
+        price: Number.isNaN(priceValue) ? 0 : priceValue,
+        pricePerDay: Number.isNaN(priceValue) ? 0 : priceValue,
+        imageUri: vehicle.imageUri || vehicle.image || '',
+        image: vehicle.image || vehicle.imageUri || '',
+        status,
+        available: status === 'available',
+        owner: vehicle.owner || 'Admin Owner',
+        features: Array.isArray(vehicle.features) && vehicle.features.length > 0
+            ? vehicle.features
+            : ["Aircon", "Bluetooth", "ABS", "Backup Camera"]
+    };
+}
+
+function toStoredVehicle(vehicle) {
+    return {
+        ...vehicle,
+        pricePerDay: Number(vehicle.pricePerDay ?? vehicle.price ?? 0),
+        image: vehicle.image || vehicle.imageUri || '',
+        status: vehicle.status || (vehicle.available ? 'available' : 'rented'),
+        available: (vehicle.status || (vehicle.available ? 'available' : 'rented')) === 'available'
+    };
+}
+
+function loadVehiclesFromStorage() {
+    try {
+        const raw = localStorage.getItem(VEHICLE_STORAGE_KEY);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                return parsed.map(normalizeVehicle);
+            }
+        }
+    } catch (error) {
+    }
+
+    const seededVehicles = defaultVehicles.map(normalizeVehicle);
+    saveVehiclesToStorage(seededVehicles);
+    return seededVehicles;
+}
+
+function saveVehiclesToStorage(vehiclesToSave) {
+    try {
+        localStorage.setItem(VEHICLE_STORAGE_KEY, JSON.stringify(vehiclesToSave.map(toStoredVehicle)));
+    } catch (error) {
+    }
+}
+
+function loadSavedCars() {
+    try {
+        const raw = localStorage.getItem(SAVED_CARS_STORAGE_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+        return [];
+    }
+}
+
+function saveSavedCars(savedCars) {
+    try {
+        localStorage.setItem(SAVED_CARS_STORAGE_KEY, JSON.stringify(savedCars));
+    } catch (error) {
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     let vehicles = [];
+    let savedCars = loadSavedCars();
 
     // DOM Elements
     const searchInput = document.getElementById('searchInput');
@@ -73,8 +146,8 @@ document.addEventListener('DOMContentLoaded', function() {
         maxPrice: ''
     };
 
-    // Initialize with default vehicles
-    vehicles = defaultVehicles.slice();
+    // Initialize with stored vehicles
+    vehicles = loadVehiclesFromStorage();
     renderVehicles(vehicles);
     updateStats(vehicles);
 
@@ -316,6 +389,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.showVehicleDetail = function(vehicleId) {
         const vehicle = vehicles.find(v => v.id === vehicleId);
         if (!vehicle) return;
+        const isSaved = savedCars.includes(vehicle.id);
 
         const detailContent = document.getElementById('detailContent');
         detailContent.innerHTML = `
@@ -370,7 +444,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
 
             ${vehicle.available
-                ? '<button class="rent-button" onclick="rentVehicle(' + vehicle.id + ')">Rent This Vehicle</button>'
+                ? '<div class="detail-actions"><button class="rent-button" onclick="rentVehicle(' + vehicle.id + ')">Rent This Vehicle</button><button class="btn btn-secondary save-car-button" onclick="saveCar(' + vehicle.id + ')">' + (isSaved ? 'Saved' : 'Save Car') + '</button></div>'
                 : `<div class="unavailable-button">${vehicle.status === 'maintenance' ? 'Under Maintenance' : 'Currently Unavailable'}</div>`
             }
         `;
@@ -381,8 +455,31 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Global function for renting vehicle
     window.rentVehicle = function(vehicleId) {
-        alert('Vehicle rental functionality would be implemented here. Vehicle ID: ' + vehicleId);
+        const index = vehicles.findIndex(v => v.id === vehicleId);
+        if (index === -1) return;
+
+        vehicles[index] = {
+            ...vehicles[index],
+            status: 'rented',
+            available: false
+        };
+
+        saveVehiclesToStorage(vehicles);
+        filterVehicles();
+        alert('Vehicle rented successfully.');
         closeDetailModal();
+    };
+
+    window.saveCar = function(vehicleId) {
+        if (savedCars.includes(vehicleId)) {
+            alert('This car is already saved.');
+            return;
+        }
+
+        savedCars = [...savedCars, vehicleId];
+        saveSavedCars(savedCars);
+        alert('Car saved successfully.');
+        showVehicleDetail(vehicleId);
     };
 
     // Filter option click handlers

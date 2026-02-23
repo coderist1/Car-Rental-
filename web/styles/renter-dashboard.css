@@ -678,6 +678,22 @@ vehicle-card {
     background-color: #ff6a3d;
 }
 
+.detail-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.detail-actions .rent-button {
+    width: auto;
+    margin-top: 0;
+    flex: 1;
+}
+
+.save-car-button {
+    flex: 1;
+}
+
 .unavailable-button {
     background-color: #e0e0e0;
     color: #666;
