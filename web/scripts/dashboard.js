@@ -164,79 +164,9 @@ function populateCarDetailModal(vehicle){
     const img = document.getElementById('modal-car-image');
     if(vehicle.image) img.src = vehicle.image;
 
-    // set form readonly
-    setModalReadonly(true);
-    // track which vehicle is being edited in the modal
-    window._currentModalVehicleId = vehicle.id;
-
-    // attach edit/save handlers once (idempotent)
-    if(!window._carDetailModalHandlersAttached){
-        document.getElementById('modal-edit-btn').addEventListener('click', ()=> setModalReadonly(false));
-        document.getElementById('modal-save-btn').addEventListener('click', modalSaveHandler);
-        // Add image button + input handlers
-        const imageInput = document.getElementById('modal-image-input');
-        const addImageBtn = document.getElementById('modal-add-image-btn');
-        addImageBtn.addEventListener('click', (ev)=>{
-            ev.preventDefault();
-            // only allow changing image when editing
-            if (document.getElementById('modal-save-btn').disabled && document.getElementById('modal-edit-btn').disabled === false) {
-                // not in edit mode
-            }
-            imageInput.click();
-        });
-        imageInput.addEventListener('change', (ev)=>{
-            const f = ev.target.files && ev.target.files[0];
-            if(!f) return;
-            const reader = new FileReader();
-            reader.onload = function(e){
-                const url = e.target.result;
-                document.getElementById('modal-car-image').src = url;
-            };
-            reader.readAsDataURL(f);
-        });
-        window._carDetailModalHandlersAttached = true;
-    }
-}
-
-function setModalReadonly(readonly){
     const form = document.getElementById('modal-car-form');
-    Array.from(form.elements).forEach(el => el.disabled = readonly);
-    document.getElementById('modal-save-btn').disabled = readonly;
-    document.getElementById('modal-edit-btn').disabled = !readonly ? true : false;
-}
-
-function modalSaveHandler(e){
-    e.preventDefault();
-    const idTitle = document.getElementById('modal-car-title').textContent;
-    const data = {
-        brand: document.getElementById('modal-make').value,
-        name: document.getElementById('modal-model').value,
-        year: parseInt(document.getElementById('modal-year').value),
-        pricePerDay: parseFloat(document.getElementById('modal-price').value),
-        status: document.getElementById('modal-availability').value,
-        available: document.getElementById('modal-availability').value === 'available',
-        location: document.getElementById('modal-location') ? document.getElementById('modal-location').value : '',
-        description: document.getElementById('modal-description').value,
-        image: document.getElementById('modal-car-image').src
-    };
-    // ask user for permission before saving using custom confirm
-    showConfirm('Save changes to this vehicle?').then(ok =>{
-      if(!ok){
-        document.getElementById('modal-save-note').textContent = 'Save cancelled.';
-        return;
-      }
-
-      // find and update original vehicles array by tracked id
-      const idx = vehicles.findIndex(v => v.id === window._currentModalVehicleId);
-      if(idx >= 0){
-          vehicles[idx] = { ...vehicles[idx], ...data };
-      }
-
-      // refresh UI
-      updateStats();
-      renderVehicles();
-      setModalReadonly(true);
-      document.getElementById('modal-save-note').textContent = 'Saved locally.';
+    Array.from(form.elements).forEach(el => {
+        el.disabled = true;
     });
 }
 
