@@ -30,6 +30,10 @@
                     ">Register</a>
                 </p>
 
+                <p slot="footer" style="text-align:center;margin-top:8px;">
+                    <a href="admin-register.html" class="link-bold" style="color:#F97316;font-weight:600;text-decoration:none;">Register as Admin</a>
+                </p>
+
             </auth-form>
         </main>
     </div>
@@ -70,6 +74,8 @@
             if (matchedUser) {
                 if (matchedUser.role === 'owner') {
                     navigateTo('dashboard.html');
+                } else if (matchedUser.role === 'admin') {
+                    navigateTo('admin-dashboard.html');
                 } else {
                     navigateTo('renter-dashboard.html');
                 }

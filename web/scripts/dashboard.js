@@ -54,7 +54,150 @@ function initDashboard() {
     updateStats();
     renderVehicles();
     setupSearch();
+    // Load owner profile into header and profile menu
+    loadOwnerProfile();
+    // Rental history initialization
+    loadRentalHistory();
 }
+
+// Rental history storage (only created when an existing vehicle is marked rented)
+let rentalHistory = [];
+
+function loadRentalHistory() {
+    try {
+        const raw = localStorage.getItem('rentalHistory');
+        rentalHistory = raw ? JSON.parse(raw) : [];
+    } catch (e) {
+        rentalHistory = [];
+    }
+}
+
+function saveRentalHistory() {
+    try {
+        localStorage.setItem('rentalHistory', JSON.stringify(rentalHistory));
+    } catch (e) { /* ignore */ }
+}
+
+function renderRentalHistory() {
+    const container = document.getElementById('rental-history-list');
+    const empty = document.getElementById('rental-history-empty');
+    if (!container) return;
+
+    if (!rentalHistory || rentalHistory.length === 0) {
+        container.innerHTML = '';
+        if (empty) empty.style.display = 'block';
+        return;
+    }
+
+    if (empty) empty.style.display = 'none';
+
+    const html = rentalHistory.slice().reverse().map(item => {
+        const start = item.startDate ? new Date(item.startDate).toLocaleString() : '—';
+        const end = item.endDate ? new Date(item.endDate).toLocaleString() : 'Ongoing';
+        const pending = item.returnRequested;
+        const accepted = item.returnAccepted;
+        const actions = pending && !accepted ? `<button class="btn btn-primary" onclick="acceptReturn(${item.id})">Accept Return</button>` : '';
+        return `
+            <div class="history-item" style="border-bottom:1px solid #eee;padding:10px 0;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div style="font-weight:600">${item.vehicleName}${pending && !accepted ? ' (return requested)' : ''}</div>
+                    <div style="color:#666;font-size:12px">₱${item.amount}/day</div>
+                </div>
+                <div style="color:#444;margin-top:6px">Renter: ${item.renterName || 'Unknown'}</div>
+                <div style="color:#666;font-size:13px;margin-top:6px">${start} → ${end}</div>
+                <div style="margin-top:8px">${actions}</div>
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = html;
+}
+
+function openRentalHistoryModal() {
+    loadRentalHistory();
+    renderRentalHistory();
+    const modal = document.getElementById('rental-history-modal');
+    if (modal) modal.style.display = 'block';
+}
+
+function closeRentalHistoryModal() {
+    const modal = document.getElementById('rental-history-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+function clearRentalHistory() {
+    showConfirm('Clear all rental history? This cannot be undone.').then(ok => {
+        if (!ok) return;
+        rentalHistory = [];
+        saveRentalHistory();
+        renderRentalHistory();
+    });
+}
+
+// Add a rental record when an existing vehicle's status changes to 'rented'
+function addRentalRecord(vehicle) {
+    try {
+        const ownerName = (() => {
+            try {
+                const stored = localStorage.getItem('userProfile');
+                if (!stored) return '';
+                const u = JSON.parse(stored);
+                return `${u.firstName || ''} ${u.lastName || ''}`.trim();
+            } catch (e) { return ''; }
+        })();
+
+        const record = {
+            id: Date.now(),
+            vehicleId: vehicle.id || null,
+            vehicleName: `${vehicle.brand || ''} ${vehicle.name || ''}`.trim() || vehicle.name || 'Vehicle',
+            ownerName: ownerName,
+            renterName: vehicle.renterName || 'Unknown',
+            startDate: new Date().toISOString(),
+            endDate: vehicle.returnDate || null,
+            amount: vehicle.pricePerDay || 0
+        };
+
+        rentalHistory.push(record);
+        saveRentalHistory();
+    } catch (e) {
+        console.error('Failed to add rental record', e);
+    }
+}
+
+// Accept a return request from renter
+window.acceptReturn = function(recordId) {
+    try {
+        const recIndex = rentalHistory.findIndex(r => r.id === recordId);
+        if (recIndex === -1) return;
+        const rec = rentalHistory[recIndex];
+        if (!rec.returnRequested) return;
+
+        // Mark return accepted
+        rec.returnAccepted = true;
+        rec.returnAcceptedAt = new Date().toISOString();
+        rec.endDate = rec.endDate || new Date().toISOString();
+
+        rentalHistory[recIndex] = rec;
+        saveRentalHistory();
+
+        // Update vehicle availability
+        const vehicleIndex = vehicles.findIndex(v => v.id === rec.vehicleId);
+        if (vehicleIndex !== -1) {
+            vehicles[vehicleIndex].status = 'available';
+            vehicles[vehicleIndex].available = true;
+            // clear pending return marker
+            delete vehicles[vehicleIndex].pendingReturn;
+            saveStoredVehicles();
+            updateStats();
+            renderVehicles();
+        }
+
+        renderRentalHistory();
+        alert('Return accepted. Vehicle is now available.');
+    } catch (e) {
+        console.error('acceptReturn failed', e);
+    }
+};
 
 function normalizeVehicle(vehicle) {
     const status = vehicle.status || (vehicle.available ? 'available' : 'rented');
@@ -89,11 +232,38 @@ function updateStats() {
     const total = vehicles.length;
     const available = vehicles.filter(v => v.available).length;
     const rented = total - available;
+    const estimatedDailyEarnings = vehicles
+        .filter(v => (v.status || (v.available ? 'available' : 'rented')) === 'rented')
+        .reduce((sum, vehicle) => sum + Number(vehicle.pricePerDay || 0), 0);
 
     document.getElementById('total-vehicles').textContent = total;
     document.getElementById('available-vehicles').textContent = available;
     document.getElementById('rented-vehicles').textContent = rented;
+    const earningsEl = document.getElementById('estimated-earnings');
+    if (earningsEl) earningsEl.textContent = `₱${estimatedDailyEarnings.toLocaleString()}`;
 }
+
+// Load owner profile from storage and update header/menu
+function loadOwnerProfile() {
+    let name = 'John Doe';
+    try {
+        const stored = localStorage.getItem('userProfile');
+        if (stored) {
+            const u = JSON.parse(stored);
+            name = `${u.firstName || ''} ${u.lastName || ''}`.trim() || name;
+        }
+    } catch (e) {
+        // ignore parse errors
+    }
+
+    const welcomeEl = document.getElementById('owner-welcome');
+    if (welcomeEl) welcomeEl.textContent = `Welcome, ${name}`;
+
+    const pm = document.getElementById('ownerProfile');
+    if (pm) pm.setAttribute('username', name);
+}
+
+// rental history removed
 
 // Render vehicles grid
 function renderVehicles(filteredVehicles = vehicles) {
@@ -282,7 +452,15 @@ function saveVehicle() {
 
             // Update existing vehicle
             const index = vehicles.findIndex(v => v.id === editingVehicleId);
+            if (index === -1) return;
+            const prevStatus = vehicles[index].status || (vehicles[index].available ? 'available' : 'rented');
             vehicles[index] = { ...vehicles[index], ...formData };
+
+            // If status changed to rented, add history record
+            if (prevStatus !== 'rented' && formData.status === 'rented') {
+                addRentalRecord({ id: editingVehicleId, ...vehicles[index] });
+            }
+
             saveStoredVehicles();
 
             updateStats();
@@ -292,7 +470,10 @@ function saveVehicle() {
     } else {
         // Add new vehicle (no confirmation needed for new items)
         const newId = Math.max(...vehicles.map(v => v.id), 0) + 1;
-        vehicles.push({ id: newId, ...formData });
+        const newVehicle = { id: newId, ...formData };
+        vehicles.push(newVehicle);
+
+        // Do not automatically create rental history when adding a vehicle
         saveStoredVehicles();
 
         updateStats();
@@ -328,6 +509,11 @@ function getVehicleImage(type){
 
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', initDashboard);
+
+// Update header when profile changes elsewhere
+window.addEventListener('profileUpdated', (e) => {
+    loadOwnerProfile();
+});
 
 // Generic showConfirm that returns a Promise<boolean>
 function showConfirm(message){

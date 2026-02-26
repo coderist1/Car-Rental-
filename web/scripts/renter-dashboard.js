@@ -150,6 +150,9 @@ document.addEventListener('DOMContentLoaded', function() {
     vehicles = loadVehiclesFromStorage();
     renderVehicles(vehicles);
     updateStats(vehicles);
+    // Load renter profile + rental history for renter view
+    loadRenterProfile();
+    loadRenterRentalHistory();
 
     // Event Listeners
     searchInput.addEventListener('input', handleSearch);
@@ -163,6 +166,26 @@ document.addEventListener('DOMContentLoaded', function() {
     profileMenu.addEventListener('menu-action', (e) => {
         handleMenuAction(e.detail.action);
     });
+
+    // Update greeting/profile when profile changes
+    window.addEventListener('profileUpdated', () => {
+        loadRenterProfile();
+        // refresh renter rental history view if open
+        if (document.getElementById('renter-rental-history-modal') && document.getElementById('renter-rental-history-modal').style.display === 'block') {
+            loadRenterRentalHistory();
+            renderRenterHistoryForUser();
+        }
+    });
+
+    // My Rentals button
+    const myRentalsBtn = document.getElementById('myRentalsBtn');
+    if (myRentalsBtn) myRentalsBtn.addEventListener('click', openRenterHistoryModal);
+
+    // Close renter history buttons
+    const closeRenterHistory = document.getElementById('closeRenterHistory');
+    const closeRenterHistoryFooter = document.getElementById('closeRenterHistoryFooter');
+    if (closeRenterHistory) closeRenterHistory.addEventListener('click', closeRenterHistoryModal);
+    if (closeRenterHistoryFooter) closeRenterHistoryFooter.addEventListener('click', closeRenterHistoryModal);
 
     // Close modals when clicking outside
     window.addEventListener('click', function(event) {
@@ -373,6 +396,142 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // ----- Renter rental history -----
+    function loadRenterRentalHistory() {
+        try {
+            const raw = localStorage.getItem('rentalHistory');
+            window._allRentalHistory = raw ? JSON.parse(raw) : [];
+        } catch (e) {
+            window._allRentalHistory = [];
+        }
+    }
+
+    // Load renter profile into header and profile menu
+    function loadRenterProfile() {
+        try {
+            const stored = localStorage.getItem('userProfile');
+            if (!stored) return;
+            const u = JSON.parse(stored);
+            const name = `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'John Doe';
+            const email = u.email || '';
+
+            // Update greeting
+            const greetingEl = document.querySelector('.greeting');
+            if (greetingEl) greetingEl.textContent = `Hello, ${name} 👋`;
+
+            // Update profile menu username attribute
+            const pm = document.getElementById('profileMenu');
+            if (pm) pm.setAttribute('username', name);
+        } catch (e) {
+            // ignore
+        }
+    }
+
+    function renderRenterHistoryForUser() {
+        const listEl = document.getElementById('renter-rental-history-list');
+        const emptyEl = document.getElementById('renter-rental-history-empty');
+        if (!listEl) return;
+
+        // Determine current user identity from userProfile
+        let currentUserName = '';
+        let currentUserEmail = '';
+        try {
+            const stored = localStorage.getItem('userProfile');
+            if (stored) {
+                const u = JSON.parse(stored);
+                currentUserName = `${u.firstName || ''} ${u.lastName || ''}`.trim();
+                currentUserEmail = (u.email || '').trim();
+            }
+        } catch (e) {
+            // ignore
+        }
+
+        const all = Array.isArray(window._allRentalHistory) ? window._allRentalHistory : [];
+        const filtered = all.filter(r => {
+            if (!r) return false;
+            // match by renterName or renter email if stored
+            if (currentUserName && r.renterName && r.renterName === currentUserName) return true;
+            if (currentUserEmail && (r.renterEmail && r.renterEmail === currentUserEmail)) return true;
+            // fallback: if renterName is unknown, show nothing
+            return false;
+        });
+
+        if (!filtered || filtered.length === 0) {
+            listEl.innerHTML = '';
+            if (emptyEl) emptyEl.style.display = 'block';
+            return;
+        }
+
+        if (emptyEl) emptyEl.style.display = 'none';
+
+        const html = filtered.slice().reverse().map(item => {
+            const start = item.startDate ? new Date(item.startDate).toLocaleString() : '—';
+            const end = item.endDate ? new Date(item.endDate).toLocaleString() : 'Completed';
+            const ongoing = !item.endDate;
+            const returnBtn = ongoing ? `<button class="btn btn-outline" onclick="requestReturn(${item.id})">Request Return</button>` : '';
+            const statusText = item.returnRequested ? ' (return requested)' : '';
+            return `
+                <div class="history-item" style="border-bottom:1px solid #eee;padding:10px 0;">
+                    <div style="font-weight:600">${item.vehicleName}${statusText}</div>
+                    <div style="color:#666;font-size:13px;margin-top:6px">Owner: ${item.ownerName || 'Unknown'}</div>
+                    <div style="color:#444;margin-top:6px">${start} → ${end}</div>
+                    <div style="margin-top:8px">${returnBtn}</div>
+                </div>
+            `;
+        }).join('');
+
+        listEl.innerHTML = html;
+    }
+
+    function openRenterHistoryModal() {
+        loadRenterRentalHistory();
+        renderRenterHistoryForUser();
+        const modal = document.getElementById('renter-rental-history-modal');
+        if (modal) modal.style.display = 'block';
+    }
+
+    function closeRenterHistoryModal() {
+        const modal = document.getElementById('renter-rental-history-modal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    // Request return for an ongoing rental (called by renter)
+    window.requestReturn = function(recordId) {
+        try {
+            const raw = localStorage.getItem('rentalHistory');
+            const arr = raw ? JSON.parse(raw) : [];
+            const idx = arr.findIndex(r => r.id === recordId);
+            if (idx === -1) return;
+            const rec = arr[idx];
+            if (rec.returnRequested) {
+                alert('Return already requested.');
+                return;
+            }
+            rec.returnRequested = true;
+            rec.returnRequestedAt = new Date().toISOString();
+            arr[idx] = rec;
+            localStorage.setItem('rentalHistory', JSON.stringify(arr));
+
+            // mark vehicle as pending return in owner vehicles storage
+            try {
+                const rawV = localStorage.getItem(VEHICLE_STORAGE_KEY);
+                const vArr = rawV ? JSON.parse(rawV) : [];
+                const vIdx = vArr.findIndex(v => v.id === rec.vehicleId);
+                if (vIdx !== -1) {
+                    vArr[vIdx].pendingReturn = true;
+                    localStorage.setItem(VEHICLE_STORAGE_KEY, JSON.stringify(vArr));
+                }
+            } catch (e) {}
+
+            // Refresh UI
+            loadRenterRentalHistory();
+            renderRenterHistoryForUser();
+            alert('Return requested. The owner will be notified.');
+        } catch (e) {
+            console.error('requestReturn failed', e);
+        }
+    };
+
     function updateStats(vehiclesToCount) {
         const totalVehicles = vehiclesToCount.length;
         const availableVehicles = vehiclesToCount.filter(v => v.available).length;
@@ -457,14 +616,50 @@ document.addEventListener('DOMContentLoaded', function() {
     window.rentVehicle = function(vehicleId) {
         const index = vehicles.findIndex(v => v.id === vehicleId);
         if (index === -1) return;
+        // attach renter info from userProfile
+        let renterName = '';
+        let renterEmail = '';
+        try {
+            const stored = localStorage.getItem('userProfile');
+            if (stored) {
+                const u = JSON.parse(stored);
+                renterName = `${u.firstName || ''} ${u.lastName || ''}`.trim();
+                renterEmail = u.email || '';
+            }
+        } catch (e) {}
 
         vehicles[index] = {
             ...vehicles[index],
             status: 'rented',
-            available: false
+            available: false,
+            renterName: renterName || vehicles[index].renterName || 'Unknown',
+            renterEmail: renterEmail || vehicles[index].renterEmail || '' ,
+            rentStart: new Date().toISOString()
         };
 
         saveVehiclesToStorage(vehicles);
+
+        // create rental history record for this renter
+        try {
+            const raw = localStorage.getItem('rentalHistory');
+            const arr = raw ? JSON.parse(raw) : [];
+            const rec = {
+                id: Date.now(),
+                vehicleId: vehicles[index].id,
+                vehicleName: `${vehicles[index].brand || ''} ${vehicles[index].name || ''}`.trim() || vehicles[index].name,
+                ownerName: vehicles[index].owner || '',
+                renterName: vehicles[index].renterName || renterName || 'Unknown',
+                renterEmail: vehicles[index].renterEmail || renterEmail || '',
+                startDate: vehicles[index].rentStart,
+                endDate: null,
+                amount: vehicles[index].pricePerDay || vehicles[index].price || 0
+            };
+            arr.push(rec);
+            localStorage.setItem('rentalHistory', JSON.stringify(arr));
+        } catch (e) {
+            console.error('Failed to write rental history', e);
+        }
+
         filterVehicles();
         alert('Vehicle rented successfully.');
         closeDetailModal();

@@ -4,16 +4,43 @@ class ProfileMenu extends HTMLElement {
         super();
         this.attachShadow({ mode: 'open' });
         this.isOpen = false;
+        this._onProfileUpdated = this.render.bind(this);
     }
 
     connectedCallback() {
         this.render();
         this.attachEventListeners();
+        window.addEventListener('profileUpdated', this._onProfileUpdated);
+    }
+
+    disconnectedCallback() {
+        window.removeEventListener('profileUpdated', this._onProfileUpdated);
     }
 
     render() {
-        const username = this.getAttribute('username') || 'John Doe';
-        const userInitial = username.charAt(0).toUpperCase();
+        // Prefer explicit attribute, otherwise read from stored profile
+        let username = this.getAttribute('username') || 'John Doe';
+        try {
+            const stored = localStorage.getItem('userProfile');
+            if (!this.getAttribute('username') && stored) {
+                const u = JSON.parse(stored);
+                username = `${u.firstName || ''} ${u.lastName || ''}`.trim() || username;
+            }
+        } catch (e) {
+            // ignore parse error
+        }
+
+        const userInitial = (username.charAt(0) || 'U').toUpperCase();
+
+        // Email from storage when available
+        let userEmail = 'user@example.com';
+        try {
+            const stored = localStorage.getItem('userProfile');
+            if (stored) {
+                const u = JSON.parse(stored);
+                userEmail = u.email || userEmail;
+            }
+        } catch (e) {}
 
         this.shadowRoot.innerHTML = `
             <style>
@@ -164,7 +191,7 @@ class ProfileMenu extends HTMLElement {
             <div class="dropdown-menu" id="dropdown">
                 <div class="dropdown-header">
                     <p class="user-name">${username}</p>
-                    <p class="user-email">renter@test.com</p>
+                    <p class="user-email">${userEmail}</p>
                 </div>
 
                 <ul class="dropdown-items">

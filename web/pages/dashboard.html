@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="../styles/dashboard.css">
     <script type="module" src="../components/vehicle-card.js"></script>
     <script type="module" src="../components/confirm-modal.js"></script>
+    <script type="module" src="../components/profile-menu.js"></script>
 </head>
 <body>
     <div class="container">
@@ -14,8 +15,8 @@
             <div class="header-content">
                 <h1>Owner Dashboard</h1>
                 <div class="user-info">
-                    <span>Welcome, John Doe</span>
-                    <button class="btn btn-secondary" onclick="window.location.href='../index.html'">Logout</button>
+                    <span id="owner-welcome">Welcome, John Doe</span>
+                    <profile-menu id="ownerProfile" username="John Doe"></profile-menu>
                 </div>
             </div>
         </header>
@@ -32,6 +33,10 @@
             <div class="stat-card">
                 <div class="stat-number" id="rented-vehicles">0</div>
                 <div class="stat-label">Rented</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="estimated-earnings">₱0</div>
+                <div class="stat-label">Estimated Earnings / Day</div>
             </div>
         </section>
 
@@ -101,6 +106,7 @@
         <section class="search-section">
             <div class="search-container">
                 <input type="text" class="search-input" placeholder="Search your vehicles..." id="search-input">
+                <button class="btn btn-outline" onclick="openRentalHistoryModal()">Rental History</button>
                 <button class="btn btn-primary" onclick="openAddModal()">+ Add Vehicle</button>
             </div>
         </section>
@@ -145,6 +151,8 @@
                             </select>
                         </div>
                     </div>
+
+                        
                     <div class="form-group">
                         <label class="form-label" for="vehicle-location">Location <span class="required">*</span></label>
                         <select id="vehicle-location" class="form-input" required>
@@ -226,6 +234,24 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
                 <button type="button" class="btn btn-primary" onclick="saveVehicle()">Save Vehicle</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rental History Modal -->
+    <div id="rental-history-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Rental History</h2>
+                <span class="close" onclick="closeRentalHistoryModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="rental-history-list"></div>
+                <p id="rental-history-empty" class="empty-state" style="display:none">No rental history yet.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeRentalHistoryModal()">Close</button>
+                <button type="button" class="btn btn-danger" onclick="clearRentalHistory()">Clear History</button>
             </div>
         </div>
     </div>
