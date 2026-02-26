@@ -150,6 +150,11 @@ class VehicleCard extends HTMLElement {
                     color: #334155;
                 }
 
+                .status-pending {
+                    background: #fff7ed;
+                    color: #c2410c;
+                }
+
                 .vehicle-meta {
                     display: flex;
                     gap: 10px;

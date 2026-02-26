@@ -43,6 +43,27 @@
             window.location.href = page;
         }
 
+        function saveUserProfile(user) {
+            try {
+                const profile = {
+                    id: user.id,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    middleName: user.middleName,
+                    fullName: user.fullName || `${user.firstName} ${user.lastName}`.trim(),
+                    email: user.email,
+                    role: user.role,
+                    sex: user.sex,
+                    dateOfBirth: user.dateOfBirth
+                };
+                localStorage.setItem('userProfile', JSON.stringify(profile));
+                localStorage.setItem('authToken', String(user.id));
+                window.dispatchEvent(new CustomEvent('profileUpdated', { detail: profile }));
+            } catch (e) {
+                console.error('Error saving profile:', e);
+            }
+        }
+
         function getRegisteredUsers() {
             const raw = localStorage.getItem('carRentalUsers');
             if (!raw) return [];
@@ -56,22 +77,14 @@
         document.querySelector('auth-form').addEventListener('auth-submit', function(e) {
             const { email, password } = e.detail;
 
-            if (email === 'owner@test.com' && password === 'password') {
-                navigateTo('dashboard.html');
-                return;
-            }
-
-            if (email === 'renter@test.com' && password === 'password') {
-                navigateTo('renter-dashboard.html');
-                return;
-            }
-
+            // Check registered users FIRST (takes priority over demo accounts)
             const registeredUsers = getRegisteredUsers();
             const matchedUser = registeredUsers.find(
                 u => u.email.toLowerCase() === email.toLowerCase() && u.password === password
             );
 
             if (matchedUser) {
+                saveUserProfile(matchedUser);
                 if (matchedUser.role === 'owner') {
                     navigateTo('dashboard.html');
                 } else if (matchedUser.role === 'admin') {
@@ -79,6 +92,48 @@
                 } else {
                     navigateTo('renter-dashboard.html');
                 }
+                return;
+            }
+
+            // Demo owner login
+            if (email === 'owner@test.com' && password === 'password') {
+                saveUserProfile({
+                    id: 'demo-owner-1',
+                    firstName: 'John',
+                    lastName: 'Doe',
+                    email: 'owner@test.com',
+                    role: 'owner',
+                    fullName: 'John Doe'
+                });
+                navigateTo('dashboard.html');
+                return;
+            }
+
+            // Demo renter login
+            if (email === 'renter@test.com' && password === 'password') {
+                saveUserProfile({
+                    id: 'demo-renter-1',
+                    firstName: 'Jane',
+                    lastName: 'Smith',
+                    email: 'renter@test.com',
+                    role: 'renter',
+                    fullName: 'Jane Smith'
+                });
+                navigateTo('renter-dashboard.html');
+                return;
+            }
+
+            // Demo admin login
+            if (email === 'admin@test.com' && password === 'admin123') {
+                saveUserProfile({
+                    id: 'demo-admin-1',
+                    firstName: 'Admin',
+                    lastName: 'User',
+                    email: 'admin@test.com',
+                    role: 'admin',
+                    fullName: 'Admin User'
+                });
+                navigateTo('admin-dashboard.html');
                 return;
             }
 

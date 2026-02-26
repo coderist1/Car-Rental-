@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Bookings - Car Rental</title>
+    <link rel="stylesheet" href="../styles/bookings.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <app-header></app-header>
+
+        <!-- Main Content -->
+        <div class="content">
+            <div class="page-header">
+                <h1>My Bookings</h1>
+                <p class="subtitle">View and manage your car rental bookings</p>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters-section">
+                <button class="filter-btn active" data-status="all">All Bookings</button>
+                <button class="filter-btn" data-status="upcoming">Upcoming</button>
+                <button class="filter-btn" data-status="completed">Completed</button>
+                <button class="filter-btn" data-status="cancelled">Cancelled</button>
+            </div>
+
+            <!-- Bookings List -->
+            <div class="bookings-container">
+                <div id="bookings-list" class="bookings-list">
+                    <!-- Bookings will be loaded here -->
+                </div>
+                <div id="empty-state" class="empty-state" style="display: none;">
+                    <div class="empty-icon">📅</div>
+                    <h2>No bookings found</h2>
+                    <p>Start by renting a car from the dashboard</p>
+                    <a href="./renter-dashboard.html" class="back-button">Browse Vehicles</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../components/app-header.js"></script>
+    <script src="./bookings.js"></script>
+</body>
+</html>

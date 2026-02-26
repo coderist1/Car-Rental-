@@ -96,11 +96,22 @@ function renderRentalHistory() {
         const end = item.endDate ? new Date(item.endDate).toLocaleString() : 'Ongoing';
         const pending = item.returnRequested;
         const accepted = item.returnAccepted;
-        const actions = pending && !accepted ? `<button class="btn btn-primary" onclick="acceptReturn(${item.id})">Accept Return</button>` : '';
+        
+        const isPendingBooking = item.status === 'pending';
+        let actions = '';
+        if (isPendingBooking) {
+            actions = `<div style="display:flex;gap:8px;margin-top:5px;">
+                <button class="btn btn-primary" style="padding:6px 12px;font-size:13px;" onclick="approveBooking(${item.id})">Approve</button>
+                <button class="btn btn-danger" style="padding:6px 12px;font-size:13px;" onclick="rejectBooking(${item.id})">Reject</button>
+            </div>`;
+        } else if (pending && !accepted) {
+            actions = `<button class="btn btn-primary" onclick="acceptReturn(${item.id})">Accept Return</button>`;
+        }
+
         return `
             <div class="history-item" style="border-bottom:1px solid #eee;padding:10px 0;">
                 <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <div style="font-weight:600">${item.vehicleName}${pending && !accepted ? ' (return requested)' : ''}</div>
+                    <div style="font-weight:600">${item.vehicleName}${isPendingBooking ? ' <span style="color:#d97706;font-size:12px">(Pending Request)</span>' : (pending && !accepted ? ' (return requested)' : '')}</div>
                     <div style="color:#666;font-size:12px">₱${item.amount}/day</div>
                 </div>
                 <div style="color:#444;margin-top:6px">Renter: ${item.renterName || 'Unknown'}</div>
@@ -199,6 +210,55 @@ window.acceptReturn = function(recordId) {
     }
 };
 
+// Approve a booking request
+window.approveBooking = function(recordId) {
+    try {
+        const recIndex = rentalHistory.findIndex(r => r.id === recordId);
+        if (recIndex === -1) return;
+        
+        // Update rental record
+        rentalHistory[recIndex].status = 'active';
+        saveRentalHistory();
+
+        // Update vehicle status to rented
+        const vehicleIndex = vehicles.findIndex(v => v.id === rentalHistory[recIndex].vehicleId);
+        if (vehicleIndex !== -1) {
+            vehicles[vehicleIndex].status = 'rented';
+            vehicles[vehicleIndex].available = false;
+            saveStoredVehicles();
+            updateStats();
+            renderVehicles();
+        }
+        renderRentalHistory();
+        alert('Booking approved.');
+    } catch (e) { console.error(e); }
+};
+
+// Reject a booking request
+window.rejectBooking = function(recordId) {
+    if (!confirm('Reject this booking request?')) return;
+    try {
+        const recIndex = rentalHistory.findIndex(r => r.id === recordId);
+        if (recIndex === -1) return;
+
+        // Update rental record
+        rentalHistory[recIndex].status = 'rejected';
+        rentalHistory[recIndex].endDate = new Date().toISOString(); // Mark as closed
+        saveRentalHistory();
+
+        // Update vehicle status back to available
+        const vehicleIndex = vehicles.findIndex(v => v.id === rentalHistory[recIndex].vehicleId);
+        if (vehicleIndex !== -1) {
+            vehicles[vehicleIndex].status = 'available';
+            vehicles[vehicleIndex].available = true;
+            saveStoredVehicles();
+            updateStats();
+            renderVehicles();
+        }
+        renderRentalHistory();
+    } catch (e) { console.error(e); }
+};
+
 function normalizeVehicle(vehicle) {
     const status = vehicle.status || (vehicle.available ? 'available' : 'rented');
     return {
@@ -245,7 +305,7 @@ function updateStats() {
 
 // Load owner profile from storage and update header/menu
 function loadOwnerProfile() {
-    let name = 'John Doe';
+    let name = 'Owner';
     try {
         const stored = localStorage.getItem('userProfile');
         if (stored) {

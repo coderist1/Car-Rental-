@@ -80,9 +80,9 @@ class ProfileManager {
         this.fields.email.value = userData.email || '';
 
         // Update profile picture initials
-        const initials = (userData.firstName?.charAt(0) || 'U') + 
-                        (userData.lastName?.charAt(0) || 'D');
-        this.profilePicture.textContent = initials.toUpperCase();
+        const initials = (userData.firstName?.charAt(0) || '') + 
+                        (userData.lastName?.charAt(0) || '');
+        this.profilePicture.textContent = initials.toUpperCase() || '👤';
 
         // Store original data for comparison
         this.originalData = { ...userData };
@@ -98,12 +98,12 @@ class ProfileManager {
 
         // Default data if none exists
         return {
-            firstName: 'John',
-            lastName: 'Doe',
+            firstName: '',
+            lastName: '',
             middleName: '',
-            sex: 'male',
-            dateOfBirth: '1990-01-15',
-            email: 'john.doe@example.com'
+            sex: '',
+            dateOfBirth: '',
+            email: ''
         };
     }
 
@@ -135,9 +135,9 @@ class ProfileManager {
         this.originalData = { ...formData };
 
         // Update profile picture
-        const initials = (formData.firstName?.charAt(0) || 'U') + 
-                        (formData.lastName?.charAt(0) || 'D');
-        this.profilePicture.textContent = initials.toUpperCase();
+        const initials = (formData.firstName?.charAt(0) || '') + 
+                        (formData.lastName?.charAt(0) || '');
+        this.profilePicture.textContent = initials.toUpperCase() || '👤';
     }
 
     validateForm() {
@@ -221,12 +221,34 @@ class ProfileManager {
     }
 
     saveUserData(data) {
-        // In a real application, send to API
-        // For now, save to localStorage
-        localStorage.setItem('userProfile', JSON.stringify(data));
+        // 1. Update session profile (preserve ID and other immutable fields)
+        let currentProfile = {};
+        try {
+            currentProfile = JSON.parse(localStorage.getItem('userProfile')) || {};
+        } catch (e) {}
+
+        const updatedProfile = { ...currentProfile, ...data };
+        localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
+
+        // 2. Update main user database
+        try {
+            const rawUsers = localStorage.getItem('carRentalUsers');
+            if (rawUsers) {
+                const users = JSON.parse(rawUsers);
+                // Find user by ID (preferred) or Email
+                const index = users.findIndex(u => u.id === currentProfile.id || u.email === currentProfile.email);
+                
+                if (index !== -1) {
+                    users[index] = { ...users[index], ...data };
+                    localStorage.setItem('carRentalUsers', JSON.stringify(users));
+                }
+            }
+        } catch (e) {
+            console.error('Error updating main user database:', e);
+        }
 
         // Dispatch custom event for other parts of the app
-        window.dispatchEvent(new CustomEvent('profileUpdated', { detail: data }));
+        window.dispatchEvent(new CustomEvent('profileUpdated', { detail: updatedProfile }));
     }
 
     showSuccessMessage() {

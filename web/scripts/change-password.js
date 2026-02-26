@@ -143,7 +143,13 @@ class ChangePasswordManager {
     }
 
     validateCurrentPassword() {
-        const currentEmail = sessionStorage.getItem('currentUserEmail');
+        let currentEmail = sessionStorage.getItem('currentUserEmail');
+        if (!currentEmail) {
+            try {
+                const p = JSON.parse(localStorage.getItem('userProfile'));
+                if (p) currentEmail = p.email;
+            } catch (e) {}
+        }
         const usersData = localStorage.getItem('carRentalUsers');
 
         if (!currentEmail || !usersData) {
@@ -323,7 +329,13 @@ class ChangePasswordManager {
     }
 
     updatePassword() {
-        const currentEmail = sessionStorage.getItem('currentUserEmail');
+        let currentEmail = sessionStorage.getItem('currentUserEmail');
+        if (!currentEmail) {
+            try {
+                const p = JSON.parse(localStorage.getItem('userProfile'));
+                if (p) currentEmail = p.email;
+            } catch (e) {}
+        }
         const usersData = localStorage.getItem('carRentalUsers');
 
         if (!currentEmail || !usersData) {

@@ -197,6 +197,23 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Listen for storage changes to update UI in real-time from other tabs
+    window.addEventListener('storage', (event) => {
+        if (event.key === 'rentalHistory') {
+            loadRenterRentalHistory();
+            // If the history modal is open, refresh its content
+            const historyModal = document.getElementById('renter-rental-history-modal');
+            if (historyModal && historyModal.style.display === 'block') {
+                renderRenterHistoryForUser();
+            }
+        }
+        if (event.key === VEHICLE_STORAGE_KEY) {
+            // Reload vehicles if they were changed (e.g., owner updated details)
+            vehicles = loadVehiclesFromStorage();
+            filterVehicles();
+        }
+    });
+
     // ===== Profile Menu Actions =====
     function handleMenuAction(action) {
         switch(action) {
@@ -412,7 +429,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const stored = localStorage.getItem('userProfile');
             if (!stored) return;
             const u = JSON.parse(stored);
-            const name = `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'John Doe';
+            const name = `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Renter';
             const email = u.email || '';
 
             // Update greeting
@@ -465,17 +482,37 @@ document.addEventListener('DOMContentLoaded', function() {
         if (emptyEl) emptyEl.style.display = 'none';
 
         const html = filtered.slice().reverse().map(item => {
-            const start = item.startDate ? new Date(item.startDate).toLocaleString() : '—';
-            const end = item.endDate ? new Date(item.endDate).toLocaleString() : 'Completed';
-            const ongoing = !item.endDate;
+            const start = item.startDate ? new Date(item.startDate).toLocaleDateString() : '—';
+            let endDisplay = '—';
+            if (item.endDate) {
+                endDisplay = new Date(item.endDate).toLocaleDateString();
+            } else if (item.plannedEndDate) {
+                endDisplay = `Expected: ${new Date(item.plannedEndDate).toLocaleDateString()}`;
+            } else {
+                endDisplay = 'Ongoing';
+            }
+            
+            if (item.status === 'rejected') endDisplay = 'Cancelled';
+
+            const ongoing = !item.endDate && item.status !== 'pending' && item.status !== 'rejected';
             const returnBtn = ongoing ? `<button class="btn btn-outline" onclick="requestReturn(${item.id})">Request Return</button>` : '';
-            const statusText = item.returnRequested ? ' (return requested)' : '';
+            
+            let statusText = '';
+            if (item.status === 'pending') statusText = ' <span style="color:#d97706;font-size:12px;font-weight:600">(Pending Approval)</span>';
+            else if (item.status === 'rejected') statusText = ' <span style="color:#dc2626;font-size:12px;font-weight:600">(Rejected)</span>';
+            else if (item.returnRequested) statusText = ' <span style="color:#f59e0b;font-size:12px">(Return Requested)</span>';
+
             return `
-                <div class="history-item" style="border-bottom:1px solid #eee;padding:10px 0;">
-                    <div style="font-weight:600">${item.vehicleName}${statusText}</div>
-                    <div style="color:#666;font-size:13px;margin-top:6px">Owner: ${item.ownerName || 'Unknown'}</div>
-                    <div style="color:#444;margin-top:6px">${start} → ${end}</div>
-                    <div style="margin-top:8px">${returnBtn}</div>
+                <div class="history-item" style="border-bottom:1px solid #eee;padding:12px 0;">
+                    <div style="display:flex;justify-content:space-between;align-items:start">
+                        <div style="font-weight:600;color:#1a2c5e">${item.vehicleName}${statusText}</div>
+                        <div style="font-weight:700;color:#059669">₱${(item.amount || 0).toLocaleString()}</div>
+                    </div>
+                    <div style="color:#666;font-size:13px;margin-top:4px">Owner: ${item.ownerName || 'Unknown'}</div>
+                    <div style="color:#444;font-size:13px;margin-top:4px">
+                        📅 ${start} → ${endDisplay}
+                    </div>
+                    <div style="margin-top:10px">${returnBtn}</div>
                 </div>
             `;
         }).join('');
@@ -549,6 +586,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const vehicle = vehicles.find(v => v.id === vehicleId);
         if (!vehicle) return;
         const isSaved = savedCars.includes(vehicle.id);
+        const today = new Date().toISOString().split('T')[0];
 
         const detailContent = document.getElementById('detailContent');
         detailContent.innerHTML = `
@@ -602,11 +640,72 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="owner-info">${vehicle.owner}</div>
             </div>
 
+            ${vehicle.available ? `
+            <div class="detail-section">
+                <div class="detail-section-title">Book Your Trip</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                    <div>
+                        <label style="font-size: 12px; color: #64748b; display: block; margin-bottom: 4px;">Start Date</label>
+                        <input type="date" id="rent-start-date" min="${today}" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit;">
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; color: #64748b; display: block; margin-bottom: 4px;">End Date</label>
+                        <input type="date" id="rent-end-date" min="${today}" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit;">
+                    </div>
+                </div>
+                <div id="rent-summary" style="display: none; background: #f0fdf4; padding: 12px; border-radius: 8px; border: 1px solid #bbf7d0; margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                        <span style="color: #166534; font-size: 14px;">Duration</span>
+                        <span style="font-weight: 600; color: #166534; font-size: 14px;" id="rent-duration">0 days</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: #166534; font-weight: 600;">Total</span>
+                        <span style="font-weight: 700; color: #15803d; font-size: 18px;" id="rent-total">₱0</span>
+                    </div>
+                </div>
+            </div>
+            ` : ''}
+
             ${vehicle.available
                 ? '<div class="detail-actions"><button class="rent-button" onclick="rentVehicle(' + vehicle.id + ')">Rent This Vehicle</button><button class="btn btn-secondary save-car-button" onclick="saveCar(' + vehicle.id + ')">' + (isSaved ? 'Saved' : 'Save Car') + '</button></div>'
                 : `<div class="unavailable-button">${vehicle.status === 'maintenance' ? 'Under Maintenance' : 'Currently Unavailable'}</div>`
             }
         `;
+
+        // Add listeners for date calculation
+        if (vehicle.available) {
+            const startInput = document.getElementById('rent-start-date');
+            const endInput = document.getElementById('rent-end-date');
+            const summaryBox = document.getElementById('rent-summary');
+            const durationEl = document.getElementById('rent-duration');
+            const totalEl = document.getElementById('rent-total');
+
+            function updateCalculation() {
+                if (startInput.value && endInput.value) {
+                    const start = new Date(startInput.value);
+                    const end = new Date(endInput.value);
+                    
+                    if (end >= start) {
+                        let days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+                        if (days < 1) days = 1;
+                        const total = days * vehicle.price;
+                        
+                        durationEl.textContent = `${days} day${days !== 1 ? 's' : ''}`;
+                        totalEl.textContent = `₱${total.toLocaleString()}`;
+                        summaryBox.style.display = 'block';
+                    } else {
+                        summaryBox.style.display = 'none';
+                    }
+                } else {
+                    summaryBox.style.display = 'none';
+                }
+            }
+
+            if (startInput && endInput) {
+                startInput.addEventListener('change', updateCalculation);
+                endInput.addEventListener('change', updateCalculation);
+            }
+        }
 
         detailModal.style.display = 'block';
         document.body.style.overflow = 'hidden';
@@ -616,6 +715,29 @@ document.addEventListener('DOMContentLoaded', function() {
     window.rentVehicle = function(vehicleId) {
         const index = vehicles.findIndex(v => v.id === vehicleId);
         if (index === -1) return;
+
+        // Get dates
+        const startInput = document.getElementById('rent-start-date');
+        const endInput = document.getElementById('rent-end-date');
+        
+        if (!startInput || !endInput || !startInput.value || !endInput.value) {
+            alert('Please select a start and end date for your booking.');
+            return;
+        }
+
+        const startDate = new Date(startInput.value);
+        const endDate = new Date(endInput.value);
+
+        if (endDate < startDate) {
+            alert('End date cannot be before start date.');
+            return;
+        }
+
+        // Calculate days and total
+        let days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+        if (days < 1) days = 1;
+        const totalPrice = days * (vehicles[index].price || 0);
+
         // attach renter info from userProfile
         let renterName = '';
         let renterEmail = '';
@@ -630,11 +752,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         vehicles[index] = {
             ...vehicles[index],
-            status: 'rented',
+            status: 'pending',
             available: false,
             renterName: renterName || vehicles[index].renterName || 'Unknown',
             renterEmail: renterEmail || vehicles[index].renterEmail || '' ,
-            rentStart: new Date().toISOString()
+            rentStart: startDate.toISOString(),
+            rentEnd: endDate.toISOString()
         };
 
         saveVehiclesToStorage(vehicles);
@@ -650,18 +773,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 ownerName: vehicles[index].owner || '',
                 renterName: vehicles[index].renterName || renterName || 'Unknown',
                 renterEmail: vehicles[index].renterEmail || renterEmail || '',
-                startDate: vehicles[index].rentStart,
+                startDate: startDate.toISOString(),
+                plannedEndDate: endDate.toISOString(),
                 endDate: null,
-                amount: vehicles[index].pricePerDay || vehicles[index].price || 0
+                status: 'pending',
+                amount: totalPrice,
+                pricePerDay: vehicles[index].pricePerDay || vehicles[index].price || 0
             };
             arr.push(rec);
             localStorage.setItem('rentalHistory', JSON.stringify(arr));
+            loadRenterRentalHistory(); // Immediately update in-memory history
         } catch (e) {
             console.error('Failed to write rental history', e);
         }
 
         filterVehicles();
-        alert('Vehicle rented successfully.');
+        alert(`Booking request sent for ${days} day(s). Total: ₱${totalPrice.toLocaleString()}\nPlease wait for the owner to approve.`);
         closeDetailModal();
     };
 

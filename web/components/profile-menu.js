@@ -4,7 +4,7 @@ class ProfileMenu extends HTMLElement {
         super();
         this.attachShadow({ mode: 'open' });
         this.isOpen = false;
-        this._onProfileUpdated = this.render.bind(this);
+        this._onProfileUpdated = () => this.render();
     }
 
     connectedCallback() {
@@ -18,29 +18,22 @@ class ProfileMenu extends HTMLElement {
     }
 
     render() {
-        // Prefer explicit attribute, otherwise read from stored profile
-        let username = this.getAttribute('username') || 'John Doe';
+        // Always read fresh data from localStorage
+        let username = 'Guest';
+        let userEmail = 'user@example.com';
+        
         try {
             const stored = localStorage.getItem('userProfile');
-            if (!this.getAttribute('username') && stored) {
+            if (stored) {
                 const u = JSON.parse(stored);
                 username = `${u.firstName || ''} ${u.lastName || ''}`.trim() || username;
+                userEmail = u.email || userEmail;
             }
         } catch (e) {
             // ignore parse error
         }
 
         const userInitial = (username.charAt(0) || 'U').toUpperCase();
-
-        // Email from storage when available
-        let userEmail = 'user@example.com';
-        try {
-            const stored = localStorage.getItem('userProfile');
-            if (stored) {
-                const u = JSON.parse(stored);
-                userEmail = u.email || userEmail;
-            }
-        } catch (e) {}
 
         this.shadowRoot.innerHTML = `
             <style>
@@ -209,6 +202,13 @@ class ProfileMenu extends HTMLElement {
                         </button>
                     </li>
 
+                    <li class="dropdown-item">
+                        <button class="dropdown-link" data-action="bookings">
+                            <span class="dropdown-link-icon">📅</span>
+                            <span>My Bookings</span>
+                        </button>
+                    </li>
+
                     <div class="dropdown-divider"></div>
 
                     <li class="dropdown-item">
@@ -293,6 +293,10 @@ class ProfileMenu extends HTMLElement {
             case 'change-password':
                 // Navigate to change password page
                 window.location.href = './change-password.html';
+                break;
+            case 'bookings':
+                // Navigate to bookings page
+                window.location.href = './bookings.html';
                 break;
             case 'logout':
                 // Handle logout
