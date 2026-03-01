@@ -172,3 +172,46 @@
         flex-wrap: wrap;
     }
 }
+
+/* sidebar layout */
+.admin-layout {
+    display: flex;
+    gap: 16px;
+}
+
+.sidebar {
+    width: 220px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 16px 12px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+    flex-shrink: 0;
+}
+
+.sidebar-brand {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: #0f172a;
+}
+
+.sidebar-nav a {
+    display: block;
+    color: #0f172a;
+    padding: 8px 10px;
+    border-radius: 8px;
+    text-decoration: none;
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+}
+
+.sidebar-nav a.active,
+.sidebar-nav a:hover {
+    background: #3f9b84;
+    color: #ffffff;
+}
+
+.admin-main {
+    flex: 1;
+}

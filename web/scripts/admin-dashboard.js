@@ -192,3 +192,14 @@ function renderAnalytics() {
     if (rentalsEl) rentalsEl.textContent = String(ongoingRentals);
     if (revenueEl) revenueEl.textContent = `₱${dailyRevenue.toLocaleString()}`;
 }
+
+// navigation helper (mirrors inline script)
+function navigateAdmin(e) {
+    e.preventDefault();
+    const target = e.currentTarget.getAttribute('data-target');
+    if (!target) return;
+    const el = document.getElementById(target);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+    e.currentTarget.classList.add('active');
+}
