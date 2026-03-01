@@ -1,182 +1,210 @@
-// bookings.js - Manage and display user bookings
-class BookingsManager {
+// profile.js - Profile edit functionality
+
+class ProfileManager {
     constructor() {
-        this.bookings = [];
-        this.currentFilter = 'all';
+        this.form = document.getElementById('profileForm');
+        this.backBtn = document.getElementById('backBtn');
+        this.cancelBtn = document.getElementById('cancelBtn');
+        this.saveBtn = document.getElementById('saveBtn');
+        this.successMessage = document.getElementById('successMessage');
+        this.profilePicture = document.getElementById('profilePicture');
+        this.pictureInput = document.getElementById('pictureInput');
+
+        // Form fields
+        this.fields = {
+            firstName: document.getElementById('firstName'),
+            lastName: document.getElementById('lastName'),
+            middleName: document.getElementById('middleName'),
+            sex: document.getElementById('sex'),
+            dateOfBirth: document.getElementById('dateOfBirth'),
+            email: document.getElementById('email')
+        };
+
+        // Error messages
+        this.errorElements = {
+            firstName: document.getElementById('firstNameError'),
+            lastName: document.getElementById('lastNameError'),
+            middleName: document.getElementById('middleNameError'),
+            sex: document.getElementById('sexError'),
+            dateOfBirth: document.getElementById('dateOfBirthError'),
+            email: document.getElementById('emailError')
+        };
+
+        this.originalData = {};
         this.init();
     }
 
     init() {
-        this.loadBookings();
+        this.loadUserData();
         this.attachEventListeners();
-        this.render();
-    }
-
-    loadBookings() {
-        try {
-            // Try to fetch from localStorage (mock data)
-            const stored = localStorage.getItem('userBookings');
-            if (stored) {
-                this.bookings = JSON.parse(stored);
-            } else {
-                // If no bookings, create empty array
-                this.bookings = [];
-            }
-        } catch (e) {
-            console.error('Error loading bookings:', e);
-            this.bookings = [];
-        }
-    }
-
-    saveBookings() {
-        try {
-            localStorage.setItem('userBookings', JSON.stringify(this.bookings));
-        } catch (e) {
-            console.error('Error saving bookings:', e);
-        }
     }
 
     attachEventListeners() {
-        const filterBtns = document.querySelectorAll('.filter-btn');
-        filterBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                // Remove active class from all buttons
-                filterBtns.forEach(b => b.classList.remove('active'));
-                // Add active class to clicked button
-                e.target.classList.add('active');
-                // Update filter and render
-                this.currentFilter = e.target.getAttribute('data-status');
-                this.render();
+        this.form.addEventListener('submit', (e) => this.handleSubmit(e));
+        this.backBtn.addEventListener('click', () => this.goBack());
+        this.cancelBtn.addEventListener('click', () => this.goBack());
+        this.pictureInput.addEventListener('change', (e) => this.handlePictureUpload(e));
+        
+        Object.values(this.fields).forEach(field => {
+            field.addEventListener('input', () => {
+                const errorElement = this.errorElements[field.id];
+                if (errorElement) {
+                    errorElement.classList.remove('show');
+                    field.classList.remove('error');
+                }
+                this.successMessage.style.display = 'none';
             });
         });
     }
 
-    getFilteredBookings() {
-        if (this.currentFilter === 'all') {
-            return this.bookings;
+    // Helper to switch between Initials and Image
+    updateProfileImageUI(imageSrc, firstName, lastName) {
+        if (imageSrc) {
+            // Replace initials with an image tag
+            this.profilePicture.innerHTML = `<img src="${imageSrc}" style="width:100%; height:100%; object-fit:cover; border-radius:50%; display:block;">`;
+        } else {
+            // Fallback to initials logic
+            const initials = (firstName?.charAt(0) || '') + (lastName?.charAt(0) || '');
+            this.profilePicture.textContent = initials.toUpperCase() || '👤';
         }
-        return this.bookings.filter(booking => booking.status === this.currentFilter);
     }
 
-    getStatusBadgeColor(status) {
-        const colors = {
-            'upcoming': '#3b82f6',
-            'completed': '#10b981',
-            'cancelled': '#ef4444',
-            'confirmed': '#8b5cf6'
+    loadUserData() {
+        const userData = this.getUserDataFromStorage();
+        const savedPicture = localStorage.getItem('profilePicture');
+
+        this.fields.firstName.value = userData.firstName || '';
+        this.fields.lastName.value = userData.lastName || '';
+        this.fields.middleName.value = userData.middleName || '';
+        this.fields.sex.value = userData.sex || '';
+        this.fields.dateOfBirth.value = userData.dateOfBirth || '';
+        this.fields.email.value = userData.email || '';
+
+        // Reflect existing data/image on load
+        this.updateProfileImageUI(savedPicture, userData.firstName, userData.lastName);
+        this.originalData = { ...userData };
+    }
+
+    getUserDataFromStorage() {
+        const stored = localStorage.getItem('userProfile');
+        return stored ? JSON.parse(stored) : { firstName: '', lastName: '', middleName: '', sex: '', dateOfBirth: '', email: '' };
+    }
+
+    handleSubmit(e) {
+        e.preventDefault();
+        if (!this.validateForm()) return;
+
+        const formData = {
+            firstName: this.fields.firstName.value.trim(),
+            lastName: this.fields.lastName.value.trim(),
+            middleName: this.fields.middleName.value.trim(),
+            sex: this.fields.sex.value,
+            dateOfBirth: this.fields.dateOfBirth.value,
+            email: this.fields.email.value.trim()
         };
-        return colors[status] || '#6b7280';
+
+        this.saveUserData(formData);
+        this.showSuccessMessage();
+        this.originalData = { ...formData };
+
+        // Ensure UI reflects changes if user changed names but has no photo
+        const savedPicture = localStorage.getItem('profilePicture');
+        this.updateProfileImageUI(savedPicture, formData.firstName, formData.lastName);
     }
 
-    formatDate(dateString) {
-        const options = { year: 'numeric', month: 'short', day: 'numeric' };
-        return new Date(dateString).toLocaleDateString(undefined, options);
+    validateForm() {
+        let isValid = true;
+        Object.values(this.errorElements).forEach(el => el.classList.remove('show'));
+        Object.values(this.fields).forEach(field => field.classList.remove('error'));
+
+        if (!this.fields.firstName.value.trim()) { this.setError('firstName', 'Required'); isValid = false; }
+        if (!this.fields.lastName.value.trim()) { this.setError('lastName', 'Required'); isValid = false; }
+        if (!this.fields.sex.value) { this.setError('sex', 'Required'); isValid = false; }
+        
+        if (!this.fields.dateOfBirth.value) {
+            this.setError('dateOfBirth', 'Required');
+            isValid = false;
+        } else {
+            const age = new Date().getFullYear() - new Date(this.fields.dateOfBirth.value).getFullYear();
+            if (age < 18) { this.setError('dateOfBirth', 'Must be 18+'); isValid = false; }
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(this.fields.email.value)) { this.setError('email', 'Invalid email'); isValid = false; }
+
+        return isValid;
     }
 
-    render() {
-        const bookingsList = document.getElementById('bookings-list');
-        const emptyState = document.getElementById('empty-state');
-        const filtered = this.getFilteredBookings();
+    setError(fieldName, message) {
+        this.fields[fieldName]?.classList.add('error');
+        if (this.errorElements[fieldName]) {
+            this.errorElements[fieldName].textContent = message;
+            this.errorElements[fieldName].classList.add('show');
+        }
+    }
 
-        if (filtered.length === 0) {
-            bookingsList.style.display = 'none';
-            emptyState.style.display = 'flex';
+    saveUserData(data) {
+        let currentProfile = JSON.parse(localStorage.getItem('userProfile')) || {};
+        const updatedProfile = { ...currentProfile, ...data };
+        localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
+
+        // Sync with main user list
+        try {
+            const users = JSON.parse(localStorage.getItem('carRentalUsers')) || [];
+            const index = users.findIndex(u => u.id === currentProfile.id || u.email === currentProfile.email);
+            if (index !== -1) {
+                users[index] = { ...users[index], ...data };
+                localStorage.setItem('carRentalUsers', JSON.stringify(users));
+            }
+        } catch (e) { console.error(e); }
+
+        window.dispatchEvent(new CustomEvent('profileUpdated', { detail: updatedProfile }));
+    }
+
+    showSuccessMessage() {
+        this.successMessage.style.display = 'flex';
+        this.saveBtn.disabled = true;
+        setTimeout(() => { this.saveBtn.disabled = false; }, 2000);
+        setTimeout(() => { this.successMessage.style.display = 'none'; }, 5000);
+    }
+
+    handlePictureUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            alert('Please select an image file');
             return;
         }
 
-        bookingsList.style.display = 'grid';
-        emptyState.style.display = 'none';
-        bookingsList.innerHTML = filtered.map(booking => this.createBookingCard(booking)).join('');
-    }
-
-    createBookingCard(booking) {
-        const statusColor = this.getStatusBadgeColor(booking.status);
-        return `
-            <div class="booking-card">
-                <div class="booking-header">
-                    <div class="booking-info">
-                        <h3>${booking.carModel || 'Vehicle'}</h3>
-                        <p class="booking-id">Booking ID: ${booking.id || 'N/A'}</p>
-                    </div>
-                    <span class="status-badge" style="background-color: ${statusColor}">${booking.status || 'pending'}</span>
-                </div>
-
-                <div class="booking-details">
-                    <div class="detail-item">
-                        <span class="detail-label">📅 Pickup Date</span>
-                        <span class="detail-value">${this.formatDate(booking.pickupDate)}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">📅 Return Date</span>
-                        <span class="detail-value">${this.formatDate(booking.returnDate)}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">💰 Price</span>
-                        <span class="detail-value">$${booking.totalPrice || '0'}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">📍 Location</span>
-                        <span class="detail-value">${booking.pickupLocation || 'Not specified'}</span>
-                    </div>
-                </div>
-
-                <div class="booking-actions">
-                    ${booking.status === 'upcoming' ? `
-                        <button class="action-btn cancel-btn" onclick="bookingsManager.cancelBooking('${booking.id}')">
-                            Cancel Booking
-                        </button>
-                    ` : ''}
-                    <button class="action-btn" onclick="bookingsManager.viewDetails('${booking.id}')">
-                        View Details
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-
-    cancelBooking(bookingId) {
-        const booking = this.bookings.find(b => b.id === bookingId);
-        if (booking && confirm('Are you sure you want to cancel this booking?')) {
-            booking.status = 'cancelled';
-            this.saveBookings();
-            this.render();
-            alert('Booking cancelled successfully');
-        }
-    }
-
-    viewDetails(bookingId) {
-        const booking = this.bookings.find(b => b.id === bookingId);
-        if (booking) {
-            const details = `
-Booking Details:
-ID: ${booking.id}
-Vehicle: ${booking.carModel}
-Pickup: ${this.formatDate(booking.pickupDate)}
-Return: ${this.formatDate(booking.returnDate)}
-Location: ${booking.pickupLocation}
-Price: $${booking.totalPrice}
-Status: ${booking.status}
-Notes: ${booking.notes || 'None'}
-            `;
-            alert(details);
-        }
-    }
-
-    // Add booking (for testing)
-    addBooking(bookingData) {
-        const booking = {
-            id: `BK${Date.now()}`,
-            status: 'upcoming',
-            ...bookingData
+        // FileReader to convert image to Base64 string
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const imageSrc = event.target.result;
+            
+            // 1. Persist to localStorage
+            localStorage.setItem('profilePicture', imageSrc);
+            
+            // 2. Reflect IMMEDIATELY in UI
+            this.updateProfileImageUI(imageSrc, this.fields.firstName.value, this.fields.lastName.value);
         };
-        this.bookings.push(booking);
-        this.saveBookings();
-        this.render();
+        reader.readAsDataURL(file);
+    }
+
+    goBack() {
+        const currentData = {
+            firstName: this.fields.firstName.value.trim(),
+            lastName: this.fields.lastName.value.trim(),
+            middleName: this.fields.middleName.value.trim(),
+            sex: this.fields.sex.value,
+            dateOfBirth: this.fields.dateOfBirth.value,
+            email: this.fields.email.value.trim()
+        };
+        if (JSON.stringify(currentData) !== JSON.stringify(this.originalData)) {
+            if (!confirm('Unsaved changes will be lost. Leave?')) return;
+        }
+        window.history.back();
     }
 }
 
-// Initialize bookings manager when page loads
-let bookingsManager;
-document.addEventListener('DOMContentLoaded', () => {
-    bookingsManager = new BookingsManager();
-});
+document.addEventListener('DOMContentLoaded', () => new ProfileManager());
