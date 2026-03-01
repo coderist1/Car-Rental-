@@ -2,46 +2,8 @@
 // Default sample vehicles
 const VEHICLE_STORAGE_KEY = 'ownerVehicles';
 const SAVED_CARS_STORAGE_KEY = 'renterSavedCars';
-const defaultVehicles = [
-    {
-        id: 2,
-        name: "BMW X5",
-        brand: "BMW",
-        year: 2022,
-        price: 5500,
-        location: "Makati",
-        seats: 7,
-        transmission: "Automatic",
-        type: "SUV",
-        fuel: "Diesel",
-        plate: "XYZ 5678",
-        color: "White",
-        status: "rented",
-        available: false,
-        owner: "Jane Smith",
-        features: ["Leather Seats", "Sunroof", "Navigation", "Premium Sound"],
-        imageUri: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=800&q=80"
-    },
-    {
-        id: 3,
-        name: "Ferrari 488",
-        brand: "Ferrari",
-        year: 2021,
-        price: 25000,
-        location: "Taguig",
-        seats: 2,
-        transmission: "Manual",
-        type: "Sports",
-        fuel: "Gasoline",
-        plate: "FER 2021",
-        color: "Red",
-        status: "available",
-        available: true,
-        owner: "Mike Johnson",
-        features: ["Sport Mode", "Carbon Fiber Interior", "Launch Control", "Track Pack"],
-        imageUri: "https://images.unsplash.com/photo-1502877338535-766e1452684a?auto=format&fit=crop&w=800&q=80"
-    }
-];
+// no seeded vehicles by default, owners will add their own
+const defaultVehicles = [];
 
 function normalizeVehicle(vehicle) {
     const status = vehicle.status || (vehicle.available ? 'available' : 'rented');
@@ -83,9 +45,9 @@ function loadVehiclesFromStorage() {
     } catch (error) {
     }
 
-    const seededVehicles = defaultVehicles.map(normalizeVehicle);
-    saveVehiclesToStorage(seededVehicles);
-    return seededVehicles;
+    // no defaults; start empty
+    saveVehiclesToStorage([]);
+    return [];
 }
 
 function saveVehiclesToStorage(vehiclesToSave) {

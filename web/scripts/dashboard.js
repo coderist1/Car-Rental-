@@ -1,42 +1,6 @@
 // Dashboard JavaScript
-// Sample data - simulating system data
+// Vehicles are managed by owners; no default sample cars are included
 const STORAGE_KEY = 'ownerVehicles';
-const defaultVehicles = [
-    {
-        id: 2,
-        name: "BMW X5",
-        brand: "BMW",
-        year: 2022,
-        pricePerDay: 5500,
-        location: "Makati",
-        seats: 7,
-        transmission: "Automatic",
-        type: "SUV",
-        fuel: "Diesel",
-        plate: "ABC 1234",
-        color: "White",
-        status: "rented",
-        available: false,
-        image: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=800&q=80"
-    },
-    {
-        id: 3,
-        name: "Ferrari 488",
-        brand: "Ferrari",
-        year: 2021,
-        pricePerDay: 25000,
-        location: "Taguig",
-        seats: 2,
-        transmission: "Manual",
-        type: "Sports",
-        fuel: "Gasoline",
-        plate: "XYZ 5678",
-        color: "Red",
-        status: "available",
-        available: true,
-        image: "https://images.unsplash.com/photo-1502877338535-766e1452684a?auto=format&fit=crop&w=800&q=80"
-    }
-];
 
 let vehicles = [];
 
@@ -57,7 +21,7 @@ function initDashboard() {
     if (storedVehicles && storedVehicles.length > 0) {
         vehicles = storedVehicles.map(normalizeVehicle);
     } else {
-        vehicles = defaultVehicles.map(normalizeVehicle);
+        vehicles = []; // start empty if nothing stored
         saveStoredVehicles();
     }
     updateStats();
