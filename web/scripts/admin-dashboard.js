@@ -198,8 +198,25 @@ function navigateAdmin(e) {
     e.preventDefault();
     const target = e.currentTarget.getAttribute('data-target');
     if (!target) return;
+
+    // hide all panels, then show only the selected one
+    document.querySelectorAll('.admin-panel').forEach(p => {
+        p.style.display = 'none';
+    });
     const el = document.getElementById(target);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (el) {
+        el.style.display = '';
+        // scroll into view in case panels are long
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
     document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
     e.currentTarget.classList.add('active');
 }
+
+// ensure initial panel state on load
+window.addEventListener('DOMContentLoaded', () => {
+    // show only the first panel by default
+    const first = document.querySelector('.sidebar-nav a');
+    if (first) first.click();
+});

@@ -49,6 +49,15 @@
     gap: 12px;
 }
 
+/* hide all panels initially; script will show the selected one */
+.admin-panel {
+    display: none;
+}
+
+.admin-panel.active {
+    display: block;
+}
+
 .admin-panel {
     background: #ffffff;
     border: 1px solid #e5e7eb;
