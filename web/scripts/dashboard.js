@@ -42,6 +42,7 @@ let vehicles = [];
 
 let editingVehicleId = null;
 let showingAvailable = false; // track if we are filtering to available cars
+let showingRented = false; // track if we are filtering to rented cars
 
 // Initialize the dashboard
 function initDashboard() {
@@ -60,6 +61,11 @@ function initDashboard() {
     const availableCard = document.getElementById('availableCard');
     if (availableCard) {
         availableCard.addEventListener('click', viewAvailable);
+    }
+    // make rented stat card clickable
+    const rentedCard = document.getElementById('rentedCard');
+    if (rentedCard) {
+        rentedCard.addEventListener('click', viewRented);
     }
     // Load owner profile into header and profile menu
     loadOwnerProfile();
@@ -425,11 +431,14 @@ function closeCarDetailModal(){
 function setupSearch() {
     const searchInput = document.getElementById('search-input');
     searchInput.addEventListener('input', function() {
-        // if user is typing, cancel available filter view
-        if (showingAvailable) {
+        // if user is typing, cancel available or rented filter view
+        if (showingAvailable || showingRented) {
             showingAvailable = false;
+            showingRented = false;
             const availableCard = document.getElementById('availableCard');
             if (availableCard) availableCard.classList.remove('active');
+            const rentedCard = document.getElementById('rentedCard');
+            if (rentedCard) rentedCard.classList.remove('active');
         }
         const query = this.value.toLowerCase();
         const filtered = vehicles.filter(vehicle =>
@@ -442,12 +451,15 @@ function setupSearch() {
 
 function viewAvailable() {
     const availableCard = document.getElementById('availableCard');
+    const rentedCard = document.getElementById('rentedCard');
     if (!showingAvailable) {
         const availList = vehicles.filter(v => v.available);
         renderVehicles(availList);
         updateStats(availList);
         showingAvailable = true;
+        showingRented = false;
         if (availableCard) availableCard.classList.add('active');
+        if (rentedCard) rentedCard.classList.remove('active');
         // clear search field
         const si = document.getElementById('search-input');
         if (si) si.value = '';
@@ -456,6 +468,27 @@ function viewAvailable() {
         updateStats();
         showingAvailable = false;
         if (availableCard) availableCard.classList.remove('active');
+    }
+}
+
+function viewRented() {
+    const rentedCard = document.getElementById('rentedCard');
+    const availableCard = document.getElementById('availableCard');
+    if (!showingRented) {
+        const rentList = vehicles.filter(v => !v.available);
+        renderVehicles(rentList);
+        updateStats(rentList);
+        showingRented = true;
+        showingAvailable = false;
+        if (rentedCard) rentedCard.classList.add('active');
+        if (availableCard) availableCard.classList.remove('active');
+        const si = document.getElementById('search-input');
+        if (si) si.value = '';
+    } else {
+        renderVehicles();
+        updateStats();
+        showingRented = false;
+        if (rentedCard) rentedCard.classList.remove('active');
     }
 }
 
