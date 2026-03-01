@@ -16,10 +16,14 @@
 }
 
 .admin-analytics {
-    display: grid;
+    display: none;
     grid-template-columns: repeat(4, minmax(180px, 1fr));
     gap: 12px;
     margin-bottom: 16px;
+}
+
+.admin-analytics.active {
+    display: grid;
 }
 
 .analytics-card {
@@ -44,9 +48,7 @@
 }
 
 .admin-panels {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
+    display: block;
 }
 
 /* hide all panels initially; script will show the selected one */
@@ -56,6 +58,7 @@
 
 .admin-panel.active {
     display: block;
+    animation: panelFade 0.2s ease;
 }
 
 .admin-panel {
@@ -65,6 +68,7 @@
     box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
     overflow: hidden;
     min-height: 260px;
+    margin-bottom: 12px;
 }
 
 .panel-title {
@@ -76,11 +80,11 @@
 }
 
 .admin-list {
-    padding: 6px 12px 10px;
+    padding: 8px 14px 12px;
 }
 
 .admin-row {
-    padding: 10px 0;
+    padding: 12px 0;
     border-bottom: 1px solid #f1f5f9;
     display: flex;
     align-items: center;
@@ -151,6 +155,17 @@
     border-radius: 7px;
 }
 
+@keyframes panelFade {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 @media (max-width: 1100px) {
     .admin-analytics {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -186,6 +201,7 @@
 .admin-layout {
     display: flex;
     gap: 16px;
+    align-items: flex-start;
 }
 
 .sidebar {
@@ -196,6 +212,8 @@
     padding: 16px 12px;
     box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
     flex-shrink: 0;
+    position: sticky;
+    top: 12px;
 }
 
 .sidebar-brand {
@@ -223,4 +241,15 @@
 
 .admin-main {
     flex: 1;
+}
+
+@media (max-width: 900px) {
+    .admin-layout {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        position: static;
+    }
 }

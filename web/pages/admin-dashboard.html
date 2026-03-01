@@ -35,7 +35,7 @@
                     </div>
                 </header>
 
-                <section class="admin-analytics" aria-label="Admin analytics overview">
+                <section id="analytics-panel" class="admin-analytics" aria-label="Admin analytics overview">
                     <article class="analytics-card">
                         <p class="analytics-label">Total Users</p>
                         <p class="analytics-value" id="analytics-users">0</p>
@@ -55,17 +55,22 @@
                 </section>
 
                 <section class="admin-panels">
-                    <div class="admin-panel">
+                    <div id="users-panel" class="admin-panel">
                         <h2 class="panel-title">Users</h2>
                         <div id="admin-users">Loading users...</div>
                     </div>
 
-                    <div class="admin-panel">
+                    <div id="vehicles-panel" class="admin-panel">
                         <h2 class="panel-title">Vehicles</h2>
                         <div id="admin-vehicles">Loading vehicles...</div>
                     </div>
 
-                    <div class="admin-panel">
+                    <div id="approvals-panel" class="admin-panel">
+                        <h2 class="panel-title">Approvals</h2>
+                        <div class="admin-empty">No pending approvals</div>
+                    </div>
+
+                    <div id="rentals-panel" class="admin-panel">
                         <h2 class="panel-title">Rentals</h2>
                         <div id="admin-rentals">Loading rentals...</div>
                     </div>
@@ -77,16 +82,5 @@
     <script src="../components/profile-menu.js" defer></script>
     <script src="../components/vehicle-card.js" defer></script>
     <script src="../scripts/admin-dashboard.js" defer></script>
-    <script>
-        function navigateAdmin(e){
-            e.preventDefault();
-            const target = e.currentTarget.getAttribute('data-target');
-            if(!target) return;
-            const el = document.getElementById(target);
-            if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
-            document.querySelectorAll('.sidebar-nav a').forEach(a=>a.classList.remove('active'));
-            e.currentTarget.classList.add('active');
-        }
-    </script>
 </body>
 </html>

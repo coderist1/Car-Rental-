@@ -199,15 +199,22 @@ function navigateAdmin(e) {
     const target = e.currentTarget.getAttribute('data-target');
     if (!target) return;
 
-    // hide all panels, then show only the selected one
+    const analyticsPanel = document.getElementById('analytics-panel');
+    if (analyticsPanel) {
+        analyticsPanel.classList.toggle('active', target === 'analytics-panel');
+    }
+
+    // hide all panels, then show only the selected one via active class
     document.querySelectorAll('.admin-panel').forEach(p => {
-        p.style.display = 'none';
+        p.classList.remove('active');
     });
     const el = document.getElementById(target);
-    if (el) {
-        el.style.display = '';
+    if (el && el.classList.contains('admin-panel')) {
+        el.classList.add('active');
         // scroll into view in case panels are long
         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (target === 'analytics-panel' && analyticsPanel) {
+        analyticsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
