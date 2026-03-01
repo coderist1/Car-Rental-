@@ -77,15 +77,68 @@ function loadVehiclesFromStorage() {
         if (raw) {
             const parsed = JSON.parse(raw);
             if (Array.isArray(parsed) && parsed.length > 0) {
-                return parsed.map(normalizeVehicle);
+                const parsedVehicles = parsed.map(normalizeVehicle);
+                // enrich with ownerId/ownerEmail when possible
+                mapVehicleOwners(parsedVehicles);
+                return parsedVehicles;
             }
         }
     } catch (error) {
     }
 
     const seededVehicles = defaultVehicles.map(normalizeVehicle);
+    // try to map seeded vehicles to existing users (by name/email) so admin can find owner vehicles
+    mapVehicleOwners(seededVehicles);
     saveVehiclesToStorage(seededVehicles);
     return seededVehicles;
+}
+
+function mapVehicleOwners(vehicles){
+    try{
+        const rawUsers = localStorage.getItem('carRentalUsers');
+        const users = rawUsers ? JSON.parse(rawUsers) : [];
+        if(!Array.isArray(users) || users.length===0) return;
+
+        const emailMap = {};
+        const nameMap = {};
+        users.forEach(u=>{
+            const email = (u.email||'').toLowerCase();
+            if(email) emailMap[email] = u;
+            const full = (u.fullName || ((u.firstName||'') + ' ' + (u.lastName||'')).trim()).toLowerCase();
+            if(full) nameMap[full] = u;
+        });
+
+        vehicles.forEach(v=>{
+            if(!v) return;
+            if(v.ownerId) return; // already assigned
+            const ownerField = (v.owner || v.ownerName || '').toString().trim();
+            if(!ownerField) return;
+            const lower = ownerField.toLowerCase();
+
+            // exact email match
+            if(emailMap[lower]){
+                const u = emailMap[lower];
+                v.ownerId = u.id; v.ownerEmail = u.email; v.ownerName = u.fullName || `${u.firstName||''} ${u.lastName||''}`.trim();
+                return;
+            }
+
+            // exact full name match
+            if(nameMap[lower]){
+                const u = nameMap[lower];
+                v.ownerId = u.id; v.ownerEmail = u.email; v.ownerName = u.fullName || `${u.firstName||''} ${u.lastName||''}`.trim();
+                return;
+            }
+
+            // partial name match
+            for(const key in nameMap){
+                if(key.includes(lower) || lower.includes(key)){
+                    const u = nameMap[key];
+                    v.ownerId = u.id; v.ownerEmail = u.email; v.ownerName = u.fullName || `${u.firstName||''} ${u.lastName||''}`.trim();
+                    break;
+                }
+            }
+        });
+    }catch(e){}
 }
 
 function saveVehiclesToStorage(vehiclesToSave) {

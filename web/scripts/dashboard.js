@@ -42,6 +42,57 @@ let vehicles = [];
 
 let editingVehicleId = null;
 
+function getCurrentOwnerMeta() {
+    try {
+        const stored = localStorage.getItem('userProfile');
+        if (!stored) return null;
+        const user = JSON.parse(stored);
+        const ownerName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.fullName || 'Owner';
+        return {
+            ownerId: user.id ?? null,
+            ownerEmail: user.email || '',
+            ownerName,
+            owner: ownerName
+        };
+    } catch (e) {
+        return null;
+    }
+}
+
+function attachOwnerMeta(vehicle, ownerMeta) {
+    if (!ownerMeta || !vehicle) return vehicle;
+    return {
+        ...vehicle,
+        ownerId: ownerMeta.ownerId,
+        ownerEmail: ownerMeta.ownerEmail,
+        ownerName: ownerMeta.ownerName,
+        owner: ownerMeta.ownerName
+    };
+}
+
+function synchronizeCurrentOwnerVehicles() {
+    const ownerMeta = getCurrentOwnerMeta();
+    if (!ownerMeta) return;
+
+    let changed = false;
+    vehicles = vehicles.map(vehicle => {
+        const hasOwnerRef = !!(vehicle.ownerId || vehicle.ownerEmail || vehicle.ownerName || vehicle.owner);
+        const matchesCurrentOwner =
+            (vehicle.ownerId != null && String(vehicle.ownerId) === String(ownerMeta.ownerId)) ||
+            ((vehicle.ownerEmail || '').toLowerCase() === (ownerMeta.ownerEmail || '').toLowerCase()) ||
+            ((vehicle.ownerName || vehicle.owner || '').toLowerCase() === (ownerMeta.ownerName || '').toLowerCase());
+
+        if (matchesCurrentOwner || !hasOwnerRef) {
+            changed = true;
+            return attachOwnerMeta(vehicle, ownerMeta);
+        }
+
+        return vehicle;
+    });
+
+    if (changed) saveStoredVehicles();
+}
+
 // Initialize the dashboard
 function initDashboard() {
     const storedVehicles = loadStoredVehicles();
@@ -49,8 +100,16 @@ function initDashboard() {
         vehicles = storedVehicles.map(normalizeVehicle);
     } else {
         vehicles = defaultVehicles.map(normalizeVehicle);
+        const ownerMeta = getCurrentOwnerMeta();
+        if (ownerMeta) {
+            vehicles = vehicles.map(v => attachOwnerMeta(v, ownerMeta));
+        }
         saveStoredVehicles();
     }
+
+    // Ensure vehicles visible to this owner are tagged with owner fields for admin sync.
+    synchronizeCurrentOwnerVehicles();
+
     updateStats();
     renderVehicles();
     setupSearch();
@@ -478,6 +537,7 @@ function closeModal() {
 }
 
 function saveVehicle() {
+    const ownerMeta = getCurrentOwnerMeta();
     const formData = {
         name: document.getElementById('vehicle-name').value,
         brand: document.getElementById('vehicle-brand').value,
@@ -497,7 +557,11 @@ function saveVehicle() {
         available: document.getElementById('vehicle-availability')
             ? document.getElementById('vehicle-availability').value === 'available'
             : true,
-        image: window._vehicleImageDataUrl || getVehicleImage(document.getElementById('vehicle-type').value)
+        image: window._vehicleImageDataUrl || getVehicleImage(document.getElementById('vehicle-type').value),
+        ownerId: ownerMeta ? ownerMeta.ownerId : null,
+        ownerEmail: ownerMeta ? ownerMeta.ownerEmail : '',
+        ownerName: ownerMeta ? ownerMeta.ownerName : '',
+        owner: ownerMeta ? ownerMeta.ownerName : ''
     };
 
     if (!formData.name || !formData.brand || !formData.pricePerDay || !formData.location || !formData.type || !formData.transmission || !formData.fuel || !formData.plate) {
