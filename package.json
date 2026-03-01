@@ -1,0 +1,13 @@
+{
+  "name": "car-rental-web",
+  "version": "1.0.0",
+  "description": "Car Rental Web Application with Web Components",
+  "scripts": {
+    "start": "cd web && python -m http.server 8000",
+    "deploy": "gh-pages -d web"
+  },
+  "devDependencies": {
+    "gh-pages": "^5.0.0"
+  },
+  "private": true
+}

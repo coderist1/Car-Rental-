@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Car Rental - Admin Dashboard</title>
+    <link rel="stylesheet" href="../styles/dashboard.css">
+    <link rel="stylesheet" href="../styles/admin-dashboard.css">
+</head>
+<body>
+    <div class="container">
+        <header class="admin-header">
+            <div class="header-content admin-header-content">
+                <div class="admin-heading">
+                    <h1>Admin Dashboard</h1>
+                    <p class="admin-subtitle">Monitor users, vehicles, and rentals in one place.</p>
+                </div>
+                <div class="user-info">
+                    <span id="admin-welcome">Welcome, Admin</span>
+                    <profile-menu id="adminProfile"></profile-menu>
+                </div>
+            </div>
+        </header>
+
+        <section class="admin-analytics" aria-label="Admin analytics overview">
+            <article class="analytics-card">
+                <p class="analytics-label">Total Users</p>
+                <p class="analytics-value" id="analytics-users">0</p>
+            </article>
+            <article class="analytics-card">
+                <p class="analytics-label">Active Vehicles</p>
+                <p class="analytics-value" id="analytics-vehicles">0</p>
+            </article>
+            <article class="analytics-card">
+                <p class="analytics-label">Ongoing Rentals</p>
+                <p class="analytics-value" id="analytics-rentals">0</p>
+            </article>
+            <article class="analytics-card">
+                <p class="analytics-label">Estimated Daily Revenue</p>
+                <p class="analytics-value" id="analytics-revenue">₱0</p>
+            </article>
+        </section>
+
+        <section class="admin-panels">
+            <div class="admin-panel">
+                <h2 class="panel-title">Users</h2>
+                <div id="admin-users">Loading users...</div>
+            </div>
+
+            <div class="admin-panel">
+                <h2 class="panel-title">Vehicles</h2>
+                <div id="admin-vehicles">Loading vehicles...</div>
+            </div>
+
+            <div class="admin-panel">
+                <h2 class="panel-title">Rentals</h2>
+                <div id="admin-rentals">Loading rentals...</div>
+            </div>
+        </section>
+    </div>
+
+    <script src="../components/profile-menu.js" defer></script>
+    <script src="../components/vehicle-card.js" defer></script>
+    <script src="../scripts/admin-dashboard.js" defer></script>
+</body>
+</html>
