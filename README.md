@@ -1,137 +1,73 @@
-# Car Rental Web App
+# Web Version - CarRental App
 
-A modern, component-based car rental application built with native Web Components. Zero dependencies, no framework required.
+This directory contains the web version of the CarRental application, separated from the React Native source code for better organization.
 
-## Features
-
-- **User Authentication**
-  - User login for renters and owners
-  - Demo credentials for testing
-  - Secure authentication flow
-
-- **Role-Based Access**
-  - **Renter Dashboard**: Browse available vehicles, filter by type/price, view details
-  - **Owner Dashboard**: Manage listed vehicles, add/edit/delete vehicles, track availability
-  - **Admin Dashboard**: Platform overview, manage users and vehicles, view statistics (disabled by default)
-
-- **Filtering & Search**
-  - Filter by vehicle type (SUV, Sedan, Sports, Luxury, etc.)
-  - Filter by transmission type  
-  - Filter by fuel type
-  - Price range selection
-  - Real-time search functionality
-
-## Tech Stack
-
-- **Pure Web Technologies**: HTML5, CSS3, JavaScript (ES6+)
-- **Native Web Components**: Custom Elements with Shadow DOM
-- **Architecture**: Component-based, reusable, encapsulated
-- **No Build Step Required**: Runs directly in modern browsers
-
-## Project Structure
+## Folder Structure
 
 ```
-CarRental/
-├── web/
-│   ├── components/          # Reusable Web Components
-│   │   ├── app-header.js
-│   │   ├── auth-form.js
-│   │   ├── vehicle-card.js
-│   │   ├── confirm-modal.js
-│   │   └── README.md        # Component documentation
-│   ├── pages/               # HTML pages
-│   │   ├── login.html
-│   │   ├── dashboard.html    # Owner dashboard
-│   │   ├── renter-dashboard.html
-│   │   └── admin-dashboard.html
-│   ├── scripts/             # Page-specific JavaScript
-│   ├── styles/              # CSS stylesheets
-│   └── index.html           # Landing page
-├── package.json             # Minimal config for deployment
-└── README.md
+web/
+├── index.html          # Main landing/welcome page
+├── pages/              # All HTML page files
+│   ├── login.html
+│   ├── register.html
+│   ├── admin-login.html
+│   ├── dashboard.html          # Owner dashboard
+│   ├── renter-dashboard.html   # Renter dashboard
+│   └── admin-dashboard.html    # Admin dashboard
+├── styles/             # All CSS stylesheets
+│   ├── auth.css                # Shared auth page styles
+│   ├── dashboard.css           # Owner dashboard styles
+│   ├── renter-dashboard.css    # Renter dashboard styles
+│   └── admin-dashboard.css     # Admin dashboard styles
+└── scripts/            # All JavaScript files
+    ├── dashboard.js            # Owner dashboard functionality
+    ├── renter-dashboard.js     # Renter dashboard functionality
+    └── admin-dashboard.js      # Admin dashboard functionality
 ```
 
-## Getting Started
+## Entry Point
 
-### Prerequisites
+Start with `index.html` in the web/ directory. This serves as the main landing page that provides navigation to:
+- User Login
+- User Registration
+- Admin Portal
 
-- A modern web browser (Chrome 54+, Firefox 63+, Safari 10.1+, Edge 79+)
-- Python (for local server) OR any static file server
+## Page Structure
 
-### Installation & Running
+### Authentication Pages
+- **index.html** - Landing page with navigation buttons
+- **pages/login.html** - User login (supports both owners and renters)
+- **pages/register.html** - User registration with role selection
+- **pages/admin-login.html** - Admin-only login portal
 
-**Option 1: Python HTTP Server** (Recommended)
+### Dashboard Pages
+- **pages/dashboard.html** - Owner dashboard for managing vehicles
+- **pages/renter-dashboard.html** - Renter dashboard for browsing and filtering vehicles
+- **pages/admin-dashboard.html** - Admin dashboard for platform management
 
-No installation needed! Just run:
-```bash
-cd web
-python -m http.server 8000
-```
+## Resource Links
 
-Then open http://localhost:8000
+All pages properly reference CSS and JavaScript files using relative paths:
+- From `index.html`: `styles/` and scripts within pages
+- From `pages/`: `../styles/` for CSS and `../scripts/` for JS
 
-**Option 2: Using npm script**
-```bash
-npm start
-```
+## Development Notes
 
-Then open http://localhost:8000
-
-**Option 3: Any static file server**
-```bash
-# Using Node.js http-server
-npx http-server web -p 8000
-
-# Using PHP
-php -S localhost:8000 -t web
-```
-
-## Demo Credentials
-
-### User Login
-- **Owner**: owner@test.com / password
-- **Renter**: renter@test.com / password
-
-### Admin Login (Disabled)
-- Admin login has been disabled for security
-
-## Web Components
-
-This app uses 4 reusable Web Components:
-
-1. **`<app-header>`** - Logo, title, subtitle display
-2. **`<auth-form>`** - Authentication form with validation
-3. **`<vehicle-card>`** - Vehicle display with actions (owner/renter modes)
-4. **`<confirm-modal>`** - Promise-based confirmation dialogs
-
-See [web/components/README.md](web/components/README.md) for detailed documentation.
-
-## Features
-
-- **Zero Dependencies**: Pure vanilla JavaScript, no frameworks
-- **Modern Architecture**: Web Components with Shadow DOM encapsulation  
-- **Component-Based**: Reusable, maintainable components
-- **Responsive Design**: Works on desktop and mobile browsers
-- **Philippines Localization**: PHP currency, Manila locations
-- **Interactive**: Smooth animations and user feedback
+- Each HTML page is self-contained and can navigate to other pages
+- Styling is centralized in the `styles/` directory
+- JavaScript logic is modular in the `scripts/` directory
+- Demo credentials are provided in authentication pages:
+  - **Owner**: owner@test.com / password
+  - **Renter**: renter@test.com / password
+  - **Admin**: admin@test.com / admin123
 
 ## Deployment
 
-To deploy to GitHub Pages:
+To deploy the web version:
+1. Copy the entire `web/` folder to your web server
+2. Configure your web server to serve `index.html` as the entry point
+3. Ensure all relative paths are correctly resolved
 
-```bash
-npm run deploy
-```
+## Notes
 
-This will deploy the `web/` folder to the `gh-pages` branch.
-
-## Browser Support
-
-Web Components are supported in:
-- Chrome/Edge 54+
-- Firefox 63+
-- Safari 10.1+
-
-## License
-
-This project is for demonstration purposes.
+The React Native source code (`src/`) remains unchanged and is used for the mobile app compilation with Expo.

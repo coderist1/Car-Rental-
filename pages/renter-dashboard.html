@@ -1,3 +1,5 @@
+<!--renter-dashboard.html-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,6 +8,7 @@
     <title>CarRental - Renter Dashboard</title>
     <link rel="stylesheet" href="../styles/renter-dashboard.css">
     <script type="module" src="../components/vehicle-card.js"></script>
+    <script type="module" src="../components/profile-menu.js"></script>
 </head>
 <body>
     <div class="container">
@@ -14,7 +17,12 @@
                 <h1 class="greeting">Hello, John Doe 👋</h1>
                 <p class="header-subtitle">Find your perfect ride</p>
             </div>
-            <button class="logout-button" id="logoutButton">Logout</button>
+
+            <!-- Profile icon lives here, inside the header -->
+            <div style="display:flex;align-items:center;gap:10px">
+                <button class="btn btn-outline" id="myRentalsBtn">My Rentals</button>
+                <profile-menu id="profileMenu" username="John Doe"></profile-menu>
+            </div>
         </header>
 
         <section class="search-section">
@@ -47,6 +55,10 @@
             <div class="stat-card">
                 <div class="stat-number" id="avgPrice">$0</div>
                 <div class="stat-label">Avg Price</div>
+            </div>
+            <div class="stat-card clickable" id="savedCardContainer">
+                <div class="stat-number" id="savedVehicles">0</div>
+                <div class="stat-label">Saved</div>
             </div>
         </section>
 
@@ -112,6 +124,23 @@
             <span class="close-detail" id="closeDetail">✕</span>
             <div class="detail-content" id="detailContent">
                 <!-- Vehicle details will be added here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Renter Rental History Modal -->
+    <div id="renter-rental-history-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">My Rentals</h2>
+                <button class="close-button" id="closeRenterHistory">✕</button>
+            </div>
+            <div class="modal-body">
+                <div id="renter-rental-history-list"></div>
+                <p id="renter-rental-history-empty" class="empty-state" style="display:none">You have no rentals yet.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="closeRenterHistoryFooter">Close</button>
             </div>
         </div>
     </div>
