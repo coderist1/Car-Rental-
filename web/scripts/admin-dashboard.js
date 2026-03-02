@@ -213,6 +213,14 @@ function getRentals(){
     try{ const raw = localStorage.getItem('rentalHistory'); return raw? JSON.parse(raw): []; }catch(e){return []}
 }
 
+// load damage reports so admin can review them as disputes
+function getDamageReports(){
+    try{ const raw = localStorage.getItem('damageReports'); return raw? JSON.parse(raw): []; }catch(e){return []}
+}
+function saveDamageReports(list){
+    try{ localStorage.setItem('damageReports', JSON.stringify(list)); }catch(e){}
+}
+
 function saveRentals(r){ try{ localStorage.setItem('rentalHistory', JSON.stringify(r)); }catch(e){} }
 
 function renderRentals(){
@@ -298,24 +306,37 @@ window.adminResolveDispute = function(recordId) {
     try {
         const rentals = getRentals();
         const idx = rentals.findIndex(r=>r.id===recordId);
-        if(idx===-1) return;
-        
         const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
         const adminName = `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() || 'Admin';
-        
-        rentals[idx].dispute = false;
-        rentals[idx].disputeResolved = true;
-        rentals[idx].disputeResolvedAt = new Date().toISOString();
-        rentals[idx].disputeResolvedBy = adminName;
-        rentals[idx].disputeResolutionNotes = '(No notes)';
-        
-        saveRentals(rentals);
+        if(idx!==-1){
+            rentals[idx].dispute = false;
+            rentals[idx].disputeResolved = true;
+            rentals[idx].disputeResolvedAt = new Date().toISOString();
+            rentals[idx].disputeResolvedBy = adminName;
+            rentals[idx].disputeResolutionNotes = '(No notes)';
+            saveRentals(rentals);
+            logAudit('resolveDispute', `Dispute for ${rentals[idx].vehicleName} resolved (No notes provided)`, {
+                category: 'dispute_management',
+                severity: 'info'
+            });
+        } else {
+            // try damage reports
+            const dmgs = getDamageReports();
+            const j = dmgs.findIndex(d=>d.id===recordId);
+            if(j!==-1){
+                dmgs[j].resolved = true;
+                dmgs[j].resolvedAt = new Date().toISOString();
+                dmgs[j].resolvedBy = adminName;
+                dmgs[j].resolutionNotes = '(No notes)';
+                saveDamageReports(dmgs);
+                logAudit('resolveDamageReport', `Damage report for ${dmgs[j].vehicleName} marked resolved`, {
+                    category: 'dispute_management',
+                    severity: 'info'
+                });
+            }
+        }
         refreshAdminDashboard();
         alert('Dispute resolved');
-        logAudit('resolveDispute', `Dispute for ${rentals[idx].vehicleName} resolved (No notes provided)`, {
-            category: 'dispute_management',
-            severity: 'info'
-        });
     } catch(e){ console.error(e); }
 }
 
@@ -326,24 +347,36 @@ window.adminResolveDisputeWithNotes = function(recordId) {
     try {
         const rentals = getRentals();
         const idx = rentals.findIndex(r=>r.id===recordId);
-        if(idx===-1) return;
-        
         const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
         const adminName = `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() || 'Admin';
-        
-        rentals[idx].dispute = false;
-        rentals[idx].disputeResolved = true;
-        rentals[idx].disputeResolvedAt = new Date().toISOString();
-        rentals[idx].disputeResolvedBy = adminName;
-        rentals[idx].disputeResolutionNotes = notes || '(No notes)';
-        
-        saveRentals(rentals);
+        if(idx!==-1) {
+            rentals[idx].dispute = false;
+            rentals[idx].disputeResolved = true;
+            rentals[idx].disputeResolvedAt = new Date().toISOString();
+            rentals[idx].disputeResolvedBy = adminName;
+            rentals[idx].disputeResolutionNotes = notes || '(No notes)';
+            saveRentals(rentals);
+            logAudit('resolveDispute', `Dispute for ${rentals[idx].vehicleName} resolved: ${notes}`, {
+                category: 'dispute_management',
+                severity: 'info'
+            });
+        } else {
+            const dmgs = getDamageReports();
+            const j = dmgs.findIndex(d=>d.id===recordId);
+            if(j!==-1){
+                dmgs[j].resolved = true;
+                dmgs[j].resolvedAt = new Date().toISOString();
+                dmgs[j].resolvedBy = adminName;
+                dmgs[j].resolutionNotes = notes || '(No notes)';
+                saveDamageReports(dmgs);
+                logAudit('resolveDamageReport', `Damage report for ${dmgs[j].vehicleName} resolved: ${notes}`, {
+                    category: 'dispute_management',
+                    severity: 'info'
+                });
+            }
+        }
         refreshAdminDashboard();
         alert('Dispute resolved');
-        logAudit('resolveDispute', `Dispute for ${rentals[idx].vehicleName} resolved: ${notes}`, {
-            category: 'dispute_management',
-            severity: 'info'
-        });
     } catch(e){ console.error(e); }
 }
 
@@ -377,14 +410,33 @@ function renderDisputes(){
     const statusFilter = document.getElementById('dispute-status-filter')?.value || 'all';
     const searchFilter = document.getElementById('dispute-search-filter')?.value || '';
     
-    let disputes = rentals.filter(r=>r.dispute);
-    
+    // collect rental disputes
+    let disputes = rentals.filter(r=>r.dispute).map(r=>({
+        ...r,
+        _source: 'rental'
+    }));
+
+    // append damage reports as additional disputes
+    const dmg = getDamageReports().map(d => ({
+        id: d.id,
+        vehicleName: d.vehicleName,
+        renterName: d.renterName,
+        disputeReason: 'Damage report',
+        disputeFiledAt: d.datetime,
+        disputeResolved: d.resolved || false,
+        disputeResolvedBy: d.resolvedBy,
+        disputeResolvedAt: d.resolvedAt,
+        disputeResolutionNotes: d.resolutionNotes || '',
+        _source: 'damage'
+    }));
+    disputes = disputes.concat(dmg);
+
     if(statusFilter === 'open') {
         disputes = disputes.filter(r => !r.disputeResolved);
     } else if(statusFilter === 'resolved') {
         disputes = disputes.filter(r => r.disputeResolved);
     }
-    
+
     if(searchFilter) {
         const search = searchFilter.toLowerCase();
         disputes = disputes.filter(r => 
@@ -422,10 +474,11 @@ function renderDisputes(){
         const resolvedInfo = isResolved ? 
             `<small class="admin-row-meta">Resolved by: ${r.disputeResolvedBy || 'Admin'} on ${new Date(r.disputeResolvedAt).toLocaleDateString()}</small>` : 
             '';
+        const sourceLabel = r._source === 'damage' ? '<span class="admin-pill" style="background:#fde68a;color:#92400e;">Damage</span>' : '';
         
         return `<div class="admin-row ${isResolved ? 'resolved-dispute' : ''}">
             <div class="admin-row-main">
-                <strong class="admin-row-title">${r.vehicleName || 'Vehicle'}</strong>
+                <strong class="admin-row-title">${r.vehicleName || 'Vehicle'}</strong> ${sourceLabel}
                 <small class="admin-row-meta">Renter: ${r.renterName||'N/A'} • Filed: ${filedDate}</small>
                 <div class="admin-row-meta"><strong>Issue:</strong> ${r.disputeReason||'Not specified'}</div>
                 ${resolvedInfo}

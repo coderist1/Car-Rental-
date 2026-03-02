@@ -1,6 +1,3 @@
-// Renter Dashboard DOM Selectors & Hooks
-
-// Search & Filter Hooks
 export const SEARCH_HOOKS = {
   searchInput: () => document.getElementById('searchInput'),
   filterButton: () => document.getElementById('filterButton'),
@@ -13,7 +10,6 @@ export const SEARCH_HOOKS = {
   filterBadge: () => document.querySelector('.filter-badge'),
 };
 
-// Vehicle Display Hooks
 export const VEHICLE_HOOKS = {
   vehiclesContainer: () => document.getElementById('vehiclesContainer'),
   detailModal: () => document.getElementById('detailModal'),
@@ -25,7 +21,6 @@ export const VEHICLE_HOOKS = {
   allFilterOptions: () => document.querySelectorAll('.filter-option'),
 };
 
-// Stats Hooks
 export const STATS_HOOKS = {
   totalVehicles: () => document.getElementById('totalVehicles'),
   availableVehicles: () => document.getElementById('availableVehicles'),
@@ -33,7 +28,6 @@ export const STATS_HOOKS = {
   savedVehicles: () => document.getElementById('savedVehicles'),
 };
 
-// Profile & History Hooks
 export const PROFILE_HOOKS = {
   profileMenu: () => document.getElementById('profileMenu'),
   myRentalsBtn: () => document.getElementById('myRentalsBtn'),
@@ -41,7 +35,6 @@ export const PROFILE_HOOKS = {
   greetingEl: () => document.querySelector('.greeting'),
 };
 
-// Rental History Hooks
 export const HISTORY_HOOKS = {
   historyModal: () => document.getElementById('renter-rental-history-modal'),
   historyList: () => document.getElementById('renter-rental-history-list'),
@@ -50,7 +43,6 @@ export const HISTORY_HOOKS = {
   closeRenterHistoryFooter: () => document.getElementById('closeRenterHistoryFooter'),
 };
 
-// Rental Date Input Hooks
 export const RENTAL_HOOKS = {
   rentStartDate: () => document.getElementById('rent-start-date'),
   rentEndDate: () => document.getElementById('rent-end-date'),
@@ -59,7 +51,6 @@ export const RENTAL_HOOKS = {
   rentTotal: () => document.getElementById('rent-total'),
 };
 
-// Helper function to get all hooks at once
 export function getRenterDashboardHooks() {
   return {
     search: Object.entries(SEARCH_HOOKS).reduce((acc, [key, fn]) => {
