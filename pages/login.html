@@ -43,6 +43,29 @@
             window.location.href = page;
         }
 
+        // ensure admin user exists, useful when someone goes straight to login
+        function ensureDefaultAdmin() {
+            let users = [];
+            try { users = JSON.parse(localStorage.getItem('carRentalUsers')) || []; } catch(e){ users = []; }
+            if (!users.some(u => u.role === 'admin')) {
+                const id = Date.now();
+                users.push({
+                    id,
+                    firstName: 'Admin',
+                    lastName: 'User',
+                    fullName: 'Admin User',
+                    email: 'admin@rentacar.com',
+                    password: 'admin123',
+                    role: 'admin',
+                    active: true,
+                    createdAt: new Date().toISOString()
+                });
+                try { localStorage.setItem('carRentalUsers', JSON.stringify(users)); } catch(e){}
+                console.log('Default admin seeded via login page');
+            }
+        }
+        ensureDefaultAdmin();
+
         function saveUserProfile(user) {
             try {
                 const profile = {
