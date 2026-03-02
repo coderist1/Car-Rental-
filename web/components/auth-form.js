@@ -186,6 +186,7 @@ class AuthForm extends HTMLElement {
                         <h4 class="demo-title">Demo Credentials:</h4>
                         <p class="demo-text">Owner: owner@test.com / password</p>
                         <p class="demo-text">Renter: renter@test.com / password</p>
+                        <p class="demo-text">Admin: admin@rentacar.com / admin123</p>
                     </div>
                 `}
             </div>
