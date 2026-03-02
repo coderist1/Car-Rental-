@@ -356,13 +356,35 @@ body::after {
   width: fit-content;
 }
 
-.guest-info {}
-.guest-name  { font-weight: 600; font-size: 0.88rem; margin-bottom: 2px; color: var(--text); }
-.guest-email { font-size: 0.73rem; color: var(--muted); }
+.guest-info,
+.booking-details {
+  min-width: 0;
+}
 
-.booking-details {}
-.property-name  { font-size: 0.88rem; font-weight: 600; margin-bottom: 2px; color: var(--text); }
-.booking-dates  { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--muted); }
+.guest-name {
+  font-weight: 600;
+  font-size: 0.88rem;
+  margin-bottom: 2px;
+  color: var(--text);
+}
+
+.guest-email {
+  font-size: 0.73rem;
+  color: var(--muted);
+}
+
+.property-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin-bottom: 2px;
+  color: var(--text);
+}
+
+.booking-dates {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
 
 .booking-dates-cell {
   display: flex;

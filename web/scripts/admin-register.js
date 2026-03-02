@@ -1,3 +1,28 @@
+// utility: ensure at least one admin user exists with known credentials
+function ensureDefaultAdmin() {
+    let users = [];
+    try { users = JSON.parse(localStorage.getItem('carRentalUsers')) || []; } catch (e) { users = []; }
+    if (!users.some(u => u.role === 'admin')) {
+        const id = Date.now();
+        const admin = {
+            id,
+            firstName: 'Admin',
+            lastName: 'User',
+            fullName: 'Admin User',
+            email: 'admin@rentacar.com',
+            password: 'admin123', // for demo only
+            role: 'admin',
+            active: true,
+            createdAt: new Date().toISOString()
+        };
+        users.push(admin);
+        try { localStorage.setItem('carRentalUsers', JSON.stringify(users)); } catch (e) { console.error(e); }
+        console.log('Default admin created: admin@rentacar.com / admin123');
+    }
+}
+
+ensureDefaultAdmin();
+
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('admin-register-form');
     const errorDiv = document.getElementById('errorMessage');
