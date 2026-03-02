@@ -20,17 +20,20 @@ class ProfileMenu extends HTMLElement {
         let username = 'Guest';
         let userEmail = 'user@example.com';
         
+        let isAdmin = false;
         try {
             const stored = localStorage.getItem('userProfile');
             if (stored) {
                 const u = JSON.parse(stored);
                 username = `${u.firstName || ''} ${u.lastName || ''}`.trim() || username;
                 userEmail = u.email || userEmail;
+                isAdmin = u.role === 'admin';
             }
         } catch (e) {
         }
 
         const userInitial = (username.charAt(0) || 'U').toUpperCase();
+        const showIcons = !isAdmin; // hide emoji icons for admin
 
         this.shadowRoot.innerHTML = `
             <style>
@@ -182,30 +185,30 @@ class ProfileMenu extends HTMLElement {
                 <ul class="dropdown-items">
                     <li class="dropdown-item">
                         <button class="dropdown-link" data-action="profile">
-                            <span class="dropdown-link-icon">👤</span>
+                            ${showIcons ? `<span class="dropdown-link-icon">👤</span>` : ``}
                             <span>My Profile</span>
                         </button>
                     </li>
 
                     <li class="dropdown-item">
                         <button class="dropdown-link" data-action="change-password">
-                            <span class="dropdown-link-icon">🔐</span>
+                            ${showIcons ? `<span class="dropdown-link-icon">🔐</span>` : ``}
                             <span>Change Password</span>
                         </button>
                     </li>
 
+                    ${isAdmin ? '' : `
                     <li class="dropdown-item">
                         <button class="dropdown-link" data-action="bookings">
-                            <span class="dropdown-link-icon">📅</span>
                             <span>My Bookings</span>
                         </button>
                     </li>
-
+                    `}
                     <div class="dropdown-divider"></div>
 
                     <li class="dropdown-item">
                         <button class="dropdown-link logout-link" data-action="logout">
-                            <span class="dropdown-link-icon">🚪</span>
+                            ${showIcons ? `<span class="dropdown-link-icon">🚪</span>` : ``}
                             <span>Logout</span>
                         </button>
                     </li>

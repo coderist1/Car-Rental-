@@ -1,23 +1,38 @@
 
 (function () {
     const STORAGE_KEY = 'auditLog';
+    const MAX_ENTRIES = 1000;       // keep last N entries to prevent storage bloat
+    let _logCache = null;           // in-memory cache
+    let _saveTimeout = null;
 
     function _loadLog() {
+        if (_logCache) return _logCache;
         try {
             const raw = localStorage.getItem(STORAGE_KEY);
-            return raw ? JSON.parse(raw) : [];
+            _logCache = raw ? JSON.parse(raw) : [];
         } catch (e) {
             console.error('Failed to load audit log', e);
-            return [];
+            _logCache = [];
         }
+        return _logCache;
+    }
+
+    function _scheduleSave() {
+        // debounce writes so multiple logAudit calls within a frame only trigger one storage write
+        if (_saveTimeout) return;
+        _saveTimeout = setTimeout(() => {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(_logCache));
+            } catch (e) {
+                console.error('Failed to save audit log', e);
+            }
+            _saveTimeout = null;
+        }, 100);
     }
 
     function _saveLog(log) {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(log));
-        } catch (e) {
-            console.error('Failed to save audit log', e);
-        }
+        // log is only used during initial load, afterwards _scheduleSave handles persistence
+        _scheduleSave();
     }
 
     function _getCurrentUser() {
@@ -47,7 +62,11 @@
         };
         const log = _loadLog();
         log.push(entry);
-        _saveLog(log);
+        // trim oldest entries if exceeding limit
+        if (log.length > MAX_ENTRIES) {
+            log.splice(0, log.length - MAX_ENTRIES);
+        }
+        _scheduleSave();
         window.dispatchEvent(new Event('auditLogged'));
         return entry;
     };
@@ -64,11 +83,12 @@
     }
 
     window.getAuditLog = function() {
-        return _loadLog();
+        // return a copy so callers cannot mutate internal cache accidentally
+        return _loadLog().slice();
     };
 
     window.filterAuditLog = function(options = {}) {
-        let logs = _loadLog();
+        let logs = _loadLog().slice();
         
         if (options.action) {
             logs = logs.filter(l => l.action.toLowerCase().includes(options.action.toLowerCase()));
