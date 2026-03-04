@@ -1,0 +1,139 @@
+.profile-menu-container {
+  position: relative;
+}
+
+.profile-icon-button {
+  background: linear-gradient(135deg, #ff7a59 0%, #ff9a7b 100%);
+  border: none;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 18px;
+  box-shadow: 0 2px 8px rgba(255, 122, 89, 0.3);
+  transition: all 0.3s ease;
+}
+
+.profile-icon-button:hover {
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(255, 122, 89, 0.4);
+}
+
+.profile-icon-button:active {
+  transform: scale(0.95);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  min-width: 220px;
+  z-index: 1100;
+  overflow: hidden;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3F9B84 0%, #2d7a67 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.user-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-name {
+  font-weight: 600;
+  color: #1a2c5e;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-email {
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: #e2e8f0;
+}
+
+.dropdown-items {
+  padding: 8px 0;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: #374151;
+  text-align: left;
+  transition: background 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background: #f1f5f9;
+}
+
+.item-icon {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
+
+.logout-item {
+  color: #ef4444;
+}
+
+.logout-item:hover {
+  background: #fef2f2;
+}
