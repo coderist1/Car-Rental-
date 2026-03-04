@@ -1,18 +1,27 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth, useVehicles } from '../hooks';
-import { ProfileMenu, Modal } from '../components';
+import { ProfileMenu, Modal, ConfirmModal } from '../components';
 import '../styles/pages/AdminDashboard.css';
 
 function AdminDashboard() {
-  const { user, getRegisteredUsers } = useAuth();
-  const { vehicles, rentalHistory } = useVehicles();
+  const { user, getRegisteredUsers, updateUser, deleteUser } = useAuth();
+  const { vehicles, rentalHistory, deleteVehicle } = useVehicles();
   
   const [activePanel, setActivePanel] = useState('users');
   const [selectedOwner, setSelectedOwner] = useState(null);
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
 
+  // Confirmation dialog state used for any destructive/important action
+  const [confirmState, setConfirmState] = useState({
+    open: false,
+    message: '',
+    onConfirm: null,
+    variant: 'danger'
+  });
+
   const users = getRegisteredUsers();
   const userName = user?.fullName || 'Admin';
+
 
   // Analytics calculations
   const analytics = useMemo(() => {
@@ -53,30 +62,59 @@ function AdminDashboard() {
     setIsVehicleModalOpen(true);
   };
 
-  const renderUsersPanel = () => (
-    <div className="admin-panel">
-      <h2 className="panel-title">Users</h2>
-      {users.length === 0 ? (
-        <div className="admin-empty">No registered users</div>
-      ) : (
-        <div className="admin-table">
-          <div className="table-header">
-            <div className="th">Name</div>
-            <div className="th">Status</div>
-            <div className="th">Email</div>
-            <div className="th">Role</div>
-          </div>
-          {users.map(u => (
+  const renderUsersPanel = () => {
+    return (
+      <div className="admin-panel">
+        <h2 className="panel-title">Users</h2>
+        {users.length === 0 ? (
+          <div className="admin-empty">No registered users</div>
+        ) : (
+          <div className="admin-table">
+            <div className="table-header">
+              <div className="th">Name</div>
+              <div className="th">Email</div>
+              <div className="th">Role</div>
+              <div className="th">Actions</div>
+            </div>
+            {users.map(u => (
             <div key={u.id} className="table-row">
               <div className="td">{u.fullName || `${u.firstName} ${u.lastName}`}</div>
-              <div className="td">
-                <span className={`status-badge ${u.active !== false ? 'active' : 'inactive'}`}>
-                  {u.active !== false ? 'Active' : 'Inactive'}
-                </span>
-              </div>
               <div className="td">{u.email}</div>
               <div className="td">
                 <span className={`role-badge ${u.role}`}>{u.role}</span>
+              </div>
+              <div className="td action-buttons">
+                {/* action buttons with confirmation */}
+                <button
+                  className="btn btn-warning btn-sm"
+                  onClick={() => {
+                    setConfirmState({
+                      open: true,
+                      variant: 'warning',
+                      message: `Are you sure you want to ${u.active !== false ? 'deactivate' : 'activate'} this user?`,
+                      onConfirm: () => {
+                        updateUser(u.id, { active: !u.active });
+                      }
+                    });
+                  }}
+                >
+                  {u.active !== false ? 'Deactivate' : 'Activate'}
+                </button>
+                <button
+                  className="btn btn-danger btn-sm"
+                  onClick={() => {
+                    setConfirmState({
+                      open: true,
+                      variant: 'danger',
+                      message: 'Are you sure you want to delete this user?',
+                      onConfirm: () => {
+                        deleteUser(u.id);
+                      }
+                    });
+                  }}
+                >
+                  Delete
+                </button>
               </div>
             </div>
           ))}
@@ -84,6 +122,7 @@ function AdminDashboard() {
       )}
     </div>
   );
+  };
 
   const renderVehiclesPanel = () => (
     <div className="admin-panel">
@@ -97,6 +136,7 @@ function AdminDashboard() {
             <div className="th">Owner</div>
             <div className="th">Price/Day</div>
             <div className="th">Status</div>
+            <div className="th">Actions</div>
           </div>
           {vehicles.map(v => (
             <div key={v.id} className="table-row">
@@ -105,6 +145,23 @@ function AdminDashboard() {
               <div className="td">₱{v.pricePerDay?.toLocaleString()}</div>
               <div className="td">
                 <span className={`status-badge ${v.status}`}>{v.status}</span>
+              </div>
+              <div className="td action-buttons">
+                <button
+                  className="btn btn-danger btn-sm"
+                  onClick={() => {
+                    setConfirmState({
+                      open: true,
+                      variant: 'danger',
+                      message: 'Are you sure you want to delete this vehicle?',
+                      onConfirm: () => {
+                        deleteVehicle(v.id);
+                      }
+                    });
+                  }}
+                >
+                  Delete
+                </button>
               </div>
             </div>
           ))}
@@ -242,24 +299,6 @@ function AdminDashboard() {
             </div>
           </header>
 
-          <section className="admin-analytics-summary">
-            <div className="analytics-card">
-              <div className="analytics-label">Total Users</div>
-              <div className="analytics-value">{analytics.totalUsers}</div>
-            </div>
-            <div className="analytics-card">
-              <div className="analytics-label">Active Vehicles</div>
-              <div className="analytics-value">{analytics.totalVehicles}</div>
-            </div>
-            <div className="analytics-card">
-              <div className="analytics-label">Ongoing Rentals</div>
-              <div className="analytics-value">{analytics.activeRentals}</div>
-            </div>
-            <div className="analytics-card">
-              <div className="analytics-label">Est. Daily Revenue</div>
-              <div className="analytics-value">₱{analytics.estimatedRevenue.toLocaleString()}</div>
-            </div>
-          </section>
 
           <section className="admin-content">
             {panels[activePanel]()}
@@ -286,6 +325,18 @@ function AdminDashboard() {
           </div>
         )}
       </Modal>
+
+      {/* universal confirmation modal for admin actions */}
+      <ConfirmModal
+        isOpen={confirmState.open}
+        onClose={() => setConfirmState(s => ({ ...s, open: false }))}
+        message={confirmState.message}
+        onConfirm={() => {
+          if (confirmState.onConfirm) confirmState.onConfirm();
+          setConfirmState(s => ({ ...s, open: false }));
+        }}
+        variant={confirmState.variant}
+      />
     </div>
   );
 }

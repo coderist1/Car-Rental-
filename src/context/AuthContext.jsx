@@ -245,6 +245,32 @@ export function AuthProvider({ children }) {
     setIsAuthenticated(false);
   };
 
+  // admin helpers --------------------------------------------------------
+  const updateUser = (userId, updates) => {
+    const users = getRegisteredUsers();
+    const idx = users.findIndex(u => u.id === userId);
+    if (idx !== -1) {
+      users[idx] = { ...users[idx], ...updates };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+      // if the updated user is the current session, refresh profile
+      if (user?.id === userId) {
+        const updatedProfile = { ...user, ...updates };
+        sessionStorage.setItem(PROFILE_KEY, JSON.stringify(updatedProfile));
+        setUser(updatedProfile);
+      }
+      return true;
+    }
+    return false;
+  };
+
+  const deleteUser = (userId) => {
+    let users = getRegisteredUsers().filter(u => u.id !== userId);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+    if (user?.id === userId) {
+      logout();
+    }
+  };
+
   const updateProfile = (updates) => {
     if (!user) return { success: false, error: 'Not authenticated' };
 
@@ -293,7 +319,10 @@ export function AuthProvider({ children }) {
     logout,
     updateProfile,
     changePassword,
-    getRegisteredUsers
+    getRegisteredUsers,
+    // admin helpers
+    updateUser,
+    deleteUser
   };
 
   return (
