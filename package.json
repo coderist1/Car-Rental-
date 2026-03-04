@@ -2,6 +2,10 @@
   "name": "car-rental-web",
   "version": "1.0.0",
   "description": "Car Rental Web Application with React",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/coderist1/Car-Rental-"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",

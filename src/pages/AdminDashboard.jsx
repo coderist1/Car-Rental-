@@ -62,21 +62,21 @@ function AdminDashboard() {
         <div className="admin-table">
           <div className="table-header">
             <div className="th">Name</div>
+            <div className="th">Status</div>
             <div className="th">Email</div>
             <div className="th">Role</div>
-            <div className="th">Status</div>
           </div>
           {users.map(u => (
             <div key={u.id} className="table-row">
               <div className="td">{u.fullName || `${u.firstName} ${u.lastName}`}</div>
-              <div className="td">{u.email}</div>
-              <div className="td">
-                <span className={`role-badge ${u.role}`}>{u.role}</span>
-              </div>
               <div className="td">
                 <span className={`status-badge ${u.active !== false ? 'active' : 'inactive'}`}>
                   {u.active !== false ? 'Active' : 'Inactive'}
                 </span>
+              </div>
+              <div className="td">{u.email}</div>
+              <div className="td">
+                <span className={`role-badge ${u.role}`}>{u.role}</span>
               </div>
             </div>
           ))}
