@@ -88,7 +88,7 @@ function ProfileMenu() {
             {!isAdmin && (
               <>
                 <button className="dropdown-item" onClick={() => handleAction('profile')}>
-                  <span className="item-icon">👤</span>
+                  <span className="item-icon"></span>
                   <span>Edit Profile</span>
                 </button>
                 <button className="dropdown-item" onClick={() => handleAction('change-password')}>

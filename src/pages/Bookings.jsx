@@ -159,7 +159,7 @@ function Bookings() {
         </div>
 
         <div className="search-box">
-          <span className="search-icon">🔍</span>
+          <span className="search-icon"></span>
           <input
             type="text"
             placeholder="Search bookings..."
@@ -180,7 +180,7 @@ function Bookings() {
                 ? "You haven't made any rental requests yet."
                 : `No ${activeTab} bookings at the moment.`}
             </p>
-            <button className="btn btn-primary" onClick={() => navigate('/renter-dashboard')}>
+            <button className="btn btn-primary" onClick={() => navigate('/renter')}>
               Browse Vehicles
             </button>
           </div>

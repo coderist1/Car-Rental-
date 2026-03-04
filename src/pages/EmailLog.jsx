@@ -63,12 +63,12 @@ function EmailLog() {
 
   const getTypeIcon = (type) => {
     const icons = {
-      registration: '👤',
-      rental: '🚗',
-      notification: '🔔',
+      registration: '',
+      rental: '',
+      notification: '',
       password: '🔐'
     };
-    return icons[type] || '📧';
+    return icons[type] || '';
   };
 
   const getTypeBadge = (type) => {
@@ -107,7 +107,7 @@ function EmailLog() {
           ← Back
         </button>
         <div className="header-info">
-          <h1 className="page-title">📧 Email Log</h1>
+          <h1 className="page-title">Email Log</h1>
           <p className="page-subtitle">View all system emails sent</p>
         </div>
       </header>
@@ -115,28 +115,24 @@ function EmailLog() {
       {/* Stats Cards */}
       <div className="stats-row">
         <div className="stat-card total">
-          <div className="stat-icon">📧</div>
           <div className="stat-info">
             <span className="stat-value">{stats.total}</span>
             <span className="stat-label">Total Emails</span>
           </div>
         </div>
         <div className="stat-card registration">
-          <div className="stat-icon">👤</div>
           <div className="stat-info">
             <span className="stat-value">{stats.registration}</span>
             <span className="stat-label">Registration</span>
           </div>
         </div>
         <div className="stat-card rental">
-          <div className="stat-icon">🚗</div>
           <div className="stat-info">
             <span className="stat-value">{stats.rental}</span>
             <span className="stat-label">Rental</span>
           </div>
         </div>
         <div className="stat-card notification">
-          <div className="stat-icon">🔔</div>
           <div className="stat-info">
             <span className="stat-value">{stats.notification}</span>
             <span className="stat-label">Notifications</span>
@@ -175,7 +171,7 @@ function EmailLog() {
 
         <div className="filter-controls">
           <div className="search-box">
-            <span className="search-icon">🔍</span>
+            <span className="search-icon"></span>
             <input
               type="text"
               placeholder="Search emails..."

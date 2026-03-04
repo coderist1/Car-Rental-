@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { useAuth, useVehicles } from '../hooks';
+import { useVehicles } from '../hooks';
+import { useAuth } from '../context/AuthContext';
 import { ProfileMenu, VehicleCard, Modal } from '../components';
 import '../styles/pages/RenterDashboard.css';
 
@@ -161,7 +162,7 @@ function RenterDashboard() {
       <section className="search-section">
         <div className="search-container">
           <div className="search-input-wrapper">
-            <span className="search-icon">🔍</span>
+            <span className="search-icon"></span>
             <input
               type="text"
               className="search-input"
@@ -350,7 +351,7 @@ function RenterDashboard() {
                 )}
                 {selectedVehicle.seats && (
                   <div className="spec-item">
-                    <span className="spec-icon">👤</span>
+                    <span className="spec-icon"></span>
                     <span>{selectedVehicle.seats} seats</span>
                   </div>
                 )}

@@ -120,7 +120,7 @@ function VehicleCard({
           )}
           {seats && (
             <span className="detail-item">
-              <span className="detail-icon">👤</span>
+              <span className="detail-icon"></span>
               {seats} seats
             </span>
           )}

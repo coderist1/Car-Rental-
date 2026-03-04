@@ -2,34 +2,129 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
+// Shared across tabs (user registry)
 const STORAGE_KEY = 'carRentalUsers';
+// Per-tab session (sessionStorage) so each tab keeps its own login
 const PROFILE_KEY = 'userProfile';
 const AUTH_TOKEN_KEY = 'authToken';
+// Legacy keys to migrate from
+const LEGACY_USER_KEY = 'user';
+
+const DEMO_ACCOUNTS = [
+  {
+    email: 'owner@test.com',
+    password: 'password',
+    userData: {
+      id: 'demo-owner-1',
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'owner@test.com',
+      role: 'owner',
+      fullName: 'John Doe'
+    }
+  },
+  {
+    email: 'renter@test.com',
+    password: 'password',
+    userData: {
+      id: 'demo-renter-1',
+      firstName: 'Jane',
+      lastName: 'Smith',
+      email: 'renter@test.com',
+      role: 'renter',
+      fullName: 'Jane Smith'
+    }
+  },
+  {
+    email: 'admin@test.com',
+    password: 'admin123',
+    userData: {
+      id: 'demo-admin-1',
+      firstName: 'Admin',
+      lastName: 'User',
+      email: 'admin@test.com',
+      role: 'admin',
+      fullName: 'Admin User'
+    }
+  }
+];
+
+// Parse JSON safely from a specific storage
+const safeParseFrom = (storage, key) => {
+  try {
+    const raw = storage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+const toProfile = (userData) => ({
+  id: userData.id,
+  firstName: userData.firstName,
+  lastName: userData.lastName,
+  middleName: userData.middleName,
+  fullName: userData.fullName || `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
+  email: userData.email,
+  role: userData.role,
+  sex: userData.sex,
+  dateOfBirth: userData.dateOfBirth
+});
+
+// Synchronously read auth state from sessionStorage (per-tab) so the very
+// first render already knows the correct user & role.
+// Falls back to localStorage for legacy/migration, then cleans up.
+function getInitialAuth() {
+  try {
+    // 1. Try sessionStorage first (per-tab, the correct source)
+    const sessionProfile = safeParseFrom(sessionStorage, PROFILE_KEY);
+    const sessionToken = sessionStorage.getItem(AUTH_TOKEN_KEY);
+
+    if (sessionProfile?.role && sessionProfile?.email && sessionToken) {
+      return { user: sessionProfile, isAuthenticated: true };
+    }
+
+    // 2. Migrate from localStorage / legacy key (one-time on first load after update)
+    const lsProfile = safeParseFrom(localStorage, PROFILE_KEY);
+    const lsToken = localStorage.getItem(AUTH_TOKEN_KEY);
+    const legacyUser = safeParseFrom(localStorage, LEGACY_USER_KEY);
+
+    const seed = lsProfile || legacyUser;
+    if (seed?.role && seed?.email) {
+      const normalized = toProfile(seed);
+      const token = String(normalized.id ?? lsToken);
+
+      // Move into sessionStorage for this tab
+      sessionStorage.setItem(PROFILE_KEY, JSON.stringify(normalized));
+      sessionStorage.setItem(AUTH_TOKEN_KEY, token);
+
+      // Clean up localStorage session keys (registry stays)
+      localStorage.removeItem(PROFILE_KEY);
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      localStorage.removeItem(LEGACY_USER_KEY);
+
+      return { user: normalized, isAuthenticated: true };
+    }
+
+    // 3. Nothing found – clean slate
+    localStorage.removeItem(PROFILE_KEY);
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(LEGACY_USER_KEY);
+  } catch (e) {
+    console.error('Error reading auth state:', e);
+  }
+  return { user: null, isAuthenticated: false };
+}
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const initialAuth = getInitialAuth();
+  const [user, setUser] = useState(initialAuth.user);
+  const [isAuthenticated, setIsAuthenticated] = useState(initialAuth.isAuthenticated);
+  const [loading] = useState(false);
 
-  // Initialize auth state from localStorage
+  // Ensure default admin exists on mount
   useEffect(() => {
-    const storedProfile = localStorage.getItem(PROFILE_KEY);
-    const authToken = localStorage.getItem(AUTH_TOKEN_KEY);
-    
-    if (storedProfile && authToken) {
-      try {
-        const profile = JSON.parse(storedProfile);
-        setUser(profile);
-        setIsAuthenticated(true);
-      } catch (e) {
-        console.error('Error parsing stored profile:', e);
-        logout();
-      }
-    }
-    
-    // Ensure default admin exists
     ensureDefaultAdmin();
-    setLoading(false);
   }, []);
 
   const ensureDefaultAdmin = () => {
@@ -66,24 +161,20 @@ export function AuthProvider({ children }) {
   };
 
   const saveUserProfile = (userData) => {
-    const profile = {
-      id: userData.id,
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-      middleName: userData.middleName,
-      fullName: userData.fullName || `${userData.firstName} ${userData.lastName}`.trim(),
-      email: userData.email,
-      role: userData.role,
-      sex: userData.sex,
-      dateOfBirth: userData.dateOfBirth
-    };
-    
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
-    localStorage.setItem(AUTH_TOKEN_KEY, String(userData.id));
+    const profile = toProfile(userData);
+
+    // Store session in sessionStorage (per-tab)
+    sessionStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+    sessionStorage.setItem(AUTH_TOKEN_KEY, String(userData.id));
+
+    // Clean up any leftover localStorage session keys
+    localStorage.removeItem(PROFILE_KEY);
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(LEGACY_USER_KEY);
+
     setUser(profile);
     setIsAuthenticated(true);
-    
-    window.dispatchEvent(new CustomEvent('profileUpdated', { detail: profile }));
+
     return profile;
   };
 
@@ -97,51 +188,17 @@ export function AuthProvider({ children }) {
       return { success: true, user: saveUserProfile(matchedUser) };
     }
 
-    // Demo accounts
-    const demoAccounts = [
-      {
-        email: 'owner@test.com',
-        password: 'password',
-        userData: {
-          id: 'demo-owner-1',
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'owner@test.com',
-          role: 'owner',
-          fullName: 'John Doe'
-        }
-      },
-      {
-        email: 'renter@test.com',
-        password: 'password',
-        userData: {
-          id: 'demo-renter-1',
-          firstName: 'Jane',
-          lastName: 'Smith',
-          email: 'renter@test.com',
-          role: 'renter',
-          fullName: 'Jane Smith'
-        }
-      },
-      {
-        email: 'admin@test.com',
-        password: 'admin123',
-        userData: {
-          id: 'demo-admin-1',
-          firstName: 'Admin',
-          lastName: 'User',
-          email: 'admin@test.com',
-          role: 'admin',
-          fullName: 'Admin User'
-        }
-      }
-    ];
-
-    const demoAccount = demoAccounts.find(
+    const demoAccount = DEMO_ACCOUNTS.find(
       acc => acc.email.toLowerCase() === email.toLowerCase() && acc.password === password
     );
 
     if (demoAccount) {
+      // Persist demo account into registered users so it survives reloads
+      const users = getRegisteredUsers();
+      if (!users.some(u => u.id === demoAccount.userData.id)) {
+        users.push({ ...demoAccount.userData, password: demoAccount.password, active: true, createdAt: new Date().toISOString() });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+      }
       return { success: true, user: saveUserProfile(demoAccount.userData) };
     }
 
@@ -179,8 +236,11 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
+    sessionStorage.removeItem(PROFILE_KEY);
+    sessionStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(PROFILE_KEY);
     localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(LEGACY_USER_KEY);
     setUser(null);
     setIsAuthenticated(false);
   };
@@ -197,10 +257,9 @@ export function AuthProvider({ children }) {
     }
 
     const updatedProfile = { ...user, ...updates };
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(updatedProfile));
+    sessionStorage.setItem(PROFILE_KEY, JSON.stringify(updatedProfile));
     setUser(updatedProfile);
     
-    window.dispatchEvent(new CustomEvent('profileUpdated', { detail: updatedProfile }));
     return { success: true, user: updatedProfile };
   };
 
@@ -239,7 +298,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 }

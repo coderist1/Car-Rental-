@@ -128,7 +128,7 @@ function Profile() {
 
         <div className="form-panel">
           <div className="form-panel-header">
-            <div className="form-panel-header-icon">👤</div>
+            <div className="form-panel-header-icon"></div>
             <span className="form-panel-title">Personal Information</span>
           </div>
 
