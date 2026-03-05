@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /* ── Page wrapper ── */
 .profile-page {
   min-height: 100vh;
@@ -5,6 +6,31 @@
   padding: 24px 20px 48px;
 }
 
+=======
+/* ── Sidebar Success Message ── */
+.sidebar-success-msg {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 20px;
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  animation: slideUpFade 0.3s ease-out;
+}
+
+/* ── Page wrapper ── */
+.profile-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
+  padding: 24px 20px 48px;
+}
+
+>>>>>>> origin/angela_app
 /* ── Top bar ── */
 .profile-topbar {
   max-width: 960px;
@@ -135,6 +161,30 @@
   margin: 0;
 }
 
+<<<<<<< HEAD
+=======
+/* Sidebar Remove Photo Button */
+.sidebar-remove-photo-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.sidebar-remove-photo-btn:hover {
+  color: #ff8a8a;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+>>>>>>> origin/angela_app
 /* Sidebar info */
 .sidebar-info {
   padding: 18px 20px;
@@ -337,6 +387,7 @@
   gap: 10px;
 }
 
+<<<<<<< HEAD
 /* ── Success toast ── */
 .success-toast {
   display: flex;
@@ -391,6 +442,30 @@
   transform: translateY(-1px);
 }
 
+=======
+/* ── Edit button in panel header ── */
+.prof-edit-btn {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: #3F9B84;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.prof-edit-btn:hover {
+  background: #2d7a67;
+  transform: translateY(-1px);
+}
+
+>>>>>>> origin/angela_app
 /* ── Read-only view ── */
 .profile-view {
   padding: 24px;
@@ -437,4 +512,114 @@
   font-style: italic;
   color: #cbd5e1;
   font-weight: 400;
+<<<<<<< HEAD
+=======
+}
+
+/* ── Photo Confirmation ── */
+.photo-confirm-wrapper {
+  margin-top: 12px;
+  width: 100%;
+}
+
+.photo-confirm-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  animation: slideUpFade 0.3s ease-out;
+}
+
+.photo-btn {
+  padding: 7px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.photo-btn.save {
+  background: #3F9B84;
+  color: white;
+  box-shadow: 0 2px 6px rgba(63, 155, 132, 0.3);
+}
+
+.photo-btn.cancel {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.photo-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+
+/* ── "Are you sure?" Dialog ── */
+.photo-confirmation-dialog {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px dashed rgba(255, 255, 255, 0.3);
+  padding: 12px;
+  border-radius: 12px;
+  text-align: center;
+  animation: slideUpFade 0.2s ease-out;
+}
+
+.photo-confirm-text {
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.photo-confirm-btns {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.photo-confirm-yes, 
+.photo-confirm-no {
+  padding: 5px 16px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+
+.photo-confirm-yes {
+  background: white;
+  color: #1a2c5e;
+  border: none;
+}
+
+.photo-confirm-no {
+  background: transparent;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.photo-confirm-yes:hover {
+  background: #f8fafc;
+  transform: scale(1.05);
+}
+
+.photo-confirm-no:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ── Animations ── */
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+>>>>>>> origin/angela_app
 }
