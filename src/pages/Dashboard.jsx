@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useAuth, useVehicles } from '../hooks';
 import { ProfileMenu, VehicleCard, Modal, ConfirmModal } from '../components';
 import { useLogReport } from '../context/LogReportContext';
@@ -60,6 +60,31 @@ function Dashboard() {
     seats: 5, transmission: '', type: '', fuel: '',
     description: '', image: '',
   });
+
+  /* Confirmation modals */
+  const [confirmAdd,         setConfirmAdd]         = useState(false);
+  const [confirmSaveEdit,    setConfirmSaveEdit]     = useState(false);
+  const [confirmRemovePhoto, setConfirmRemovePhoto]  = useState(false);
+
+  /* Photo upload */
+  const fileInputRef = useRef(null);
+
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setFormData(p => ({ ...p, image: ev.target.result }));
+    reader.readAsDataURL(file);
+  };
+
+  const handlePhotoDrop = (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setFormData(p => ({ ...p, image: ev.target.result }));
+    reader.readAsDataURL(file);
+  };
 
   const userName = user?.fullName || user?.firstName || 'Owner';
 
@@ -138,15 +163,23 @@ function Dashboard() {
     description: '', image: '',
   });
 
+  /* Add: form submits → show confirm first */
   const handleAddVehicle = (e) => {
     e.preventDefault();
+    setConfirmAdd(true);
+  };
+  const doAddVehicle = () => {
     addVehicle(formData);
     resetForm();
     setIsAddModalOpen(false);
   };
 
+  /* Edit: form submits → show confirm first */
   const handleEditVehicle = (e) => {
     e.preventDefault();
+    setConfirmSaveEdit(true);
+  };
+  const doEditVehicle = () => {
     if (editingVehicle) {
       updateVehicle(editingVehicle.id, formData);
       setIsEditModalOpen(false);
@@ -189,91 +222,161 @@ function Dashboard() {
 
   const renderVehicleForm = (onSubmit, isEdit = false) => (
     <form onSubmit={onSubmit} className="vehicle-form">
-      <div className="form-row">
-        <div className="form-group">
-          <label className="form-label">Vehicle Name <span className="required">*</span></label>
-          <input type="text" name="name" className="form-input"
-            placeholder="e.g. Civic, Vios, Fortuner"
-            value={formData.name} onChange={handleFormChange} required />
+
+      {/* ── Photo upload ── */}
+      <div className="vf-section">
+        <div className="vf-section-header">
+          <span className="vf-section-icon">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path strokeLinecap="round" strokeLinejoin="round" d="M21 15l-5-5L5 21"/></svg>
+          </span>
+          Vehicle Photo
         </div>
-        <div className="form-group">
-          <label className="form-label">Brand <span className="required">*</span></label>
-          <input type="text" name="brand" className="form-input"
-            placeholder="e.g. Toyota, Honda, Ford"
-            value={formData.brand} onChange={handleFormChange} required />
+        <div
+          className={`vf-photo-zone${formData.image ? ' vf-photo-zone--filled' : ''}`}
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={e => e.preventDefault()}
+          onDrop={handlePhotoDrop}
+        >
+          {formData.image ? (
+            <>
+              <img src={formData.image} alt="Preview" className="vf-photo-preview" />
+              <div className="vf-photo-overlay">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 11l-5 5v3h3l5-5m0 0l3.536-3.536M9 11l3.536-3.536"/></svg>
+                <span>Change Photo</span>
+              </div>
+            </>
+          ) : (
+            <div className="vf-photo-empty">
+              <div className="vf-upload-icon">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M14 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              </div>
+              <p className="vf-upload-title">Click to upload or drag & drop</p>
+              <p className="vf-upload-hint">JPG, PNG, WEBP · up to 10 MB</p>
+            </div>
+          )}
+        </div>
+        <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoUpload} />
+        {formData.image && (
+          <button type="button" className="vf-remove-photo"
+            onClick={e => { e.stopPropagation(); setConfirmRemovePhoto(true); }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            Remove photo
+          </button>
+        )}
+      </div>
+
+      {/* ── Basic info ── */}
+      <div className="vf-section">
+        <div className="vf-section-header">
+          <span className="vf-section-icon">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M5 17H3a2 2 0 01-2-2V9a2 2 0 012-2h3.5l2-3h7l2 3H21a2 2 0 012 2v6a2 2 0 01-2 2h-2M8 17a2 2 0 104 0 2 2 0 00-4 0zm8 0a2 2 0 104 0 2 2 0 00-4 0z"/></svg>
+          </span>
+          Basic Information
+        </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">Brand <span className="required">*</span></label>
+            <input type="text" name="brand" className="form-input" placeholder="e.g. Toyota, Honda"
+              value={formData.brand} onChange={handleFormChange} required />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Model Name <span className="required">*</span></label>
+            <input type="text" name="name" className="form-input" placeholder="e.g. Civic, Vios, Fortuner"
+              value={formData.name} onChange={handleFormChange} required />
+          </div>
+        </div>
+        <div className="form-row three-cols">
+          <div className="form-group">
+            <label className="form-label">Year <span className="required">*</span></label>
+            <input type="number" name="year" className="form-input" min="1990" max="2030"
+              value={formData.year} onChange={handleFormChange} required />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Seats</label>
+            <input type="number" name="seats" className="form-input" min="2" max="15"
+              value={formData.seats} onChange={handleFormChange} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Status</label>
+            <select name="status" className="form-input" value={formData.status} onChange={handleFormChange}>
+              <option value="available">Available</option>
+              <option value="rented">Rented</option>
+              <option value="maintenance">Maintenance</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      <div className="form-row three-cols">
-        <div className="form-group">
-          <label className="form-label">Year <span className="required">*</span></label>
-          <input type="number" name="year" className="form-input"
-            min="1990" max="2030" value={formData.year} onChange={handleFormChange} required />
+      {/* ── Specs ── */}
+      <div className="vf-section">
+        <div className="vf-section-header">
+          <span className="vf-section-icon">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path strokeLinecap="round" strokeLinejoin="round" d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+          </span>
+          Specifications
         </div>
-        <div className="form-group">
-          <label className="form-label">Price/Day (&#8369;) <span className="required">*</span></label>
-          <input type="number" name="pricePerDay" className="form-input"
-            placeholder="e.g. 2500" value={formData.pricePerDay} onChange={handleFormChange} required />
-        </div>
-        <div className="form-group">
-          <label className="form-label">Status</label>
-          <select name="status" className="form-input" value={formData.status} onChange={handleFormChange}>
-            <option value="available">Available</option>
-            <option value="rented">Rented</option>
-            <option value="maintenance">Maintenance</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="form-row three-cols">
-        <div className="form-group">
-          <label className="form-label">Type</label>
-          <select name="type" className="form-input" value={formData.type} onChange={handleFormChange}>
-            <option value="">Select type</option>
-            {VEHICLE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
-        </div>
-        <div className="form-group">
-          <label className="form-label">Transmission</label>
-          <select name="transmission" className="form-input" value={formData.transmission} onChange={handleFormChange}>
-            <option value="">Select</option>
-            {TRANSMISSIONS.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
-        </div>
-        <div className="form-group">
-          <label className="form-label">Fuel</label>
-          <select name="fuel" className="form-input" value={formData.fuel} onChange={handleFormChange}>
-            <option value="">Select</option>
-            {FUEL_TYPES.map(f => <option key={f} value={f}>{f}</option>)}
-          </select>
+        <div className="form-row three-cols">
+          <div className="form-group">
+            <label className="form-label">Vehicle Type</label>
+            <select name="type" className="form-input" value={formData.type} onChange={handleFormChange}>
+              <option value="">Select type</option>
+              {VEHICLE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Transmission</label>
+            <select name="transmission" className="form-input" value={formData.transmission} onChange={handleFormChange}>
+              <option value="">Select</option>
+              {TRANSMISSIONS.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Fuel Type</label>
+            <select name="fuel" className="form-input" value={formData.fuel} onChange={handleFormChange}>
+              <option value="">Select</option>
+              {FUEL_TYPES.map(f => <option key={f} value={f}>{f}</option>)}
+            </select>
+          </div>
         </div>
       </div>
 
-      <div className="form-row">
-        <div className="form-group">
-          <label className="form-label">Location</label>
-          <select name="location" className="form-input" value={formData.location} onChange={handleFormChange}>
-            <option value="">Select location</option>
-            {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
-          </select>
+      {/* ── Pricing & location ── */}
+      <div className="vf-section">
+        <div className="vf-section-header">
+          <span className="vf-section-icon">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          </span>
+          Pricing & Location
         </div>
-        <div className="form-group">
-          <label className="form-label">Seats</label>
-          <input type="number" name="seats" className="form-input"
-            min="2" max="15" value={formData.seats} onChange={handleFormChange} />
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">Price per Day (&#8369;) <span className="required">*</span></label>
+            <div className="vf-prefix-wrap">
+              <span className="vf-prefix">₱</span>
+              <input type="number" name="pricePerDay" className="form-input vf-prefixed"
+                placeholder="e.g. 2500" value={formData.pricePerDay} onChange={handleFormChange} required />
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Location</label>
+            <select name="location" className="form-input" value={formData.location} onChange={handleFormChange}>
+              <option value="">Select location</option>
+              {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
+            </select>
+          </div>
         </div>
       </div>
 
-      <div className="form-group">
-        <label className="form-label">Image URL</label>
-        <input type="url" name="image" className="form-input"
-          placeholder="https://…" value={formData.image} onChange={handleFormChange} />
-      </div>
-
-      <div className="form-group">
-        <label className="form-label">Description</label>
+      {/* ── Description ── */}
+      <div className="vf-section" style={{ marginBottom: 0 }}>
+        <div className="vf-section-header">
+          <span className="vf-section-icon">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h12M4 18h8"/></svg>
+          </span>
+          Description
+        </div>
         <textarea name="description" className="form-input" rows="3"
-          placeholder="Brief description of the vehicle…"
+          placeholder="Briefly describe the vehicle — condition, features, notes for renters…"
           value={formData.description} onChange={handleFormChange} />
       </div>
 
@@ -281,9 +384,7 @@ function Dashboard() {
         <button type="button" className="btn btn-secondary" onClick={() => {
           isEdit ? setIsEditModalOpen(false) : setIsAddModalOpen(false);
           resetForm();
-        }}>
-          Cancel
-        </button>
+        }}>Cancel</button>
         <button type="submit" className="btn btn-primary">
           {isEdit ? 'Save Changes' : 'Add Vehicle'}
         </button>
@@ -530,8 +631,45 @@ function Dashboard() {
         onConfirm={confirmDelete}
         title="Delete Vehicle"
         message="Are you sure you want to delete this vehicle? This action cannot be undone."
-        confirmText="Delete"
+        confirmText="Yes, Delete"
+        cancelText="No, Cancel"
         variant="danger"
+      />
+
+      {/* ── Confirm: Add vehicle ── */}
+      <ConfirmModal
+        isOpen={confirmAdd}
+        onClose={() => setConfirmAdd(false)}
+        onConfirm={doAddVehicle}
+        title="Add Vehicle"
+        message={`Are you sure you want to list "${formData.brand} ${formData.name}" for rent?`}
+        confirmText="Yes, Add"
+        cancelText="No, Go Back"
+        variant="primary"
+      />
+
+      {/* ── Confirm: Save edits ── */}
+      <ConfirmModal
+        isOpen={confirmSaveEdit}
+        onClose={() => setConfirmSaveEdit(false)}
+        onConfirm={doEditVehicle}
+        title="Save Changes"
+        message={`Are you sure you want to save changes to "${formData.brand} ${formData.name}"?`}
+        confirmText="Yes, Save"
+        cancelText="No, Go Back"
+        variant="primary"
+      />
+
+      {/* ── Confirm: Remove photo ── */}
+      <ConfirmModal
+        isOpen={confirmRemovePhoto}
+        onClose={() => setConfirmRemovePhoto(false)}
+        onConfirm={() => setFormData(p => ({ ...p, image: '' }))}
+        title="Remove Photo"
+        message="Are you sure you want to remove this vehicle photo?"
+        confirmText="Yes, Remove"
+        cancelText="No, Keep"
+        variant="warning"
       />
     </div>
   );
