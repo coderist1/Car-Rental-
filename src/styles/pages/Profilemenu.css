@@ -1,0 +1,247 @@
+/* ─── Trigger button (Navbar Icon) ────────────────────────── */
+.profile-menu-container {
+  position: relative;
+}
+
+.profile-icon-button {
+  background: linear-gradient(135deg, #ff7a59 0%, #ff9a7b 100%);
+  border: none;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 18px;
+  box-shadow: 0 2px 8px rgba(255, 122, 89, 0.3);
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  padding: 0;
+  overflow: hidden; /* Ensures the image stays circular */
+}
+
+/* Specific style when the button contains an image */
+.profile-icon-button.has-img {
+  background: white;
+  border: 2px solid #ff7a59;
+}
+
+.pm-btn-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Prevents stretching */
+  display: block;
+}
+
+.profile-icon-button:hover {
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(255, 122, 89, 0.4);
+}
+
+.profile-icon-button:active {
+  transform: scale(0.95);
+}
+
+/* ─── Dropdown panel ─────────────────────────────────────── */
+.pm-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  min-width: 240px;
+  z-index: 1100;
+  overflow: hidden;
+  animation: pmSlideDown 0.2s ease-out;
+}
+
+@keyframes pmSlideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* ─── Dropdown Header ────────────────────────────────────── */
+.pm-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.pm-avatar-lg {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3F9B84 0%, #2d7a67 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(63, 155, 132, 0.3);
+  overflow: hidden;
+}
+
+/* Specific style when the header avatar contains an image */
+.pm-avatar-lg.has-img {
+  background: white;
+  border: 2px solid #3F9B84;
+}
+
+.pm-header-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pm-header-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pm-name {
+  font-weight: 600;
+  color: #1a2c5e;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+.pm-email {
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0 0 3px;
+}
+
+.pm-role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px 2px 6px;
+  border-radius: 999px;
+  width: fit-content;
+}
+
+.pm-role-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ─── View Profile button ─────────────────────────────────── */
+.pm-profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 16px;
+  background: rgba(63, 155, 132, 0.06);
+  border: none;
+  border-top: 1px solid rgba(63, 155, 132, 0.1);
+  border-bottom: 1px solid rgba(63, 155, 132, 0.1);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #2d7a67;
+  text-align: left;
+  transition: background 0.2s ease;
+}
+
+.pm-profile-btn:hover {
+  background: rgba(63, 155, 132, 0.12);
+}
+
+.pm-profile-btn-arrow {
+  margin-left: auto;
+  opacity: 0.45;
+  display: flex;
+  align-items: center;
+}
+
+/* ─── Divider ─────────────────────────────────────────────── */
+.pm-divider {
+  height: 1px;
+  background: #e2e8f0;
+}
+
+/* ─── Menu items ─────────────────────────────────────────── */
+.pm-items {
+  padding: 6px 0;
+}
+
+.pm-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  text-align: left;
+  transition: background 0.2s ease;
+}
+
+.pm-item:hover {
+  background: #f1f5f9;
+}
+
+.pm-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: #f1f5f9;
+  color: #64748b;
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.pm-item:hover .pm-item-icon {
+  background: #e2e8f0;
+  color: #374151;
+}
+
+/* ─── Logout ─────────────────────────────────────────────── */
+.pm-logout {
+  color: #ef4444;
+  margin-bottom: 4px;
+}
+
+.pm-logout:hover {
+  background: #fef2f2;
+}
+
+.pm-logout .pm-item-icon {
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+.pm-logout:hover .pm-item-icon {
+  background: #fee2e2;
+}
