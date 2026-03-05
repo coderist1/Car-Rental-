@@ -77,9 +77,32 @@ function VehicleCard({
 
   return (
     <div className={`vehicle-card ${mode}`} onClick={handleCardClick}>
-      <div className="vehicle-image-container">
+      <div
+        className="vehicle-image-container"
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: '190px',
+          overflow: 'hidden',
+          background: '#f1f5f9',
+          flexShrink: 0,
+        }}
+      >
         {displayImage ? (
-          <img src={displayImage} alt={name} className="vehicle-image" />
+          <img
+            src={displayImage}
+            alt={name}
+            className="vehicle-image"
+            style={{
+              position: 'absolute',
+              top: 0, left: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center',
+              display: 'block',
+            }}
+          />
         ) : (
           <div className="vehicle-image-placeholder">
             <span>🚗</span>
