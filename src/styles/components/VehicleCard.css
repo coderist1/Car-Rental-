@@ -16,32 +16,40 @@
 .vehicle-card.renter {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 14px;
+  padding: 0;
+  overflow: hidden;
 }
 
 .vehicle-image-container {
   position: relative;
   width: 100%;
-}
-
-.vehicle-image {
-  width: 100%;
-  height: 500px;
-  border-radius: 10px;
+  height: 190px;
+  overflow: hidden;
   background: #f1f5f9;
-  object-fit: cover;
+  flex-shrink: 0;
 }
 
-.vehicle-card.owner .vehicle-image {
-  height: 200px;
+.vehicle-card.owner .vehicle-image-container {
+  height: 185px;
+}
+
+/* CSS fallback — inline styles on the img take precedence anyway */
+.vehicle-image {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  display: block;
   border-radius: 0;
 }
 
 .vehicle-image-placeholder {
+  position: absolute;
+  top: 0; left: 0;
   width: 100%;
-  height: 200px;
-  border-radius: 10px;
+  height: 100%;
   background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
   display: flex;
   align-items: center;
@@ -112,7 +120,7 @@
 }
 
 .vehicle-card.renter .vehicle-info {
-  padding: 6px 0;
+  padding: 14px;
 }
 
 .vehicle-header {
