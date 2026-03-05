@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 /* ── Page wrapper ── */
 .profile-page {
   min-height: 100vh;
@@ -6,31 +5,6 @@
   padding: 24px 20px 48px;
 }
 
-=======
-/* ── Sidebar Success Message ── */
-.sidebar-success-msg {
-  background: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 8px 16px;
-  border-radius: 20px;
-  margin-top: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: center;
-  animation: slideUpFade 0.3s ease-out;
-}
-
-/* ── Page wrapper ── */
-.profile-page {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
-  padding: 24px 20px 48px;
-}
-
->>>>>>> origin/angela_app
 /* ── Top bar ── */
 .profile-topbar {
   max-width: 960px;
@@ -161,9 +135,7 @@
   margin: 0;
 }
 
-<<<<<<< HEAD
-=======
-/* Sidebar Remove Photo Button */
+/* ── Sidebar Remove Photo Button (added by Angela) ── */
 .sidebar-remove-photo-btn {
   background: none;
   border: none;
@@ -184,7 +156,22 @@
   background: rgba(255, 255, 255, 0.1);
 }
 
->>>>>>> origin/angela_app
+/* ── Sidebar Success Message (added by Angela) ── */
+.sidebar-success-msg {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 20px;
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  animation: slideUpFade 0.3s ease-out;
+}
+
 /* Sidebar info */
 .sidebar-info {
   padding: 18px 20px;
@@ -290,6 +277,28 @@
   color: #1a2c5e;
 }
 
+/* ── Edit button in panel header ── */
+.prof-edit-btn {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: #3F9B84;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.prof-edit-btn:hover {
+  background: #2d7a67;
+  transform: translateY(-1px);
+}
+
 /* ── Form styles ── */
 .profile-form {
   padding: 24px;
@@ -387,7 +396,6 @@
   gap: 10px;
 }
 
-<<<<<<< HEAD
 /* ── Success toast ── */
 .success-toast {
   display: flex;
@@ -403,69 +411,6 @@
   animation: fadeIn .3s ease;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0);   }
-}
-
-/* ── Edit button in panel header ── */
-.form-panel-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 18px 24px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-bottom: 1px solid #e2e8f0;
-  font-size: 14px;
-  font-weight: 600;
-  color: #1a2c5e;
-}
-
-.prof-edit-btn {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  background: #3F9B84;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s ease, transform 0.15s ease;
-}
-
-.prof-edit-btn:hover {
-  background: #2d7a67;
-  transform: translateY(-1px);
-}
-
-=======
-/* ── Edit button in panel header ── */
-.prof-edit-btn {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  background: #3F9B84;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s ease, transform 0.15s ease;
-}
-
-.prof-edit-btn:hover {
-  background: #2d7a67;
-  transform: translateY(-1px);
-}
-
->>>>>>> origin/angela_app
 /* ── Read-only view ── */
 .profile-view {
   padding: 24px;
@@ -514,7 +459,7 @@
   font-weight: 400;
 }
 
-/* ── Photo Confirmation ── */
+/* ── Photo Confirmation Dialog (added by Angela) ── */
 .photo-confirm-wrapper {
   margin-top: 12px;
   width: 100%;
@@ -555,7 +500,6 @@
   filter: brightness(1.1);
 }
 
-/* ── "Are you sure?" Dialog ── */
 .photo-confirmation-dialog {
   background: rgba(255, 255, 255, 0.1);
   border: 1px dashed rgba(255, 255, 255, 0.3);
@@ -578,7 +522,7 @@
   justify-content: center;
 }
 
-.photo-confirm-yes, 
+.photo-confirm-yes,
 .photo-confirm-no {
   padding: 5px 16px;
   border-radius: 6px;
@@ -613,10 +557,10 @@
 /* ── Animations ── */
 @keyframes slideUpFade {
   from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0);   }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0);   }
 }
