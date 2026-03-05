@@ -1,134 +1,188 @@
-/* Renter Dashboard Styles */
+/* ═══════════════════════════════════════════════════════════════
+   RENTER DASHBOARD  ·  Enhanced Design
+   Font: Plus Jakarta Sans  ·  Palette: navy #1a2c5e / teal #3F9B84
+═══════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+/* ══════════════════════════════════════
+   BASE
+══════════════════════════════════════ */
 .renter-dashboard {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
-  padding: 20px;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  background: #edf1f7;
+  background-image:
+    radial-gradient(ellipse 80% 38% at 65% -8%, rgba(63,155,132,.13) 0%, transparent 55%),
+    radial-gradient(ellipse 45% 28% at 0% 85%, rgba(26,44,94,.07) 0%, transparent 50%);
+  padding: 0 0 60px;
 }
 
+/* ══════════════════════════════════════
+   HEADER
+   Matches owner .dashboard-header + .header-content exactly.
+   The renter JSX has no inner wrapper div, so we replicate the
+   1200px centred band using calc() padding on the header itself.
+══════════════════════════════════════ */
 .renter-header {
-  max-width: 1200px;
-  margin: 0 auto 24px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 1px 0 #f3f4f6, 0 2px 10px rgba(0,0,0,.05);
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  /* Flex row — same as owner's .header-content */
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 4px;
+  height: 68px;
+  box-sizing: border-box;
+  /* Mirrors owner: 28px gutters capped at the 1200px content band */
+  padding-left:  max(28px, calc((100% - 1200px) / 2 + 28px));
+  padding-right: max(28px, calc((100% - 1200px) / 2 + 28px));
+}
+
+.header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
 .greeting {
-  font-size: 28px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 800;
   color: #1a2c5e;
-  margin-bottom: 4px;
+  margin: 0 0 2px;
+  letter-spacing: -.4px;
+  line-height: 1.2;
 }
 
 .header-subtitle {
-  font-size: 14px;
-  color: #64748b;
+  font-size: 12px;
+  font-weight: 500;
+  color: #9ca3af;
+  margin: 0;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
-/* Search Section */
+/* ══════════════════════════════════════
+   SEARCH SECTION
+══════════════════════════════════════ */
 .search-section {
   max-width: 1200px;
-  margin: 0 auto 24px;
+  margin: 28px auto 20px;
+  padding: 0 28px;
 }
 
 .search-container {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 8px 8px 8px 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 14px rgba(0,0,0,.05);
+  transition: border-color .18s, box-shadow .18s;
+}
+
+.search-container:focus-within {
+  border-color: #3F9B84;
+  box-shadow: 0 0 0 3px rgba(63,155,132,.14), 0 4px 14px rgba(0,0,0,.05);
 }
 
 .search-input-wrapper {
   flex: 1;
   position: relative;
+  display: flex;
+  align-items: center;
+  padding-left: 14px;
+  min-width: 0;
 }
 
 .search-icon {
   position: absolute;
-  left: 16px;
+  left: 14px;
   top: 50%;
   transform: translateY(-50%);
+  color: #9ca3af;
+  display: flex;
+  pointer-events: none;
   font-size: 16px;
 }
 
 .search-input {
   width: 100%;
-  padding: 14px 20px 14px 46px;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  font-size: 15px;
-  background: white;
-  transition: all 0.3s ease;
+  padding: 8px 8px 8px 30px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-family: inherit;
+  color: #111827;
+  outline: none;
+  box-shadow: none;
+  transition: none;
 }
 
-.search-input:focus {
-  outline: none;
-  border-color: #3F9B84;
-  box-shadow: 0 0 0 3px rgba(63, 155, 132, 0.1);
-}
+.search-input::placeholder { color: #9ca3af; }
+.search-input:focus { outline: none; border-color: transparent; box-shadow: none; }
 
 .filter-button {
-  background: white;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 12px 16px;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 9px 14px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
-  transition: all 0.3s ease;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #374151;
+  transition: all .15s ease;
   position: relative;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .filter-button:hover {
   border-color: #3F9B84;
+  color: #3F9B84;
+  background: #ecfdf5;
 }
 
-.filter-icon {
-  font-size: 18px;
-}
+.filter-icon { font-size: 18px; display: flex; }
 
 .filter-badge {
   position: absolute;
-  top: -6px;
-  right: -6px;
+  top: -7px;
+  right: -7px;
   background: #3F9B84;
-  color: white;
-  font-size: 11px;
-  font-weight: 600;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
   width: 20px;
   height: 20px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 2px solid #fff;
 }
 
-/* Stats Section */
-.stats-section {
-  max-width: 1200px;
-  margin: 0 auto 24px;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-}
-
-@media (max-width: 768px) {
-  .stats-section {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* Vehicles Section */
+/* ══════════════════════════════════════
+   VEHICLES SECTION + GRID
+══════════════════════════════════════ */
 .vehicles-section {
   max-width: 1200px;
   margin: 0 auto;
+  padding: 0 28px;
 }
 
 .vehicles-grid {
@@ -137,7 +191,37 @@
   gap: 20px;
 }
 
-/* Filter Modal Content */
+/* ══════════════════════════════════════
+   EMPTY STATE
+══════════════════════════════════════ */
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 80px 24px;
+  background: #fff;
+  border-radius: 16px;
+  border: 1.5px dashed #d1d5db;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+}
+
+.empty-state h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #374151;
+  margin: 0 0 8px;
+}
+
+.empty-state p {
+  font-size: 13px;
+  color: #9ca3af;
+  line-height: 1.65;
+  margin: 0 auto;
+  max-width: 300px;
+}
+
+/* ══════════════════════════════════════
+   FILTER MODAL
+══════════════════════════════════════ */
 .filter-content {
   display: flex;
   flex-direction: column;
@@ -145,76 +229,65 @@
 }
 
 .filter-group {
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #f3f4f6;
   padding-bottom: 20px;
 }
 
-.filter-group:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
+.filter-group:last-child { border-bottom: none; padding-bottom: 0; }
 
 .filter-label {
   display: block;
-  font-size: 14px;
-  font-weight: 600;
-  color: #374151;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: #9ca3af;
   margin-bottom: 12px;
 }
 
-.filter-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
+.filter-options { display: flex; flex-wrap: wrap; gap: 8px; }
 
 .filter-option {
-  padding: 8px 16px;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 8px;
-  background: white;
+  padding: 8px 18px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 999px;
+  background: #fff;
   cursor: pointer;
   font-size: 13px;
-  color: #475569;
-  transition: all 0.2s ease;
+  font-weight: 500;
+  font-family: inherit;
+  color: #6b7280;
+  transition: all .15s ease;
 }
 
-.filter-option:hover {
-  border-color: #3F9B84;
-}
+.filter-option:hover { border-color: #3F9B84; color: #3F9B84; }
 
 .filter-option.active {
   border-color: #3F9B84;
-  background: linear-gradient(135deg, rgba(63, 155, 132, 0.1) 0%, rgba(63, 155, 132, 0.15) 100%);
-  color: #3F9B84;
-  font-weight: 500;
+  background: #ecfdf5;
+  color: #2e7d67;
+  font-weight: 700;
 }
 
-.price-inputs {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+.price-inputs { display: flex; align-items: center; gap: 12px; }
 
 .price-input {
   flex: 1;
   padding: 10px 14px;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid #e5e7eb;
   border-radius: 8px;
   font-size: 14px;
-}
-
-.price-input:focus {
+  font-family: inherit;
   outline: none;
-  border-color: #3F9B84;
+  transition: border-color .15s;
 }
 
-.price-separator {
-  color: #94a3b8;
-  font-size: 13px;
-}
+.price-input:focus { border-color: #3F9B84; }
+.price-separator { color: #9ca3af; font-size: 13px; }
 
-/* Vehicle Detail Modal */
+/* ══════════════════════════════════════
+   VEHICLE DETAIL MODAL
+══════════════════════════════════════ */
 .vehicle-detail {
   display: flex;
   flex-direction: column;
@@ -224,16 +297,12 @@
 .detail-image {
   width: 100%;
   height: 250px;
-  border-radius: 12px;
+  border-radius: 14px;
   overflow: hidden;
-  background: #f1f5f9;
+  background: #f3f4f6;
 }
 
-.detail-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
+.detail-image img { width: 100%; height: 100%; object-fit: cover; }
 
 .image-placeholder {
   width: 100%;
@@ -244,111 +313,123 @@
   font-size: 64px;
 }
 
-.detail-info {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
+.detail-info { display: flex; flex-direction: column; gap: 16px; }
 
 .detail-price {
   display: flex;
   align-items: baseline;
   gap: 4px;
+  background: #ecfdf5;
+  border: 1px solid rgba(63,155,132,.2);
+  border-radius: 12px;
+  padding: 14px 18px;
 }
 
 .detail-price .price-amount {
   font-size: 28px;
-  font-weight: 700;
-  color: #3F9B84;
+  font-weight: 800;
+  color: #2e7d67;
+  letter-spacing: -.4px;
 }
 
 .detail-price .price-period {
   font-size: 14px;
-  color: #94a3b8;
+  color: #3F9B84;
+  font-weight: 500;
 }
 
-.detail-specs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
+.detail-specs { display: flex; flex-wrap: wrap; gap: 8px; }
 
 .spec-item {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 14px;
-  background: #f8fafc;
-  border-radius: 8px;
+  padding: 7px 14px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
   font-size: 13px;
-  color: #475569;
+  font-weight: 500;
+  color: #374151;
 }
 
-.spec-icon {
-  font-size: 14px;
-}
+.spec-icon { font-size: 14px; }
 
 .detail-location {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: #64748b;
-}
-
-.location-icon {
-  font-size: 16px;
-}
-
-.detail-owner {
-  font-size: 14px;
-  color: #64748b;
-  padding: 12px 16px;
-  background: #f8fafc;
+  color: #6b7280;
+  padding: 10px 14px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
 }
 
-.detail-description {
+.location-icon { font-size: 16px; }
+
+.detail-owner {
   font-size: 14px;
-  color: #475569;
-  line-height: 1.6;
+  color: #6b7280;
+  padding: 12px 16px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
 }
 
+.detail-description { font-size: 14px; color: #475569; line-height: 1.65; }
+
 .detail-features h4 {
-  font-size: 14px;
-  font-weight: 600;
-  color: #374151;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: #9ca3af;
   margin-bottom: 10px;
 }
 
-.features-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
+.features-list { display: flex; flex-wrap: wrap; gap: 8px; }
 
 .feature-tag {
-  padding: 6px 12px;
-  background: #d1fae5;
-  color: #059669;
-  border-radius: 6px;
+  padding: 5px 12px;
+  background: #ecfdf5;
+  color: #2e7d67;
+  border: 1px solid rgba(63,155,132,.25);
+  border-radius: 999px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
 }
 
-/* Rental History */
+/* ══════════════════════════════════════
+   RENTAL HISTORY
+══════════════════════════════════════ */
 .rental-history-list {
-  max-height: 400px;
+  max-height: 500px;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 2px;
 }
+
+.rental-history-list::-webkit-scrollbar { width: 4px; }
+.rental-history-list::-webkit-scrollbar-track { background: #f3f4f6; border-radius: 4px; }
+.rental-history-list::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
 
 .rental-item {
-  padding: 16px;
-  border-bottom: 1px solid #e2e8f0;
+  background: #f9fafb;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 11px;
+  padding: 16px 18px;
+  transition: border-color .15s, box-shadow .15s;
 }
 
-.rental-item:last-child {
-  border-bottom: none;
+.rental-item:last-child { border-bottom: none; }
+
+.rental-item:hover {
+  border-color: #3F9B84;
+  box-shadow: 0 2px 14px rgba(63,155,132,.14);
 }
 
 .rental-header {
@@ -359,56 +440,44 @@
 }
 
 .rental-vehicle {
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 15px;
   color: #1a2c5e;
 }
 
 .rental-status {
-  font-size: 12px;
-  padding: 4px 10px;
+  font-size: 11px;
+  padding: 3px 11px;
   border-radius: 20px;
-  font-weight: 500;
+  font-weight: 700;
   text-transform: capitalize;
+  letter-spacing: .04em;
 }
 
-.rental-status.pending {
-  background: #fef3c7;
-  color: #d97706;
-}
-
-.rental-status.active {
-  background: #d1fae5;
-  color: #059669;
-}
-
-.rental-status.returned {
-  background: #e5e7eb;
-  color: #6b7280;
-}
-
-.rental-status.rejected {
-  background: #fee2e2;
-  color: #dc2626;
-}
-
-.rental-status.return_requested {
-  background: #dbeafe;
-  color: #2563eb;
-}
+.rental-status.pending          { background: #fef3c7; color: #d97706; border: 1px solid #fde68a; }
+.rental-status.active           { background: #d1fae5; color: #059669; border: 1px solid #6ee7b7; }
+.rental-status.returned         { background: #e5e7eb; color: #6b7280; border: 1px solid #d1d5db; }
+.rental-status.rejected         { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
+.rental-status.return_requested { background: #dbeafe; color: #2563eb; border: 1px solid #93c5fd; }
 
 .rental-details {
   display: flex;
   justify-content: space-between;
   font-size: 13px;
+  font-weight: 500;
   color: #64748b;
   margin-bottom: 4px;
 }
 
-.rental-dates {
-  font-size: 12px;
-  color: #94a3b8;
-}
+.rental-dates { font-size: 12px; color: #94a3b8; }
 
-.rental-actions {
-  margin-top: 12px;
+.rental-actions { margin-top: 12px; }
+
+/* ══════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════ */
+@media (max-width: 768px) {
+  .renter-header    { padding: 0 16px; height: auto; min-height: 60px; }
+  .search-section   { padding: 0 16px; margin-top: 20px; }
+  .vehicles-section { padding: 0 16px; }
 }
