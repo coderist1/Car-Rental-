@@ -124,51 +124,47 @@ function AdminDashboard() {
   );
   };
 
-  const renderVehiclesPanel = () => (
-    <div className="admin-panel">
-      <h2 className="panel-title">Vehicles</h2>
-      {vehicles.length === 0 ? (
-        <div className="admin-empty">No registered vehicles</div>
-      ) : (
-        <div className="admin-table">
-          <div className="table-header">
-            <div className="th">Vehicle</div>
-            <div className="th">Owner</div>
-            <div className="th">Price/Day</div>
-            <div className="th">Status</div>
-            <div className="th">Actions</div>
-          </div>
-          {vehicles.map(v => (
-            <div key={v.id} className="table-row">
-              <div className="td">{v.brand} {v.name}</div>
-              <div className="td">{v.owner || 'Unknown'}</div>
-              <div className="td">₱{v.pricePerDay?.toLocaleString()}</div>
-              <div className="td">
-                <span className={`status-badge ${v.status}`}>{v.status}</span>
-              </div>
-              <div className="td action-buttons">
-                <button
-                  className="btn btn-danger btn-sm"
-                  onClick={() => {
-                    setConfirmState({
-                      open: true,
-                      variant: 'danger',
-                      message: 'Are you sure you want to delete this vehicle?',
-                      onConfirm: () => {
-                        deleteVehicle(v.id);
-                      }
-                    });
-                  }}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))}
+const renderVehiclesPanel = () => (
+  <div className="admin-panel">
+    <h2 className="panel-title">Vehicles</h2>
+    {vehicles.length === 0 ? (
+      <div className="admin-empty">No registered vehicles</div>
+    ) : (
+      <div className="admin-table no-status">  {/* ← key change */}
+        <div className="table-header">
+          <div className="th">Vehicle</div>
+          <div className="th">Owner</div>
+          <div className="th">Price/Day</div>
+          <div className="th">Actions</div>   {/* ← removed Status column */}
         </div>
-      )}
-    </div>
-  );
+        {vehicles.map(v => (
+          <div key={v.id} className="table-row">
+            <div className="td">{v.brand} {v.name}</div>
+            <div className="td">{v.owner || 'Unknown'}</div>
+            <div className="td">₱{Number(v.pricePerDay || 0).toLocaleString()}</div>
+            <div className="td action-buttons">
+              <button
+                className="btn btn-danger btn-sm"
+                onClick={() => {
+                  setConfirmState({
+                    open: true,
+                    variant: 'danger',
+                    message: 'Are you sure you want to delete this vehicle?',
+                    onConfirm: () => {
+                      deleteVehicle(v.id);
+                    }
+                  });
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+);
 
   const renderRentalsPanel = () => (
     <div className="admin-panel">
@@ -176,12 +172,11 @@ function AdminDashboard() {
       {rentalHistory.length === 0 ? (
         <div className="admin-empty">No rental records</div>
       ) : (
-        <div className="admin-table">
+        <div className="admin-table no-status">
           <div className="table-header">
             <div className="th">Vehicle</div>
             <div className="th">Renter</div>
             <div className="th">Owner</div>
-            <div className="th">Status</div>
             <div className="th">Amount</div>
           </div>
           {rentalHistory.slice().reverse().map(r => (
@@ -189,9 +184,6 @@ function AdminDashboard() {
               <div className="td">{r.vehicleName}</div>
               <div className="td">{r.renterName}</div>
               <div className="td">{r.ownerName}</div>
-              <div className="td">
-                <span className={`status-badge ${r.status}`}>{r.status}</span>
-              </div>
               <div className="td">₱{r.amount}/day</div>
             </div>
           ))}
@@ -318,7 +310,7 @@ function AdminDashboard() {
             {selectedOwner.vehicles.map(v => (
               <div key={v.id} className="owner-vehicle-item">
                 <span>{v.brand} {v.name}</span>
-                <span className={`status-badge ${v.status}`}>{v.status}</span>
+                <span className="status-text">{v.status}</span>
                 <span>₱{v.pricePerDay?.toLocaleString()}/day</span>
               </div>
             ))}
