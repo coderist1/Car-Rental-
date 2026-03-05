@@ -430,6 +430,7 @@ function Dashboard() {
         isOpen={isLogReportOpen}
         onClose={() => setIsLogReportOpen(false)}
         ownerRentals={ownerRentals}
+        ownerName={userName}
       />
 
       <ConfirmModal

@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { useVehicles } from '../hooks';
 import { useAuth } from '../context/AuthContext';
 import { ProfileMenu, VehicleCard, Modal } from '../components';
-import { loadLogReports, addComment } from '../hooks/useLogReport';
+import { loadLogReports, addComment, saveLogReports } from '../hooks/useLogReport';
 import '../styles/pages/RenterDashboard.css';
 import '../styles/pages/LogReport.css';
 
@@ -90,6 +90,65 @@ const ChevronRightIcon = () => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
   </svg>
 );
+
+const CONDITION_COLORS_R = {
+  Excellent: { bg: '#d1fae5', color: '#065f46', border: '#6ee7b7' },
+  Good:      { bg: '#dbeafe', color: '#1e40af', border: '#93c5fd' },
+  Fair:      { bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
+  Poor:      { bg: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
+};
+const FUEL_BAR_R = { 'Full': 100, '3/4': 75, '1/2': 50, '1/4': 25, 'Empty': 0 };
+
+function FuelGaugeR({ level }) {
+  if (!level) return <span style={{ fontSize: 13, color: '#374151', fontWeight: 600 }}>{level || '—'}</span>;
+  const pct = FUEL_BAR_R[level] ?? 0;
+  const color = pct >= 75 ? '#22c55e' : pct >= 50 ? '#84cc16' : pct >= 25 ? '#f59e0b' : '#ef4444';
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+      <div style={{ flex: 1, height: 7, background: '#e5e7eb', borderRadius: 4, overflow: 'hidden' }}>
+        <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 4 }} />
+      </div>
+      <span style={{ fontSize: 12, fontWeight: 700, color, minWidth: 32, textAlign: 'right' }}>{level}</span>
+    </div>
+  );
+}
+
+function ConditionBadgeR({ rating }) {
+  if (!rating) return null;
+  const c = CONDITION_COLORS_R[rating] || { bg: '#f3f4f6', color: '#374151', border: '#d1d5db' };
+  return (
+    <span style={{ display: 'inline-block', fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 999, background: c.bg, color: c.color, border: `1px solid ${c.border}` }}>{rating}</span>
+  );
+}
+
+function TripSummaryRenter({ report }) {
+  if (!report.checkout) return null;
+  const ms = report.startDate && report.endDate ? new Date(report.endDate) - new Date(report.startDate) : 0;
+  const days = ms > 0 ? Math.max(1, Math.round(ms / 86400000)) : null;
+  const ciOdo = parseFloat(report.odometer);
+  const coOdo = parseFloat(report.checkout?.odometer);
+  const kmDriven = !isNaN(ciOdo) && !isNaN(coOdo) && coOdo > ciOdo ? coOdo - ciOdo : null;
+  const ciIssues = report.issues || [];
+  const coIssues = report.checkout?.issues || [];
+  const newDamage = coIssues.filter(i => !ciIssues.includes(i));
+
+  return (
+    <div style={{ background: 'linear-gradient(135deg, #f0fdf4, #ecfdf5)', border: '1px solid rgba(63,155,132,.25)', borderRadius: 12, padding: '14px 18px', marginBottom: 18 }}>
+      <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#6b7280', margin: '0 0 10px' }}>Trip Summary</p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 10 }}>
+        {days && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={{ fontSize: 18, fontWeight: 800, color: '#1a2c5e' }}>{days}</span><span style={{ fontSize: 11, color: '#6b7280' }}>Days</span></div>}
+        {kmDriven && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={{ fontSize: 18, fontWeight: 800, color: '#1a2c5e' }}>{kmDriven.toLocaleString()}</span><span style={{ fontSize: 11, color: '#6b7280' }}>km Driven</span></div>}
+        {newDamage.length > 0 && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={{ fontSize: 18, fontWeight: 800, color: '#ef4444' }}>{newDamage.length}</span><span style={{ fontSize: 11, color: '#6b7280' }}>New Issues</span></div>}
+      </div>
+      {newDamage.length > 0 && (
+        <div style={{ marginTop: 12, padding: '10px 14px', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, fontSize: 13, color: '#991b1b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+          ⚠ New damage was recorded at check-out. Contact the owner if you have concerns.
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 function PhotoGallery({ photos = [], label }) {
   const [lightbox, setLightbox] = useState(null);
@@ -201,17 +260,21 @@ function RenterLogListModal({ isOpen, onClose, reports, onView }) {
 }
 
 function RenterLogViewModal({ isOpen, onClose, report, onCommentAdded, user }) {
-  const [commentText, setCommentText] = useState('');
-  const [submitting,  setSubmitting]  = useState(false);
-  const [localReport, setLocalReport] = useState(report);
+  const [commentText,  setCommentText]  = useState('');
+  const [submitting,   setSubmitting]   = useState(false);
+  const [localReport,  setLocalReport]  = useState(report);
+  const [sigText,      setSigText]      = useState('');
+  const [sigEditing,   setSigEditing]   = useState(false);
+  const [sigSaving,    setSigSaving]    = useState(false);
 
   React.useEffect(() => { setLocalReport(report); }, [report]);
 
   if (!localReport) return null;
 
-  const hasCheckout = !!localReport.checkout;
-  const ciIssues    = localReport.issues || [];
-  const newIssues   = hasCheckout ? (localReport.checkout.issues || []).filter(i => !ciIssues.includes(i)) : [];
+  const hasCheckout   = !!localReport.checkout;
+  const ciIssues      = localReport.issues || [];
+  const newIssues     = hasCheckout ? (localReport.checkout.issues || []).filter(i => !ciIssues.includes(i)) : [];
+  const alreadySigned = !!localReport.renterSignature;
 
   const allLabels = id => {
     const d = DEFAULT_CHECKLIST.find(x => x.id === id);
@@ -224,12 +287,31 @@ function RenterLogViewModal({ isOpen, onClose, report, onCommentAdded, user }) {
     addComment(localReport.id, {
       authorName: user?.fullName || user?.firstName || 'Renter',
       authorId: user?.id,
+      authorRole: 'renter',
       text: commentText.trim(),
     });
     const fresh = loadLogReports().find(r => r.id === localReport.id);
     if (fresh) setLocalReport(fresh);
     setCommentText('');
     setSubmitting(false);
+    onCommentAdded && onCommentAdded();
+  };
+
+  const handleSign = () => {
+    if (!sigText.trim()) return;
+    setSigSaving(true);
+    const all = loadLogReports();
+    const idx = all.findIndex(r => r.id === localReport.id);
+    if (idx !== -1) {
+      all[idx].renterSignature   = sigText.trim();
+      all[idx].renterSignatureAt = new Date().toISOString();
+      saveLogReports(all);
+    }
+    const fresh = loadLogReports().find(r => r.id === localReport.id);
+    if (fresh) setLocalReport(fresh);
+    setSigText('');
+    setSigEditing(false);
+    setSigSaving(false);
     onCommentAdded && onCommentAdded();
   };
 
@@ -249,16 +331,33 @@ function RenterLogViewModal({ isOpen, onClose, report, onCommentAdded, user }) {
         <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}><UserIcon />Renter: <strong>{localReport.renterName || '—'}</strong></span>
       </div>
 
+      {/* Trip summary when complete */}
+      <TripSummaryRenter report={localReport} />
+
       {hasCheckout ? (
         <div className="lr-compare-grid">
           <div className="lr-compare-col">
             <div className="lr-compare-header lr-compare-header--ci"><span>Before Trip</span><small>{fmtDate(localReport.createdAt)}</small></div>
+            {(localReport.odometer || localReport.fuelLevel || localReport.conditionRating) && (
+              <div className="lr-view-section" style={{ padding: '10px 14px' }}>
+                {localReport.odometer && <div style={{ marginBottom: 6 }}><span className="lr-view-label">Odometer </span><span className="lr-view-value">{localReport.odometer} km</span></div>}
+                {localReport.fuelLevel && <div style={{ marginBottom: 6 }}><span className="lr-view-label">Fuel </span><FuelGaugeR level={localReport.fuelLevel} /></div>}
+                {localReport.conditionRating && <div><span className="lr-view-label">Condition </span><ConditionBadgeR rating={localReport.conditionRating} /></div>}
+              </div>
+            )}
             <IssueBlock issues={ciIssues} labelFn={allLabels} newIssues={[]} />
             <NotesBlock notes={localReport.notes} />
             <PhotoGallery photos={localReport.photos} label="Check-in Photos" />
           </div>
           <div className="lr-compare-col">
             <div className="lr-compare-header lr-compare-header--co"><span>After Trip</span><small>{fmtDate(localReport.checkout.createdAt)}</small></div>
+            {(localReport.checkout.odometer || localReport.checkout.fuelLevel || localReport.checkout.conditionRating) && (
+              <div className="lr-view-section" style={{ padding: '10px 14px' }}>
+                {localReport.checkout.odometer && <div style={{ marginBottom: 6 }}><span className="lr-view-label">Odometer </span><span className="lr-view-value">{localReport.checkout.odometer} km</span></div>}
+                {localReport.checkout.fuelLevel && <div style={{ marginBottom: 6 }}><span className="lr-view-label">Fuel </span><FuelGaugeR level={localReport.checkout.fuelLevel} /></div>}
+                {localReport.checkout.conditionRating && <div><span className="lr-view-label">Condition </span><ConditionBadgeR rating={localReport.checkout.conditionRating} /></div>}
+              </div>
+            )}
             <IssueBlock issues={localReport.checkout.issues || []} labelFn={allLabels} newIssues={newIssues} />
             <NotesBlock notes={localReport.checkout.notes} />
             <PhotoGallery photos={localReport.checkout.photos} label="Check-out Photos" />
@@ -269,6 +368,19 @@ function RenterLogViewModal({ isOpen, onClose, report, onCommentAdded, user }) {
           <div className="lr-view-grid">
             <div className="lr-view-field"><span className="lr-view-label">Vehicle</span><span className="lr-view-value">{localReport.vehicleName}</span></div>
             <div className="lr-view-field"><span className="lr-view-label">Date</span><span className="lr-view-value">{fmtDate(localReport.createdAt)}</span></div>
+            {localReport.odometer && <div className="lr-view-field"><span className="lr-view-label">Odometer</span><span className="lr-view-value">{localReport.odometer} km</span></div>}
+            {localReport.fuelLevel && (
+              <div className="lr-view-field">
+                <span className="lr-view-label">Fuel Level</span>
+                <FuelGaugeR level={localReport.fuelLevel} />
+              </div>
+            )}
+            {localReport.conditionRating && (
+              <div className="lr-view-field">
+                <span className="lr-view-label">Condition Rating</span>
+                <ConditionBadgeR rating={localReport.conditionRating} />
+              </div>
+            )}
           </div>
           <IssueBlock issues={ciIssues} labelFn={allLabels} newIssues={[]} />
           <NotesBlock notes={localReport.notes} />
@@ -276,21 +388,92 @@ function RenterLogViewModal({ isOpen, onClose, report, onCommentAdded, user }) {
         </>
       )}
 
+      {/* Renter Acknowledgement Signature */}
+      <div className="lr-view-section">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <p className="lr-view-section-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 11l-5 5v3h3l5-5m0 0l3.536-3.536M9 11l3.536-3.536" />
+            </svg>
+            Your Acknowledgement
+          </p>
+          {!sigEditing && (
+            <button
+              onClick={() => { setSigText(localReport.renterSignature || user?.fullName || user?.firstName || ''); setSigEditing(true); }}
+              style={{ background: alreadySigned ? 'none' : '#4338ca', color: alreadySigned ? '#4338ca' : '#fff', border: alreadySigned ? '1px solid #c7d2fe' : 'none', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
+              {alreadySigned ? '✏ Edit Signature' : 'Sign Acknowledgement'}
+            </button>
+          )}
+        </div>
+
+        {alreadySigned && !sigEditing ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '12px 16px' }}>
+            <span style={{ fontSize: 20 }}></span>
+            <div>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#1a2c5e', fontStyle: 'italic' }}>{localReport.renterSignature}</p>
+              {localReport.renterSignatureAt && <p style={{ margin: '2px 0 0', fontSize: 11, color: '#9ca3af' }}>Signed {fmtDate(localReport.renterSignatureAt)}</p>}
+            </div>
+          </div>
+        ) : sigEditing ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#1e40af' }}>
+              {alreadySigned
+                ? 'Update your acknowledgement signature below. Type your full name to confirm.'
+                : 'By signing, you acknowledge that you have read this vehicle log report and agree with its contents. Type your full name below to sign.'}
+            </div>
+            <input
+              className="form-input"
+              value={sigText}
+              onChange={e => setSigText(e.target.value)}
+              placeholder="Type your full name to sign…"
+              autoFocus
+              onKeyDown={e => e.key === 'Enter' && handleSign()}
+            />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn-secondary" onClick={() => { setSigEditing(false); setSigText(''); }}>Cancel</button>
+              <button
+                className="btn btn-primary"
+                onClick={handleSign}
+                disabled={sigSaving || !sigText.trim()}
+                style={{ background: '#4338ca', border: 'none' }}
+              >
+                {sigSaving ? 'Saving…' : alreadySigned ? '✍ Update Signature' : '✍ Confirm Signature'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '12px 16px', fontSize: 13, color: '#92400e' }}>
+            ⏳ You haven't signed this report yet. Click "Sign Acknowledgement" to confirm you've reviewed it.
+          </div>
+        )}
+      </div>
+
       <div className="lr-comments-section">
         <p className="lr-view-section-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><CommentIcon /> Comments</p>
         {(localReport.comments || []).length === 0
           ? <p className="lr-muted">No comments yet. Be the first to comment.</p>
           : (
             <div className="lr-comments-list">
-              {localReport.comments.map(c => (
-                <div key={c.id} className="lr-comment">
-                  <div className="lr-comment-meta">
-                    <span className="lr-comment-author" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><UserIcon />{c.authorName}</span>
-                    <span className="lr-comment-date">{fmtDate(c.createdAt)}</span>
+              {localReport.comments.map(c => {
+                const isOwner = c.authorRole === 'owner';
+                return (
+                  <div key={c.id} className="lr-comment" style={{
+                    borderLeft: `3px solid ${isOwner ? '#3F9B84' : '#6366f1'}`,
+                    background: isOwner ? 'rgba(63,155,132,.04)' : 'rgba(99,102,241,.04)',
+                  }}>
+                    <div className="lr-comment-meta">
+                      <span className="lr-comment-author" style={{ display: 'flex', alignItems: 'center', gap: 5, color: isOwner ? '#3F9B84' : '#4338ca' }}>
+                        <UserIcon />{c.authorName}
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 999, background: isOwner ? 'rgba(63,155,132,.15)' : 'rgba(99,102,241,.15)', color: isOwner ? '#065f46' : '#3730a3' }}>
+                          {isOwner ? 'Owner' : 'Renter'}
+                        </span>
+                      </span>
+                      <span className="lr-comment-date">{fmtDate(c.createdAt)}</span>
+                    </div>
+                    <p className="lr-comment-text">{c.text}</p>
                   </div>
-                  <p className="lr-comment-text">{c.text}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )
         }
@@ -406,9 +589,12 @@ function RenterDashboard() {
           <p className="header-subtitle">Find your perfect ride</p>
         </div>
         <div className="header-actions">
-          <button className="btn btn-outline lr-toolbar-btn" onClick={() => { refreshLogs(); setIsLogListOpen(true); }}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <ClipboardIcon /> Log Reports
+          <button
+            className="btn btn-outline lr-toolbar-btn"
+            onClick={() => { refreshLogs(); setIsLogListOpen(true); }}
+          >
+            <ClipboardIcon />
+            Log Reports
             {logCount > 0 && <span className="lr-badge-pill">{logCount}</span>}
           </button>
           <button className="btn btn-outline" onClick={() => setIsHistoryOpen(true)}>My Rentals</button>

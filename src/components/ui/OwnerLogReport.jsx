@@ -14,10 +14,27 @@ const DEFAULT_CHECKLIST = [
 ];
 
 const FUEL_OPTS = ['Full', '3/4', '1/2', '1/4', 'Empty'];
+const CONDITION_RATINGS = ['Excellent', 'Good', 'Fair', 'Poor'];
 
-const fmtDate = iso => iso ? new Date(iso).toLocaleString() : '—';
+const CONDITION_COLORS = {
+  Excellent: { bg: '#d1fae5', color: '#065f46', border: '#6ee7b7' },
+  Good:      { bg: '#dbeafe', color: '#1e40af', border: '#93c5fd' },
+  Fair:      { bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
+  Poor:      { bg: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
+};
+
+const FUEL_BAR_WIDTH = { 'Full': 100, '3/4': 75, '1/2': 50, '1/4': 25, 'Empty': 0 };
+
+const fmtDate      = iso => iso ? new Date(iso).toLocaleString()  : '—';
 const fmtShortDate = iso => iso ? new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
 
+const tripDays = (start, end) => {
+  if (!start || !end) return null;
+  const ms = new Date(end) - new Date(start);
+  return Math.max(1, Math.round(ms / 86400000));
+};
+
+/* ─── Icons ─── */
 const ClipboardIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -79,7 +96,156 @@ const CalendarIcon = () => (
     <rect x="3" y="4" width="18" height="18" rx="2"/><path strokeLinecap="round" strokeLinejoin="round" d="M16 2v4M8 2v4M3 10h18" />
   </svg>
 );
+const PrintIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-2-4H8v8h8v-8z" />
+  </svg>
+);
+const PhilippeSignIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 11l-5 5v3h3l5-5m0 0l3.536-3.536M9 11l3.536-3.536" />
+  </svg>
+);
+const DamageIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M5.07 19H19a2 2 0 001.75-2.9L13.75 5a2 2 0 00-3.5 0L3.25 16.1A2 2 0 005.07 19z" />
+  </svg>
+);
 
+/* ─── Fuel gauge visual ─── */
+function FuelGauge({ level }) {
+  if (!level) return null;
+  const pct = FUEL_BAR_WIDTH[level] ?? 0;
+  const color = pct >= 75 ? '#22c55e' : pct >= 50 ? '#84cc16' : pct >= 25 ? '#f59e0b' : '#ef4444';
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ flex: 1, height: 8, background: '#e5e7eb', borderRadius: 4, overflow: 'hidden' }}>
+        <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 4, transition: 'width .4s' }} />
+      </div>
+      <span style={{ fontSize: 12, fontWeight: 700, color, minWidth: 32, textAlign: 'right' }}>{level}</span>
+    </div>
+  );
+}
+
+/* ─── Condition badge ─── */
+function ConditionBadge({ rating }) {
+  if (!rating) return null;
+  const c = CONDITION_COLORS[rating] || { bg: '#f3f4f6', color: '#374151', border: '#d1d5db' };
+  return (
+    <span style={{
+      display: 'inline-block', fontSize: 11, fontWeight: 700,
+      padding: '3px 10px', borderRadius: 999,
+      background: c.bg, color: c.color, border: `1px solid ${c.border}`,
+    }}>{rating}</span>
+  );
+}
+
+/* ─── Stats bar ─── */
+function LogStatsBar({ reports }) {
+  const complete  = reports.filter(r => !!r.checkout).length;
+  const awaiting  = reports.filter(r => !r.checkout).length;
+  const newDamage = reports.filter(r => {
+    if (!r.checkout) return false;
+    const ci = r.issues || [];
+    const co = r.checkout.issues || [];
+    return co.some(i => !ci.includes(i));
+  }).length;
+  const pills = [
+    { label: 'Total Entries', value: reports.length, color: '#3F9B84' },
+    { label: 'Trips Complete', value: complete,       color: '#3b82f6' },
+    { label: 'Awaiting Check-out', value: awaiting,   color: '#f59e0b' },
+    { label: 'New Damage Reports', value: newDamage,  color: '#ef4444' },
+  ];
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 18 }}>
+      {pills.map(p => (
+        <div key={p.label} style={{
+          background: '#fff', border: `1.5px solid ${p.color}22`,
+          borderLeft: `4px solid ${p.color}`,
+          borderRadius: 10, padding: '10px 14px',
+          display: 'flex', flexDirection: 'column', gap: 2,
+        }}>
+          <span style={{ fontSize: 22, fontWeight: 800, color: p.color, lineHeight: 1 }}>{p.value}</span>
+          <span style={{ fontSize: 11, color: '#6b7280', fontWeight: 500 }}>{p.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ─── Trip summary card (shown when both check-in and check-out exist) ─── */
+function TripSummaryCard({ report }) {
+  if (!report.checkout) return null;
+
+  const days    = tripDays(report.startDate, report.endDate);
+  const revenue = days && report.amount ? days * Number(report.amount) : null;
+  const ciOdo   = parseFloat(report.odometer);
+  const coOdo   = parseFloat(report.checkout?.odometer);
+  const kmDriven = (!isNaN(ciOdo) && !isNaN(coOdo) && coOdo > ciOdo) ? (coOdo - ciOdo) : null;
+  const ciIssues = report.issues || [];
+  const coIssues = report.checkout?.issues || [];
+  const newDamage = coIssues.filter(i => !ciIssues.includes(i));
+  const overallStatus = newDamage.length > 0 ? 'Damage Reported'
+    : coIssues.length > ciIssues.length ? 'Minor Issues'
+    : 'Clean Return';
+  const statusColor = overallStatus === 'Damage Reported' ? '#ef4444'
+    : overallStatus === 'Minor Issues' ? '#f59e0b'
+    : '#22c55e';
+
+  return (
+    <div style={{
+      background: 'linear-gradient(135deg, #f0fdf4, #ecfdf5)',
+      border: '1px solid rgba(63,155,132,.25)',
+      borderRadius: 12, padding: '14px 18px', marginBottom: 18,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#6b7280' }}>
+          Trip Summary
+        </span>
+        <span style={{
+          fontSize: 11, fontWeight: 800, padding: '3px 12px', borderRadius: 999,
+          background: `${statusColor}18`, color: statusColor, border: `1px solid ${statusColor}44`,
+        }}>
+          {overallStatus === 'Damage Reported' && '⚠ '}{overallStatus}
+        </span>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 10 }}>
+        {days !== null && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span style={{ fontSize: 18, fontWeight: 800, color: '#1a2c5e' }}>{days}</span>
+            <span style={{ fontSize: 11, color: '#6b7280' }}>Days Rented</span>
+          </div>
+        )}
+        {revenue !== null && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span style={{ fontSize: 18, fontWeight: 800, color: '#3F9B84' }}>₱{revenue.toLocaleString()}</span>
+            <span style={{ fontSize: 11, color: '#6b7280' }}>Total Revenue</span>
+          </div>
+        )}
+        {kmDriven !== null && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span style={{ fontSize: 18, fontWeight: 800, color: '#1a2c5e' }}>{kmDriven.toLocaleString()}</span>
+            <span style={{ fontSize: 11, color: '#6b7280' }}>km Driven</span>
+          </div>
+        )}
+        {newDamage.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span style={{ fontSize: 18, fontWeight: 800, color: '#ef4444' }}>{newDamage.length}</span>
+            <span style={{ fontSize: 11, color: '#6b7280' }}>New Issues</span>
+          </div>
+        )}
+        {report.checkout?.damageCost && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span style={{ fontSize: 18, fontWeight: 800, color: '#ef4444' }}>₱{parseFloat(report.checkout.damageCost).toLocaleString()}</span>
+            <span style={{ fontSize: 11, color: '#6b7280' }}>Damage Est.</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Photo uploader ─── */
 function PhotoUploader({ photos = [], onChange, label = 'Photos' }) {
   const inputRef = useRef();
   const handleFiles = (e) => {
@@ -119,6 +285,7 @@ function PhotoUploader({ photos = [], onChange, label = 'Photos' }) {
   );
 }
 
+/* ─── Photo gallery ─── */
 function PhotoGallery({ photos = [], label }) {
   const [lightbox, setLightbox] = useState(null);
   if (!photos.length) return null;
@@ -140,6 +307,7 @@ function PhotoGallery({ photos = [], label }) {
   );
 }
 
+/* ─── Checklist editor ─── */
 function ChecklistEditor({ issues, customLabels, onChange, onLabelChange }) {
   const [otherText, setOtherText] = useState('');
   const allItems = [
@@ -188,14 +356,13 @@ function ChecklistEditor({ issues, customLabels, onChange, onLabelChange }) {
   );
 }
 
+/* ─── Rental info banner ─── */
 function RentalInfoBanner({ report }) {
   return (
     <div style={{
       background: 'linear-gradient(135deg, #f0fdf4, #ecfdf5)',
       border: '1px solid rgba(63,155,132,.3)',
-      borderRadius: 12,
-      padding: '14px 18px',
-      marginBottom: 18,
+      borderRadius: 12, padding: '14px 18px', marginBottom: 18,
     }}>
       <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: '#6b7280', margin: '0 0 10px' }}>
         Rental Information
@@ -227,18 +394,25 @@ function RentalInfoBanner({ report }) {
   );
 }
 
-function ReportForm({ initial, subtitle, onSave, onCancel }) {
-  const [issues,       setIssues]       = useState(initial.issues || []);
-  const [customLabels, setCustomLabels] = useState(initial.customLabels || {});
-  const [notes,        setNotes]        = useState(initial.notes || '');
-  const [odometer,     setOdometer]     = useState(initial.odometer || '');
-  const [fuelLevel,    setFuelLevel]    = useState(initial.fuelLevel || '');
-  const [photos,       setPhotos]       = useState(initial.photos || []);
+/* ─── Report form (check-in or check-out) ─── */
+function ReportForm({ initial, subtitle, onSave, onCancel, isCheckout = false, checkinIssues = [] }) {
+  const [issues,        setIssues]        = useState(initial.issues || []);
+  const [customLabels,  setCustomLabels]  = useState(initial.customLabels || {});
+  const [notes,         setNotes]         = useState(initial.notes || '');
+  const [odometer,      setOdometer]      = useState(initial.odometer || '');
+  const [fuelLevel,     setFuelLevel]     = useState(initial.fuelLevel || '');
+  const [conditionRating, setConditionRating] = useState(initial.conditionRating || '');
+  const [photos,        setPhotos]        = useState(initial.photos || []);
+  const [damageCost,    setDamageCost]    = useState(initial.damageCost || '');
+
+  const newIssues = isCheckout ? issues.filter(i => !checkinIssues.includes(i)) : [];
+  const showDamageCostField = isCheckout && newIssues.length > 0;
 
   return (
     <div>
       {initial.vehicleName && <RentalInfoBanner report={initial} />}
       {subtitle && <p className="lr-form-subtitle">{subtitle}</p>}
+
       <div className="lr-form-grid">
         <div className="form-group">
           <label className="form-label">Odometer (km)</label>
@@ -250,22 +424,61 @@ function ReportForm({ initial, subtitle, onSave, onCancel }) {
             <option value="">Select…</option>
             {FUEL_OPTS.map(f => <option key={f} value={f}>{f}</option>)}
           </select>
+          {fuelLevel && <div style={{ marginTop: 6 }}><FuelGauge level={fuelLevel} /></div>}
+        </div>
+        <div className="form-group">
+          <label className="form-label">Overall Condition Rating</label>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
+            {CONDITION_RATINGS.map(r => {
+              const c = CONDITION_COLORS[r];
+              const active = conditionRating === r;
+              return (
+                <button key={r} type="button"
+                  onClick={() => setConditionRating(active ? '' : r)}
+                  style={{
+                    padding: '6px 14px', borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                    background: active ? c.bg : '#f9fafb',
+                    color:      active ? c.color : '#6b7280',
+                    border:     active ? `1.5px solid ${c.border}` : '1.5px solid #e5e7eb',
+                  }}>{r}</button>
+              );
+            })}
+          </div>
         </div>
       </div>
+
       <ChecklistEditor issues={issues} customLabels={customLabels} onChange={setIssues} onLabelChange={setCustomLabels} />
+
+      {showDamageCostField && (
+        <div className="lr-view-section" style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '12px 16px' }}>
+          <p className="lr-view-section-title" style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#991b1b' }}>
+            <DamageIcon /> {newIssues.length} new issue{newIssues.length > 1 ? 's' : ''} found at check-out
+          </p>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">Estimated Damage Cost (₱) <span style={{ color: '#9ca3af', fontWeight: 400 }}>— optional</span></label>
+            <input className="form-input" type="number" placeholder="e.g. 5000" value={damageCost} onChange={e => setDamageCost(e.target.value)} />
+          </div>
+        </div>
+      )}
+
       <div className="lr-view-section">
         <p className="lr-view-section-title">Notes</p>
         <textarea className="form-input" rows={4} placeholder="Describe the vehicle condition…" value={notes} onChange={e => setNotes(e.target.value)} style={{ resize: 'vertical' }} />
       </div>
+
       <PhotoUploader photos={photos} onChange={setPhotos} label="Condition Photos" />
+
       <div className="lr-form-actions">
         <button className="btn btn-secondary" onClick={onCancel}>Cancel</button>
-        <button className="btn btn-primary" onClick={() => onSave({ issues, customLabels, notes, odometer, fuelLevel, photos })}>Save Report</button>
+        <button className="btn btn-primary" onClick={() => onSave({ issues, customLabels, notes, odometer, fuelLevel, conditionRating, photos, damageCost: damageCost || undefined })}>
+          Save Report
+        </button>
       </div>
     </div>
   );
 }
 
+/* ─── Issue block ─── */
 function IssueBlock({ issues, labelFn, newIssues = [] }) {
   if (!issues.length) return (
     <div className="lr-view-section">
@@ -292,7 +505,266 @@ function IssueBlock({ issues, labelFn, newIssues = [] }) {
   );
 }
 
-function ReportDetailView({ report, onEdit, onAddCheckout, onEditCheckout, onBack }) {
+/* ─── Signature block ─── */
+function SignatureDisplay({ label, name, date }) {
+  return (
+    <div style={{
+      border: '1px solid #e5e7eb', borderRadius: 10, padding: '12px 16px',
+      background: '#fafafa', display: 'flex', flexDirection: 'column', gap: 4,
+    }}>
+      <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: '#9ca3af' }}>{label}</span>
+      {name
+        ? <span style={{ fontSize: 14, fontWeight: 700, color: '#1a2c5e', fontStyle: 'italic' }}>{name}</span>
+        : <span style={{ fontSize: 13, color: '#d1d5db' }}>Not signed</span>}
+      {date && <span style={{ fontSize: 11, color: '#9ca3af' }}>{fmtDate(date)}</span>}
+    </div>
+  );
+}
+
+/* ─── Print helper ─── */
+function printReport(report) {
+  const allLabels = id => {
+    const d = DEFAULT_CHECKLIST.find(x => x.id === id);
+    return (report.customLabels || {})[id] || (report.checkout?.customLabels || {})[id] || d?.label || id;
+  };
+  const ciIssues = report.issues || [];
+  const coIssues = report.checkout?.issues || [];
+  const newIssues = coIssues.filter(i => !ciIssues.includes(i));
+  const days = tripDays(report.startDate, report.endDate);
+  const revenue = days && report.amount ? days * Number(report.amount) : null;
+  const ciOdo = parseFloat(report.odometer);
+  const coOdo = parseFloat(report.checkout?.odometer);
+  const kmDriven = !isNaN(ciOdo) && !isNaN(coOdo) && coOdo > ciOdo ? coOdo - ciOdo : null;
+
+  const win = window.open('', '_blank');
+  win.document.write(`
+    <html><head><title>Log Report – ${report.vehicleName}</title>
+    <style>
+      body { font-family: Georgia, serif; max-width: 760px; margin: 0 auto; padding: 32px; color: #111; }
+      h1 { font-size: 22px; margin-bottom: 4px; }
+      .subtitle { color: #6b7280; font-size: 13px; margin-bottom: 24px; }
+      .section { margin-bottom: 20px; }
+      .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: #9ca3af; font-weight: 700; margin-bottom: 8px; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .field { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 14px; }
+      .field-label { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: #9ca3af; }
+      .field-value { font-size: 14px; font-weight: 700; color: #111; margin-top: 2px; }
+      .issue { padding: 6px 10px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 13px; margin-bottom: 4px; }
+      .issue.new { background: #fef2f2; border-color: #fca5a5; color: #991b1b; }
+      .col-header { font-size: 12px; font-weight: 700; padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; }
+      .ci { background: #d1fae5; color: #065f46; } .co { background: #fef3c7; color: #92400e; }
+      .summary { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 16px; margin-bottom: 20px; }
+      .sig-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 32px; }
+      .sig-box { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 16px; }
+      .sig-label { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: #9ca3af; }
+      .sig-name { font-size: 15px; font-style: italic; font-weight: 700; margin-top: 4px; }
+      @media print { body { padding: 0; } }
+    </style></head><body>
+    <h1>Vehicle Log Report — ${report.vehicleName}</h1>
+    <p class="subtitle">Renter: ${report.renterName || '—'} &nbsp;|&nbsp; Period: ${fmtShortDate(report.startDate)} – ${fmtShortDate(report.endDate)} &nbsp;|&nbsp; Rate: ₱${report.amount || '—'}/day</p>
+    ${report.checkout ? `
+    <div class="summary">
+      <div class="section-title">Trip Summary</div>
+      <div class="grid">
+        ${days ? `<div class="field"><div class="field-label">Days Rented</div><div class="field-value">${days}</div></div>` : ''}
+        ${revenue ? `<div class="field"><div class="field-label">Total Revenue</div><div class="field-value">₱${revenue.toLocaleString()}</div></div>` : ''}
+        ${kmDriven ? `<div class="field"><div class="field-label">km Driven</div><div class="field-value">${kmDriven.toLocaleString()} km</div></div>` : ''}
+        ${newIssues.length ? `<div class="field"><div class="field-label">New Damage</div><div class="field-value" style="color:#ef4444">${newIssues.length} issue(s)</div></div>` : ''}
+        ${report.checkout.damageCost ? `<div class="field"><div class="field-label">Damage Est.</div><div class="field-value" style="color:#ef4444">₱${parseFloat(report.checkout.damageCost).toLocaleString()}</div></div>` : ''}
+      </div>
+    </div>
+    <div class="grid">
+      <div>
+        <div class="col-header ci">Before Trip — ${fmtShortDate(report.createdAt)}</div>
+        <div class="field" style="margin-bottom:8px"><div class="field-label">Odometer</div><div class="field-value">${report.odometer ? report.odometer + ' km' : '—'}</div></div>
+        <div class="field" style="margin-bottom:8px"><div class="field-label">Fuel</div><div class="field-value">${report.fuelLevel || '—'}</div></div>
+        ${report.conditionRating ? `<div class="field" style="margin-bottom:8px"><div class="field-label">Condition</div><div class="field-value">${report.conditionRating}</div></div>` : ''}
+        <div class="section-title" style="margin-top:12px">Issues</div>
+        ${ciIssues.length ? ciIssues.map(k => `<div class="issue">${allLabels(k)}</div>`).join('') : '<p style="color:#6b7280;font-size:13px">None</p>'}
+        <div class="section-title" style="margin-top:12px">Notes</div>
+        <p style="font-size:13px">${report.notes || 'No notes.'}</p>
+      </div>
+      <div>
+        <div class="col-header co">After Trip — ${fmtShortDate(report.checkout.createdAt)}</div>
+        <div class="field" style="margin-bottom:8px"><div class="field-label">Odometer</div><div class="field-value">${report.checkout.odometer ? report.checkout.odometer + ' km' : '—'}</div></div>
+        <div class="field" style="margin-bottom:8px"><div class="field-label">Fuel</div><div class="field-value">${report.checkout.fuelLevel || '—'}</div></div>
+        ${report.checkout.conditionRating ? `<div class="field" style="margin-bottom:8px"><div class="field-label">Condition</div><div class="field-value">${report.checkout.conditionRating}</div></div>` : ''}
+        <div class="section-title" style="margin-top:12px">Issues</div>
+        ${coIssues.length ? coIssues.map(k => `<div class="issue ${newIssues.includes(k) ? 'new' : ''}">${allLabels(k)}${newIssues.includes(k) ? ' [NEW]' : ''}</div>`).join('') : '<p style="color:#6b7280;font-size:13px">None</p>'}
+        <div class="section-title" style="margin-top:12px">Notes</div>
+        <p style="font-size:13px">${report.checkout.notes || 'No notes.'}</p>
+      </div>
+    </div>` : `
+    <div class="section">
+      <div class="section-title">Check-in Record — ${fmtDate(report.createdAt)}</div>
+      <div class="grid">
+        <div class="field"><div class="field-label">Odometer</div><div class="field-value">${report.odometer ? report.odometer + ' km' : '—'}</div></div>
+        <div class="field"><div class="field-label">Fuel</div><div class="field-value">${report.fuelLevel || '—'}</div></div>
+        ${report.conditionRating ? `<div class="field"><div class="field-label">Condition Rating</div><div class="field-value">${report.conditionRating}</div></div>` : ''}
+      </div>
+      <div class="section-title" style="margin-top:12px">Issues</div>
+      ${ciIssues.length ? ciIssues.map(k => `<div class="issue">${allLabels(k)}</div>`).join('') : '<p style="color:#6b7280;font-size:13px">None</p>'}
+      <div class="section-title" style="margin-top:12px">Notes</div>
+      <p style="font-size:13px">${report.notes || 'No notes.'}</p>
+    </div>`}
+    <div class="sig-row">
+      <div class="sig-box"><div class="sig-label">Owner Signature</div><div class="sig-name">${report.ownerSignature || '(not provided)'}</div></div>
+      <div class="sig-box"><div class="sig-label">Renter Acknowledgement</div><div class="sig-name">${report.renterSignature || '(not provided)'}</div></div>
+    </div>
+    <p style="font-size:11px;color:#9ca3af;margin-top:32px;text-align:center">Generated ${new Date().toLocaleString()}</p>
+    </body></html>
+  `);
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 500);
+}
+
+/* ─── Signatures section — owner edits only their own name ─── */
+function SignaturesSection({ report, onUpdate }) {
+  const [ownerSig, setOwnerSig] = useState(report.ownerSignature || '');
+  const [editing, setEditing]   = useState(false);
+
+  const save = () => {
+    onUpdate({ ownerSignature: ownerSig, ownerSignatureAt: new Date().toISOString() });
+    setEditing(false);
+  };
+
+  const renterSigned = !!report.renterSignature;
+
+  return (
+    <div className="lr-view-section">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <p className="lr-view-section-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <PhilippeSignIcon /> Signatures
+        </p>
+        {!editing && (
+          <button onClick={() => setEditing(true)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#3F9B84', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <EditIcon /> {report.ownerSignature ? 'Edit My Signature' : 'Sign'}
+          </button>
+        )}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: editing ? 14 : 0 }}>
+        {/* Owner signature — editable */}
+        {editing ? (
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">Your Signature (Owner)</label>
+            <input
+              className="form-input"
+              value={ownerSig}
+              onChange={e => setOwnerSig(e.target.value)}
+              placeholder="Type your full name"
+              autoFocus
+            />
+          </div>
+        ) : (
+          <SignatureDisplay label="Owner Signature" name={report.ownerSignature} date={report.ownerSignatureAt} />
+        )}
+
+        {/* Renter acknowledgement — read-only for owner */}
+        <div style={{
+          border: '1px solid #e5e7eb', borderRadius: 10, padding: '12px 16px',
+          background: renterSigned ? '#f0fdf4' : '#fffbeb',
+          display: 'flex', flexDirection: 'column', gap: 4,
+        }}>
+          <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: '#9ca3af' }}>
+            Renter Acknowledgement
+          </span>
+          {renterSigned ? (
+            <>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#1a2c5e', fontStyle: 'italic' }}>{report.renterSignature}</span>
+              {report.renterSignatureAt && <span style={{ fontSize: 11, color: '#9ca3af' }}>{fmtDate(report.renterSignatureAt)}</span>}
+            </>
+          ) : (
+            <span style={{ fontSize: 12, color: '#d97706', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 5 }}>
+              ⏳ Awaiting renter signature
+            </span>
+          )}
+        </div>
+      </div>
+
+      {editing && (
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-secondary" onClick={() => { setOwnerSig(report.ownerSignature || ''); setEditing(false); }}>Cancel</button>
+          <button className="btn btn-primary" onClick={save}>Save My Signature</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Comments section with owner reply ─── */
+function CommentsSection({ report, ownerName, onReply }) {
+  const [text, setText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = () => {
+    if (!text.trim()) return;
+    setSubmitting(true);
+    onReply({ authorName: ownerName || 'Owner', authorRole: 'owner', text: text.trim() });
+    setText('');
+    setSubmitting(false);
+  };
+
+  const comments = report.comments || [];
+
+  return (
+    <div className="lr-comments-section">
+      <p className="lr-view-section-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <CommentIcon /> Comments {comments.length > 0 && `(${comments.length})`}
+      </p>
+      {comments.length === 0
+        ? <p className="lr-muted">No comments yet.</p>
+        : (
+          <div className="lr-comments-list">
+            {comments.map(c => {
+              const isOwner = c.authorRole === 'owner' || c.authorName?.toLowerCase().includes('owner');
+              return (
+                <div key={c.id} className="lr-comment" style={{
+                  borderLeft: `3px solid ${isOwner ? '#3F9B84' : '#6366f1'}`,
+                  background: isOwner ? 'rgba(63,155,132,.04)' : 'rgba(99,102,241,.04)',
+                }}>
+                  <div className="lr-comment-meta">
+                    <span className="lr-comment-author" style={{ display: 'flex', alignItems: 'center', gap: 5, color: isOwner ? '#3F9B84' : '#4338ca' }}>
+                      <UserIcon />{c.authorName}
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 999, background: isOwner ? 'rgba(63,155,132,.15)' : 'rgba(99,102,241,.15)', color: isOwner ? '#065f46' : '#3730a3' }}>
+                        {isOwner ? 'Owner' : 'Renter'}
+                      </span>
+                    </span>
+                    <span className="lr-comment-date">{fmtDate(c.createdAt)}</span>
+                  </div>
+                  <p className="lr-comment-text">{c.text}</p>
+                </div>
+              );
+            })}
+          </div>
+        )
+      }
+      <div className="lr-comment-form">
+        <textarea
+          className="form-input"
+          rows="3"
+          placeholder="Reply as owner…"
+          value={text}
+          onChange={e => setText(e.target.value)}
+          style={{ resize: 'vertical' }}
+        />
+        <button
+          className="btn btn-primary"
+          onClick={handleSubmit}
+          disabled={submitting || !text.trim()}
+          style={{ alignSelf: 'flex-end', display: 'flex', alignItems: 'center', gap: 6 }}
+        >
+          <CommentIcon /> {submitting ? 'Sending…' : 'Send Reply'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Detail view ─── */
+function ReportDetailView({ report, ownerName, onEdit, onAddCheckout, onEditCheckout, onBack, onUpdateSignatures, onReply }) {
   const hasCheckout = !!report.checkout;
   const ciIssues    = report.issues || [];
   const coIssues    = report.checkout?.issues || [];
@@ -304,17 +776,38 @@ function ReportDetailView({ report, onEdit, onAddCheckout, onEditCheckout, onBac
 
   return (
     <div>
-      <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: '#3F9B84', fontWeight: 600, fontSize: 13, padding: '0 0 16px 0' }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
-        Back to list
-      </button>
+      {/* Back + Print row */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 16 }}>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: '#3F9B84', fontWeight: 600, fontSize: 13, padding: 0 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to list
+        </button>
+        <button onClick={() => printReport(report)}
+          style={{ background: 'none', border: '1px solid #e5e7eb', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: '#374151', fontWeight: 600, fontSize: 12, padding: '6px 14px', borderRadius: 8 }}>
+          <PrintIcon /> Print / Export
+        </button>
+      </div>
 
       <RentalInfoBanner report={report} />
 
+      {/* Trip summary (only when complete) */}
+      {hasCheckout && <TripSummaryCard report={report} />}
+
+      {/* Damage cost banner if present */}
+      {hasCheckout && report.checkout?.damageCost && (
+        <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 10, padding: '12px 16px', marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <DamageIcon />
+          <span style={{ fontSize: 13, color: '#991b1b', fontWeight: 600 }}>
+            Damage estimated at ₱{parseFloat(report.checkout.damageCost).toLocaleString()}
+          </span>
+        </div>
+      )}
+
       {hasCheckout ? (
         <div className="lr-compare-grid">
+          {/* Check-in column */}
           <div className="lr-compare-col">
             <div className="lr-compare-header lr-compare-header--ci">
               <span>Before Trip</span>
@@ -325,8 +818,13 @@ function ReportDetailView({ report, onEdit, onAddCheckout, onEditCheckout, onBac
                 </button>
               </span>
             </div>
-            {report.odometer && <div className="lr-view-section" style={{ padding: '8px 14px' }}><span className="lr-view-label">Odometer</span> <span className="lr-view-value">{report.odometer} km</span></div>}
-            {report.fuelLevel && <div className="lr-view-section" style={{ padding: '8px 14px' }}><span className="lr-view-label">Fuel</span> <span className="lr-view-value">{report.fuelLevel}</span></div>}
+            {(report.odometer || report.fuelLevel || report.conditionRating) && (
+              <div className="lr-view-section" style={{ padding: '10px 14px' }}>
+                {report.odometer && <div style={{ marginBottom: 6 }}><span className="lr-view-label">Odometer </span><span className="lr-view-value">{report.odometer} km</span></div>}
+                {report.fuelLevel && <div style={{ marginBottom: 6 }}><span className="lr-view-label">Fuel </span><FuelGauge level={report.fuelLevel} /></div>}
+                {report.conditionRating && <div><span className="lr-view-label">Condition </span><ConditionBadge rating={report.conditionRating} /></div>}
+              </div>
+            )}
             <IssueBlock issues={ciIssues} labelFn={allLabels} newIssues={[]} />
             <div style={{ padding: '0 14px 12px' }}>
               <p className="lr-view-section-title">Notes</p>
@@ -334,6 +832,7 @@ function ReportDetailView({ report, onEdit, onAddCheckout, onEditCheckout, onBac
             </div>
             <PhotoGallery photos={report.photos} label="Check-in Photos" />
           </div>
+          {/* Check-out column */}
           <div className="lr-compare-col">
             <div className="lr-compare-header lr-compare-header--co">
               <span>After Trip</span>
@@ -344,8 +843,13 @@ function ReportDetailView({ report, onEdit, onAddCheckout, onEditCheckout, onBac
                 </button>
               </span>
             </div>
-            {report.checkout.odometer && <div className="lr-view-section" style={{ padding: '8px 14px' }}><span className="lr-view-label">Odometer</span> <span className="lr-view-value">{report.checkout.odometer} km</span></div>}
-            {report.checkout.fuelLevel && <div className="lr-view-section" style={{ padding: '8px 14px' }}><span className="lr-view-label">Fuel</span> <span className="lr-view-value">{report.checkout.fuelLevel}</span></div>}
+            {(report.checkout.odometer || report.checkout.fuelLevel || report.checkout.conditionRating) && (
+              <div className="lr-view-section" style={{ padding: '10px 14px' }}>
+                {report.checkout.odometer && <div style={{ marginBottom: 6 }}><span className="lr-view-label">Odometer </span><span className="lr-view-value">{report.checkout.odometer} km</span></div>}
+                {report.checkout.fuelLevel && <div style={{ marginBottom: 6 }}><span className="lr-view-label">Fuel </span><FuelGauge level={report.checkout.fuelLevel} /></div>}
+                {report.checkout.conditionRating && <div><span className="lr-view-label">Condition </span><ConditionBadge rating={report.checkout.conditionRating} /></div>}
+              </div>
+            )}
             <IssueBlock issues={coIssues} labelFn={allLabels} newIssues={newIssues} />
             <div style={{ padding: '0 14px 12px' }}>
               <p className="lr-view-section-title">Notes</p>
@@ -362,7 +866,18 @@ function ReportDetailView({ report, onEdit, onAddCheckout, onEditCheckout, onBac
           <div className="lr-view-grid">
             <div className="lr-view-field"><span className="lr-view-label">Logged On</span><span className="lr-view-value">{fmtDate(report.createdAt)}</span></div>
             {report.odometer && <div className="lr-view-field"><span className="lr-view-label">Odometer</span><span className="lr-view-value">{report.odometer} km</span></div>}
-            {report.fuelLevel && <div className="lr-view-field"><span className="lr-view-label">Fuel Level</span><span className="lr-view-value">{report.fuelLevel}</span></div>}
+            {report.fuelLevel && (
+              <div className="lr-view-field">
+                <span className="lr-view-label">Fuel Level</span>
+                <FuelGauge level={report.fuelLevel} />
+              </div>
+            )}
+            {report.conditionRating && (
+              <div className="lr-view-field">
+                <span className="lr-view-label">Condition Rating</span>
+                <ConditionBadge rating={report.conditionRating} />
+              </div>
+            )}
           </div>
           <IssueBlock issues={ciIssues} labelFn={allLabels} newIssues={[]} />
           <div className="lr-view-section">
@@ -377,28 +892,19 @@ function ReportDetailView({ report, onEdit, onAddCheckout, onEditCheckout, onBac
         </>
       )}
 
-      {(report.comments || []).length > 0 && (
-        <div className="lr-comments-section">
-          <p className="lr-view-section-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><CommentIcon /> Comments</p>
-          <div className="lr-comments-list">
-            {report.comments.map(c => (
-              <div key={c.id} className="lr-comment">
-                <div className="lr-comment-meta">
-                  <span className="lr-comment-author" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><UserIcon />{c.authorName}</span>
-                  <span className="lr-comment-date">{fmtDate(c.createdAt)}</span>
-                </div>
-                <p className="lr-comment-text">{c.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Signatures */}
+      <SignaturesSection report={report} onUpdate={onUpdateSignatures} />
+
+      {/* Comments */}
+      <CommentsSection report={report} ownerName={ownerName} onReply={onReply} />
     </div>
   );
 }
 
-export default function OwnerLogReport({ isOpen, onClose, ownerRentals }) {
-  const { reports, editCheckin, addCheckoutReport, editCheckout, removeReport } = useLogReport();
+/* ─── Main component ─── */
+export default function OwnerLogReport({ isOpen, onClose, ownerRentals, ownerName }) {
+  const { reports, editCheckin, addCheckoutReport, editCheckout, removeReport, postComment } = useLogReport();
+  const { loadLogReports: _unused, saveLogReports: _unused2, ...rest } = {};
 
   const [search,         setSearch]         = useState('');
   const [view,           setView]           = useState('list');
@@ -455,6 +961,15 @@ export default function OwnerLogReport({ isOpen, onClose, ownerRentals }) {
     removeReport(id);
     if (selectedReport?.id === id) backToList();
   };
+  const handleUpdateSignatures = (sigs) => {
+    editCheckin(selectedReport.id, sigs);
+    setSelectedReport(prev => ({ ...prev, ...sigs }));
+  };
+  const handleReply = (comment) => {
+    postComment(selectedReport.id, comment);
+    const updated = { ...selectedReport, comments: [...(selectedReport.comments || []), { id: `cmt-${Date.now()}`, ...comment, createdAt: new Date().toISOString() }] };
+    setSelectedReport(updated);
+  };
 
   const modalTitle = view === 'list'          ? 'Log Book'
                    : view === 'detail'        ? 'Log Entry Details'
@@ -471,9 +986,14 @@ export default function OwnerLogReport({ isOpen, onClose, ownerRentals }) {
           <p className="lr-form-subtitle">
             Vehicle log book — all check-in and check-out records for your rentals. Click an entry to view details, edit, or record a check-out.
           </p>
+
+          {/* Stats bar */}
+          <LogStatsBar reports={ownerReports} />
+
           <div className="lr-list-controls">
             <input className="form-input" placeholder="Search by vehicle or renter…" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
+
           {filtered.length === 0 ? (
             <div className="empty-state" style={{ padding: '40px 0', textAlign: 'center' }}>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12, color: '#9ca3af' }}><ClipboardIcon /></div>
@@ -482,38 +1002,52 @@ export default function OwnerLogReport({ isOpen, onClose, ownerRentals }) {
             </div>
           ) : (
             <div className="lr-list">
-              {filtered.slice().reverse().map(r => (
-                <div key={r.id} className="lr-list-row" onClick={() => openReport(r)}>
-                  <div className="lr-list-body">
-                    <div className="lr-list-tags">
-                      <span className="lr-tag lr-tag--ci">Check-in</span>
-                      {r.checkout
-                        ? <span className="lr-badge lr-badge--linked">Trip Complete</span>
-                        : <span className="lr-badge lr-badge--pending">Awaiting Check-out</span>}
-                      {(r.comments || []).length > 0 && (
-                        <span className="lr-badge lr-badge--comment" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                          <CommentIcon /> {r.comments.length}
-                        </span>
-                      )}
+              {filtered.slice().reverse().map(r => {
+                const ciIssues = r.issues || [];
+                const coIssues = r.checkout?.issues || [];
+                const newDamage = r.checkout ? coIssues.filter(i => !ciIssues.includes(i)) : [];
+                return (
+                  <div key={r.id} className="lr-list-row" onClick={() => openReport(r)}>
+                    <div className="lr-list-body">
+                      <div className="lr-list-tags">
+                        <span className="lr-tag lr-tag--ci">Check-in</span>
+                        {r.checkout
+                          ? <span className="lr-badge lr-badge--linked">Trip Complete</span>
+                          : <span className="lr-badge lr-badge--pending">Awaiting Check-out</span>}
+                        {r.conditionRating && <ConditionBadge rating={r.conditionRating} />}
+                        {newDamage.length > 0 && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 999, background: '#fef2f2', color: '#991b1b', border: '1px solid #fca5a5' }}>
+                            <DamageIcon /> {newDamage.length} new damage
+                          </span>
+                        )}
+                        {(r.comments || []).length > 0 && (
+                          <span className="lr-badge lr-badge--comment" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            <CommentIcon /> {r.comments.length}
+                          </span>
+                        )}
+                      </div>
+                      <p className="lr-list-vehicle">{r.vehicleName}</p>
+                      <div className="lr-list-meta">
+                        <span>{fmtDate(r.createdAt)}</span>
+                        {(r.issues || []).length > 0
+                          ? <span className="lr-flag" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><AlertIcon />{r.issues.length} issue{r.issues.length > 1 ? 's' : ''}</span>
+                          : <span className="lr-ok" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><CheckIcon />No issues on check-in</span>}
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><UserIcon />{r.renterName}</span>
+                        {r.checkout?.damageCost && (
+                          <span style={{ color: '#ef4444', fontWeight: 600 }}>₱{parseFloat(r.checkout.damageCost).toLocaleString()} damage</span>
+                        )}
+                      </div>
                     </div>
-                    <p className="lr-list-vehicle">{r.vehicleName}</p>
-                    <div className="lr-list-meta">
-                      <span>{fmtDate(r.createdAt)}</span>
-                      {(r.issues || []).length > 0
-                        ? <span className="lr-flag" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><AlertIcon />{r.issues.length} issue{r.issues.length > 1 ? 's' : ''}</span>
-                        : <span className="lr-ok" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><CheckIcon />No issues on check-in</span>}
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><UserIcon />{r.renterName}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <button onClick={e => { e.stopPropagation(); handleDelete(r.id); }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '4px 6px', borderRadius: 6 }}>
+                        <TrashIcon />
+                      </button>
+                      <span className="lr-list-arrow"><ChevronRightIcon /></span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <button onClick={e => { e.stopPropagation(); handleDelete(r.id); }}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '4px 6px', borderRadius: 6 }}>
-                      <TrashIcon />
-                    </button>
-                    <span className="lr-list-arrow"><ChevronRightIcon /></span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
@@ -525,10 +1059,13 @@ export default function OwnerLogReport({ isOpen, onClose, ownerRentals }) {
       {view === 'detail' && selectedReport && (
         <ReportDetailView
           report={selectedReport}
+          ownerName={ownerName}
           onEdit={() => setView('edit-checkin')}
           onAddCheckout={() => setView('add-checkout')}
           onEditCheckout={() => setView('edit-checkout')}
           onBack={backToList}
+          onUpdateSignatures={handleUpdateSignatures}
+          onReply={handleReply}
         />
       )}
 
@@ -543,8 +1080,10 @@ export default function OwnerLogReport({ isOpen, onClose, ownerRentals }) {
 
       {view === 'add-checkout' && selectedReport && (
         <ReportForm
-          initial={{ ...selectedReport, issues: [], notes: '', odometer: '', fuelLevel: '', photos: [], customLabels: selectedReport.customLabels }}
+          initial={{ ...selectedReport, issues: [], notes: '', odometer: '', fuelLevel: '', conditionRating: '', photos: [], customLabels: selectedReport.customLabels }}
           subtitle="Record the vehicle condition upon return."
+          isCheckout={true}
+          checkinIssues={selectedReport.issues || []}
           onSave={handleAddCheckout}
           onCancel={() => setView('detail')}
         />
@@ -554,6 +1093,8 @@ export default function OwnerLogReport({ isOpen, onClose, ownerRentals }) {
         <ReportForm
           initial={{ ...selectedReport.checkout, vehicleName: selectedReport.vehicleName, renterName: selectedReport.renterName, startDate: selectedReport.startDate, endDate: selectedReport.endDate, amount: selectedReport.amount }}
           subtitle="Update the check-out condition record for this rental."
+          isCheckout={true}
+          checkinIssues={selectedReport.issues || []}
           onSave={handleSaveCheckout}
           onCancel={() => setView('detail')}
         />
