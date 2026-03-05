@@ -146,9 +146,18 @@ function VehicleCard({
           </div>
 
           {mode === 'renter' && isAvailable && (
-            <button className="btn btn-primary rent-btn" onClick={handleRentClick}>
-              Rent Now
-            </button>
+            <div className="vehicle-actions">
+              <button 
+                className={`btn btn-secondary saved-btn ${isSaved ? 'saved' : ''}`}
+                onClick={handleSaveClick}
+                aria-label={isSaved ? 'Remove from saved' : 'Save vehicle'}
+              >
+                {isSaved ? 'Saved' : 'Save'}
+              </button>
+              <button className="btn btn-primary rent-btn" onClick={handleRentClick}>
+                Rent Now
+              </button>
+            </div>
           )}
 
           {mode === 'owner' && (

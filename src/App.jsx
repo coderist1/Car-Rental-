@@ -5,6 +5,7 @@ import { VehicleProvider } from './context/VehicleContext';
 import { LogReportProvider } from './context/LogReportContext';
 import { useAuth } from './hooks';
 import {
+  SplashPage,
   LandingPage,
   Login,
   Register,
@@ -134,8 +135,9 @@ function App() {
 
             {/* Lab Requirement Part 5: Handle 404s and Blank Pages 
                 Ensures that any unknown URL redirects back to the entry point. */}
-            <Route path="/" element={<Navigate to="/LandingPage" replace />} />
-            <Route path="*" element={<Navigate to="/LandingPage" replace />} />
+            <Route path="/" element={<SplashPage />} />
+            <Route path="/LandingPage" element={<LandingPage />} />
+             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           </LogReportProvider>
         </VehicleProvider>
