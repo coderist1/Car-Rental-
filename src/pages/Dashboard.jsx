@@ -20,6 +20,18 @@ const BookIcon = () => (
   </svg>
 );
 
+const SearchIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="11" cy="11" r="8"/><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35" />
+  </svg>
+);
+
+const FilterIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h18M7 10h10M11 16h2" />
+  </svg>
+);
+
 function Dashboard() {
   const { user } = useAuth();
   const {
@@ -30,7 +42,8 @@ function Dashboard() {
   const { createCheckin, reports } = useLogReport();
 
   const [searchQuery,      setSearchQuery]      = useState('');
-  const [filterStatus,     setFilterStatus]     = useState('all');
+  const [isFilterOpen,     setIsFilterOpen]     = useState(false);
+  const [filters,          setFilters]          = useState({ types: [], transmissions: [], fuels: [], statuses: [], minPrice: '', maxPrice: '' });
   const [isAddModalOpen,   setIsAddModalOpen]   = useState(false);
   const [isEditModalOpen,  setIsEditModalOpen]  = useState(false);
   const [isRentalHistOpen, setIsRentalHistOpen] = useState(false);
@@ -55,20 +68,37 @@ function Dashboard() {
     [vehicles, user?.id]
   );
 
-  const filteredVehicles = useMemo(() =>
-    ownerVehicles.filter((v) => {
-      const matchSearch =
-        v.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        v.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        v.type?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchFilter =
-        filterStatus === 'all' ||
-        (filterStatus === 'available' && v.available) ||
-        (filterStatus === 'rented' && !v.available);
-      return matchSearch && matchFilter;
-    }),
-    [ownerVehicles, searchQuery, filterStatus]
-  );
+  const filteredVehicles = useMemo(() => {
+    let result = ownerVehicles;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(v =>
+        v.name?.toLowerCase().includes(q) ||
+        v.brand?.toLowerCase().includes(q) ||
+        v.type?.toLowerCase().includes(q) ||
+        v.location?.toLowerCase().includes(q)
+      );
+    }
+    if (filters.statuses.length > 0)
+      result = result.filter(v =>
+        filters.statuses.includes('available') && v.available ||
+        filters.statuses.includes('rented') && !v.available
+      );
+    if (filters.types.length > 0)         result = result.filter(v => filters.types.includes(v.type));
+    if (filters.transmissions.length > 0) result = result.filter(v => filters.transmissions.includes(v.transmission));
+    if (filters.fuels.length > 0)         result = result.filter(v => filters.fuels.includes(v.fuel));
+    if (filters.minPrice) result = result.filter(v => Number(v.pricePerDay || 0) >= Number(filters.minPrice));
+    if (filters.maxPrice) result = result.filter(v => Number(v.pricePerDay || 0) <= Number(filters.maxPrice));
+    return result;
+  }, [ownerVehicles, searchQuery, filters]);
+
+  const activeFiltersCount = filters.types.length + filters.transmissions.length + filters.fuels.length + filters.statuses.length + (filters.minPrice ? 1 : 0) + (filters.maxPrice ? 1 : 0);
+
+  const handleFilterToggle = (cat, val) => setFilters(prev => ({
+    ...prev,
+    [cat]: prev[cat].includes(val) ? prev[cat].filter(v => v !== val) : [...prev[cat], val],
+  }));
+  const clearFilters = () => setFilters({ types: [], transmissions: [], fuels: [], statuses: [], minPrice: '', maxPrice: '' });
 
   const ownerRentals = useMemo(() => {
     const ids = new Set(ownerVehicles.map((v) => v.id));
@@ -266,8 +296,24 @@ function Dashboard() {
 
       <header className="dashboard-header">
         <div className="header-content">
-          <h1>Owner Dashboard</h1>
+          <div className="header-info">
+            <h1>Owner Dashboard</h1>
+            <p className="header-subtitle">Manage your fleet</p>
+          </div>
           <div className="user-info">
+            <button className="btn btn-outline" onClick={() => setIsRentalHistOpen(true)}>
+              Rental History
+            </button>
+            <button className="btn btn-outline lr-toolbar-btn" onClick={() => setIsLogReportOpen(true)}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9h6m-6 4h4" />
+              </svg>
+              Log Reports
+              {logReportCount > 0 && <span className="lr-badge-pill">{logReportCount}</span>}
+            </button>
+            <button className="btn btn-primary" onClick={() => setIsAddModalOpen(true)}>
+              + Add Vehicle
+            </button>
             <span className="welcome-text">Welcome, {userName}</span>
             <ProfileMenu />
           </div>
@@ -279,17 +325,11 @@ function Dashboard() {
           <div className="stat-number">{ownerStats.total}</div>
           <div className="stat-label">Total Vehicles</div>
         </div>
-        <div
-          className={`stat-card clickable ${filterStatus === 'available' ? 'active' : ''}`}
-          onClick={() => setFilterStatus(filterStatus === 'available' ? 'all' : 'available')}
-        >
+        <div className="stat-card">
           <div className="stat-number">{ownerStats.available}</div>
           <div className="stat-label">Available</div>
         </div>
-        <div
-          className={`stat-card clickable ${filterStatus === 'rented' ? 'active' : ''}`}
-          onClick={() => setFilterStatus(filterStatus === 'rented' ? 'all' : 'rented')}
-        >
+        <div className="stat-card">
           <div className="stat-number">{ownerStats.rented}</div>
           <div className="stat-label">Rented</div>
         </div>
@@ -301,48 +341,99 @@ function Dashboard() {
 
       <section className="search-section">
         <div className="search-container">
-          <input type="text" className="search-input"
-            placeholder="Search your vehicles…"
-            value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-
-          <button className="btn btn-outline" onClick={() => setIsRentalHistOpen(true)}>
-            Rental History
-          </button>
-
-          <button
-            className="btn btn-outline lr-toolbar-btn"
-            onClick={() => setIsLogReportOpen(true)}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round"
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9h6m-6 4h4" />
-            </svg>
-            Log Reports
-            {logReportCount > 0 && (
-              <span className="lr-badge-pill">{logReportCount}</span>
-            )}
-          </button>
-
-          <button className="btn btn-primary" onClick={() => setIsAddModalOpen(true)}>
-            + Add Vehicle
+          <div className="search-input-wrapper">
+            <span className="search-icon"><SearchIcon /></span>
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Search your vehicles…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <button className="filter-button" onClick={() => setIsFilterOpen(true)}>
+            <span className="filter-icon"><FilterIcon /></span>
+            {activeFiltersCount > 0 && <span className="filter-badge">{activeFiltersCount}</span>}
           </button>
         </div>
       </section>
 
-      <section className="vehicles-grid">
+      <section className="vehicles-section">
         {filteredVehicles.length === 0 ? (
           <div className="empty-state">
-            <h3>No vehicles yet</h3>
-            <p>Click "Add Vehicle" to list your first car for rent.</p>
+            <h3>No vehicles found</h3>
+            <p>{activeFiltersCount > 0 ? 'Try adjusting your filters.' : 'Click "+ Add Vehicle" to list your first car for rent.'}</p>
           </div>
         ) : (
-          filteredVehicles.map((vehicle) => (
-            <VehicleCard key={vehicle.id} vehicle={vehicle} mode="owner"
-              onEdit={openEditModal} onDelete={handleDeleteClick} />
-          ))
+          <div className="vehicles-grid">
+            {filteredVehicles.map((vehicle) => (
+              <VehicleCard key={vehicle.id} vehicle={vehicle} mode="owner"
+                onEdit={openEditModal} onDelete={handleDeleteClick} />
+            ))}
+          </div>
         )}
       </section>
+
+      {/* Filter Modal */}
+      <Modal isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} title="Filters"
+        footer={
+          <>
+            <button className="btn btn-secondary" onClick={clearFilters}>Reset</button>
+            <button className="btn btn-primary" onClick={() => setIsFilterOpen(false)}>Apply</button>
+          </>
+        }>
+        <div className="filter-content">
+          <div className="filter-group">
+            <label className="filter-label">Status</label>
+            <div className="filter-options">
+              {['available', 'rented'].map(s => (
+                <button key={s} className={`filter-option ${filters.statuses.includes(s) ? 'active' : ''}`}
+                  onClick={() => handleFilterToggle('statuses', s)}
+                  style={{ textTransform: 'capitalize' }}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="filter-group">
+            <label className="filter-label">Vehicle Type</label>
+            <div className="filter-options">
+              {VEHICLE_TYPES.map(type => (
+                <button key={type} className={`filter-option ${filters.types.includes(type) ? 'active' : ''}`}
+                  onClick={() => handleFilterToggle('types', type)}>{type}</button>
+              ))}
+            </div>
+          </div>
+          <div className="filter-group">
+            <label className="filter-label">Transmission</label>
+            <div className="filter-options">
+              {TRANSMISSIONS.map(t => (
+                <button key={t} className={`filter-option ${filters.transmissions.includes(t) ? 'active' : ''}`}
+                  onClick={() => handleFilterToggle('transmissions', t)}>{t}</button>
+              ))}
+            </div>
+          </div>
+          <div className="filter-group">
+            <label className="filter-label">Fuel Type</label>
+            <div className="filter-options">
+              {FUEL_TYPES.map(f => (
+                <button key={f} className={`filter-option ${filters.fuels.includes(f) ? 'active' : ''}`}
+                  onClick={() => handleFilterToggle('fuels', f)}>{f}</button>
+              ))}
+            </div>
+          </div>
+          <div className="filter-group">
+            <label className="filter-label">Price Range (&#8369;/day)</label>
+            <div className="price-inputs">
+              <input type="number" className="price-input" placeholder="Min"
+                value={filters.minPrice} onChange={e => setFilters(p => ({ ...p, minPrice: e.target.value }))} />
+              <span className="price-separator">to</span>
+              <input type="number" className="price-input" placeholder="Max"
+                value={filters.maxPrice} onChange={e => setFilters(p => ({ ...p, maxPrice: e.target.value }))} />
+            </div>
+          </div>
+        </div>
+      </Modal>
 
       <Modal isOpen={isAddModalOpen}
         onClose={() => { setIsAddModalOpen(false); resetForm(); }}
