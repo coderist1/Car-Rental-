@@ -1,16 +1,20 @@
 /* Login.css */
 
-/* Visual Clarity & Spacing [cite: 80, 81] */
-.auth-container {
-    padding: 20px;
+/* Adapt register layout for the sign‑in page */
+.register-split-container {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
+    width: 100%;
+    max-width: 950px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    min-height: 600px;
 }
 
-/* Color Contrast & Theme [cite: 79] */
+/* Left-green panel rules specific to login */
 .login-theme-panel {
+    flex: 0 0 380px;
     background: linear-gradient(135deg, #3F9B84 0%, #2d7a67 100%) !important;
     color: white !important;
     padding: 40px;
@@ -19,7 +23,7 @@
     justify-content: center;
 }
 
-.login-theme-panel .auth-title, 
+.login-theme-panel .auth-title,
 .login-theme-panel .auth-subtitle {
     color: white !important;
 }
@@ -34,7 +38,26 @@
 }
 
 .login-theme-panel .auth-logo-svg {
-    color: #3F9B84 !important; 
+    color: #3F9B84 !important;
+}
+
+/* Right pane mirrors register styles */
+.register-right-panel {
+    flex: 1;
+    padding: 40px 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: #fafafa;
+}
+
+/* Visual Clarity & Spacing [cite: 80, 81] */
+.auth-container {
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
 }
 
 /* Form Styling */
@@ -46,6 +69,15 @@
 
 .input-group {
     margin-bottom: 20px;
+}
+
+/* Demo credentials box tweak */
+.demo-accounts {
+    margin-top: 30px;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 15px;
+    border-radius: 8px;
 }
 
 /* Accessible Input Focus [cite: 5] */
@@ -67,8 +99,13 @@
         border-bottom: 1px solid #e2e8f0;
     }
 
+    .register-right-panel {
+        padding: 32px;
+    }
+
     .login-form-wrapper {
         max-width: 100%;
         padding: 20px;
     }
 }
+

@@ -18,10 +18,16 @@ function Login() {
     setLoading(true);
 
     try {
-      const result = login(email, password);
-      
-      if (result.success) {
-        const role = result.user.role;
+      // trim whitespace so users don't accidentally include spaces
+      const cleanEmail = email.trim();
+      const cleanPassword = password.trim();
+
+      // `login` may be synchronous today but could change to async later,
+      // so await its return value to correctly handle promises.
+      const result = await login(cleanEmail, cleanPassword);
+
+      if (result && result.success) {
+        const role = result.user?.role;
         if (role === 'owner') {
           navigate('/dashboard');
         } else if (role === 'admin') {
@@ -30,9 +36,10 @@ function Login() {
           navigate('/renter');
         }
       } else {
-        setError(result.error || 'Invalid email or password');
+        setError(result?.error || 'Invalid email or password');
       }
     } catch (err) {
+      console.error('login error', err);
       setError('An error occurred. Please try again.');
     } finally {
       setLoading(false);
@@ -72,9 +79,9 @@ function Login() {
 
           <div className="demo-accounts" style={{ marginTop: '30px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', padding: '15px', borderRadius: '8px' }}>
             <p className="demo-title" style={{ color: 'white', fontWeight: 'bold' }}>Quick Demo Access:</p>
-            <p className="demo-account" style={{ color: '#e2e8f0' }}>Owner: owner@test.com</p>
-            <p className="demo-account" style={{ color: '#e2e8f0' }}>Renter: renter@test.com</p>
-            <p className="demo-account" style={{ color: '#e2e8f0' }}>Admin: admin@test.com</p>
+            <p className="demo-account" style={{ color: '#e2e8f0' }}>Owner: owner@test.com / password</p>
+            <p className="demo-account" style={{ color: '#e2e8f0' }}>Renter: renter@test.com / password</p>
+            <p className="demo-account" style={{ color: '#e2e8f0' }}>Admin: admin@test.com / admin123</p>
           </div>
         </div>
 
