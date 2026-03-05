@@ -19,10 +19,12 @@ function Profile() {
     firstName: '', lastName: '', middleName: '',
     sex: '', dateOfBirth: '', email: '', phone: '',
   });
-  const [avatar,      setAvatar]      = useState(null);   // base64 preview
+  const [savedData, setSavedData] = useState(null); // snapshot before editing
+  const [avatar,      setAvatar]      = useState(null);
   const [errors,      setErrors]      = useState({});
   const [showSuccess, setShowSuccess] = useState(false);
   const [loading,     setLoading]     = useState(false);
+  const [isEditing,   setIsEditing]   = useState(false);
 
   const userRole   = user?.role || 'renter';
   const roleStyle  = ROLE_COLORS[userRole] || ROLE_COLORS.renter;
@@ -87,6 +89,7 @@ function Profile() {
       });
       if (result?.success !== false) {
         setShowSuccess(true);
+        setIsEditing(false);
         setTimeout(() => setShowSuccess(false), 3000);
       }
     } catch (err) {
@@ -94,6 +97,18 @@ function Profile() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleStartEdit = () => {
+    setSavedData({ ...formData }); // snapshot current data
+    setErrors({});
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    if (savedData) setFormData(savedData); // revert any unsaved changes
+    setErrors({});
+    setIsEditing(false);
   };
 
   /* ── Derived display values ── */
@@ -171,99 +186,165 @@ function Profile() {
           </div>
         </aside>
 
-        {/* ── RIGHT: edit form ── */}
+        {/* ── RIGHT: info view or edit form ── */}
         <div className="profile-form-panel">
           <div className="form-panel-header">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3F9B84" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-            </svg>
-            <span>Edit Personal Information</span>
+            {isEditing ? (
+              <>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3F9B84" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                <span>Edit Personal Information</span>
+              </>
+            ) : (
+              <>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3F9B84" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+                <span>Personal Information</span>
+                <button className="prof-edit-btn" onClick={handleStartEdit}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                  </svg>
+                  Edit Profile
+                </button>
+              </>
+            )}
           </div>
 
-          <form className="profile-form" onSubmit={handleSubmit}>
-
-            {/* Name section */}
-            <p className="form-section-label">Name</p>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">First Name <span className="req">*</span></label>
-                <input type="text" name="firstName" className={`form-input ${errors.firstName ? 'input-error' : ''}`}
-                  placeholder="First name" value={formData.firstName} onChange={handleChange} />
-                {errors.firstName && <span className="error-msg">{errors.firstName}</span>}
-              </div>
-              <div className="form-group">
-                <label className="form-label">Last Name <span className="req">*</span></label>
-                <input type="text" name="lastName" className={`form-input ${errors.lastName ? 'input-error' : ''}`}
-                  placeholder="Last name" value={formData.lastName} onChange={handleChange} />
-                {errors.lastName && <span className="error-msg">{errors.lastName}</span>}
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Middle Name <span className="opt">(Optional)</span></label>
-                <input type="text" name="middleName" className="form-input"
-                  placeholder="Middle name" value={formData.middleName} onChange={handleChange} />
-              </div>
-            </div>
-
-            {/* Details */}
-            <p className="form-section-label">Details</p>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Sex <span className="req">*</span></label>
-                <select name="sex" className={`form-input form-select ${errors.sex ? 'input-error' : ''}`}
-                  value={formData.sex} onChange={handleChange}>
-                  <option value="">Select sex</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                  <option value="prefer-not-to-say">Prefer not to say</option>
-                </select>
-                {errors.sex && <span className="error-msg">{errors.sex}</span>}
-              </div>
-              <div className="form-group">
-                <label className="form-label">Date of Birth <span className="req">*</span></label>
-                <input type="date" name="dateOfBirth" className={`form-input ${errors.dateOfBirth ? 'input-error' : ''}`}
-                  value={formData.dateOfBirth} onChange={handleChange} />
-                {errors.dateOfBirth && <span className="error-msg">{errors.dateOfBirth}</span>}
-              </div>
-            </div>
-
-            {/* Contact */}
-            <p className="form-section-label">Contact</p>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Email Address <span className="req">*</span></label>
-                <input type="email" name="email" className={`form-input ${errors.email ? 'input-error' : ''}`}
-                  placeholder="your@email.com" value={formData.email} onChange={handleChange} />
-                {errors.email && <span className="error-msg">{errors.email}</span>}
-              </div>
-              <div className="form-group">
-                <label className="form-label">Phone Number <span className="opt">(Optional)</span></label>
-                <input type="tel" name="phone" className="form-input"
-                  placeholder="+63 900 000 0000" value={formData.phone} onChange={handleChange} />
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="form-actions">
+          {/* ── READ-ONLY VIEW ── */}
+          {!isEditing && (
+            <div className="profile-view">
               {showSuccess && (
-                <div className="success-toast">
+                <div className="success-toast" style={{ margin: '0 0 16px' }}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
                   </svg>
                   Profile updated successfully!
                 </div>
               )}
-              <div className="form-action-btns">
-                <button type="button" className="btn btn-secondary" onClick={() => navigate(-1)}>Cancel</button>
-                <button type="submit" className="btn btn-primary" disabled={loading}>
-                  {loading ? 'Saving…' : 'Save Changes'}
-                </button>
+
+              <p className="form-section-label">Name</p>
+              <div className="prof-view-grid">
+                <div className="prof-view-field">
+                  <span className="prof-view-label">First Name</span>
+                  <span className="prof-view-value">{formData.firstName || <em className="prof-empty">Not set</em>}</span>
+                </div>
+                <div className="prof-view-field">
+                  <span className="prof-view-label">Last Name</span>
+                  <span className="prof-view-value">{formData.lastName || <em className="prof-empty">Not set</em>}</span>
+                </div>
+                <div className="prof-view-field">
+                  <span className="prof-view-label">Middle Name</span>
+                  <span className="prof-view-value">{formData.middleName || <em className="prof-empty">Not set</em>}</span>
+                </div>
+              </div>
+
+              <p className="form-section-label">Details</p>
+              <div className="prof-view-grid">
+                <div className="prof-view-field">
+                  <span className="prof-view-label">Sex</span>
+                  <span className="prof-view-value" style={{ textTransform: 'capitalize' }}>{formData.sex || <em className="prof-empty">Not set</em>}</span>
+                </div>
+                <div className="prof-view-field">
+                  <span className="prof-view-label">Date of Birth</span>
+                  <span className="prof-view-value">
+                    {formData.dateOfBirth
+                      ? new Date(formData.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                      : <em className="prof-empty">Not set</em>}
+                  </span>
+                </div>
+              </div>
+
+              <p className="form-section-label">Contact</p>
+              <div className="prof-view-grid">
+                <div className="prof-view-field">
+                  <span className="prof-view-label">Email Address</span>
+                  <span className="prof-view-value">{formData.email || <em className="prof-empty">Not set</em>}</span>
+                </div>
+                <div className="prof-view-field">
+                  <span className="prof-view-label">Phone Number</span>
+                  <span className="prof-view-value">{formData.phone || <em className="prof-empty">Not set</em>}</span>
+                </div>
               </div>
             </div>
+          )}
 
-          </form>
+          {/* ── EDIT FORM ── */}
+          {isEditing && (
+            <form className="profile-form" onSubmit={handleSubmit}>
+
+              <p className="form-section-label">Name</p>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">First Name <span className="req">*</span></label>
+                  <input type="text" name="firstName" className={`form-input ${errors.firstName ? 'input-error' : ''}`}
+                    placeholder="First name" value={formData.firstName} onChange={handleChange} />
+                  {errors.firstName && <span className="error-msg">{errors.firstName}</span>}
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Last Name <span className="req">*</span></label>
+                  <input type="text" name="lastName" className={`form-input ${errors.lastName ? 'input-error' : ''}`}
+                    placeholder="Last name" value={formData.lastName} onChange={handleChange} />
+                  {errors.lastName && <span className="error-msg">{errors.lastName}</span>}
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Middle Name <span className="opt">(Optional)</span></label>
+                  <input type="text" name="middleName" className="form-input"
+                    placeholder="Middle name" value={formData.middleName} onChange={handleChange} />
+                </div>
+              </div>
+
+              <p className="form-section-label">Details</p>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Sex <span className="req">*</span></label>
+                  <select name="sex" className={`form-input form-select ${errors.sex ? 'input-error' : ''}`}
+                    value={formData.sex} onChange={handleChange}>
+                    <option value="">Select sex</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                    <option value="prefer-not-to-say">Prefer not to say</option>
+                  </select>
+                  {errors.sex && <span className="error-msg">{errors.sex}</span>}
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Date of Birth <span className="req">*</span></label>
+                  <input type="date" name="dateOfBirth" className={`form-input ${errors.dateOfBirth ? 'input-error' : ''}`}
+                    value={formData.dateOfBirth} onChange={handleChange} />
+                  {errors.dateOfBirth && <span className="error-msg">{errors.dateOfBirth}</span>}
+                </div>
+              </div>
+
+              <p className="form-section-label">Contact</p>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Email Address <span className="req">*</span></label>
+                  <input type="email" name="email" className={`form-input ${errors.email ? 'input-error' : ''}`}
+                    placeholder="your@email.com" value={formData.email} onChange={handleChange} />
+                  {errors.email && <span className="error-msg">{errors.email}</span>}
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Phone Number <span className="opt">(Optional)</span></label>
+                  <input type="tel" name="phone" className="form-input"
+                    placeholder="+63 900 000 0000" value={formData.phone} onChange={handleChange} />
+                </div>
+              </div>
+
+              <div className="form-actions">
+                <div className="form-action-btns">
+                  <button type="button" className="btn btn-secondary" onClick={handleCancelEdit}>Cancel</button>
+                  <button type="submit" className="btn btn-primary" disabled={loading}>
+                    {loading ? 'Saving…' : 'Save Changes'}
+                  </button>
+                </div>
+              </div>
+
+            </form>
+          )}
         </div>
       </div>
     </div>
