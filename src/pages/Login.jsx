@@ -18,12 +18,9 @@ function Login() {
     setLoading(true);
 
     try {
-      // trim whitespace so users don't accidentally include spaces
       const cleanEmail = email.trim();
       const cleanPassword = password.trim();
 
-      // `login` may be synchronous today but could change to async later,
-      // so await its return value to correctly handle promises.
       const result = await login(cleanEmail, cleanPassword);
 
       if (result && result.success) {
@@ -48,23 +45,30 @@ function Login() {
 
   return (
     <div className="auth-container">
-      {/* Use <main> for the primary content area [cite: 52] */}
+
+      {/* ── Back button → LandingPage ── */}
+      <button
+        className="auth-back-btn"
+        onClick={() => navigate('/LandingPage')}
+        title="Back"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2.5"
+          strokeLinecap="round" strokeLinejoin="round">
+          <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+      </button>
+
       <main className="register-split-container">
         
         {/* LEFT PANEL */}
         <div className="register-left-panel login-theme-panel">
           <div className="auth-logo-box">
             <svg
-              width="55"
-              height="55"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="auth-logo-svg"
-              aria-hidden="true"
+              width="55" height="55" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" strokeWidth="2.5"
+              strokeLinecap="round" strokeLinejoin="round"
+              className="auth-logo-svg" aria-hidden="true"
             >
               <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
               <circle cx="7" cy="17" r="2" />
@@ -73,7 +77,6 @@ function Login() {
             </svg>
           </div>
 
-          {/* Correct Heading Levels [cite: 71, 73] */}
           <h1 className="auth-title">Welcome Back</h1>
           <p className="auth-subtitle">Sign in to continue to CarRental</p>
 
@@ -97,7 +100,6 @@ function Login() {
 
             <form onSubmit={handleSubmit} className="auth-form">
               <div className="input-group">
-                {/* Step 2: Form Accessibility - Labels linked to IDs [cite: 61, 62] */}
                 <label className="input-label" htmlFor="login-email">Email Address</label>
                 <input
                   id="login-email"
@@ -112,7 +114,6 @@ function Login() {
 
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <label className="input-label" htmlFor="login-password">Password</label>
-                {/* Step 2: Improved Usability with functional Link */}
                 <Link to="/forgot-password" style={{ fontSize: '12px', color: '#3F9B84', textDecoration: 'none', fontWeight: '500' }}>
                   Forgot Password?
                 </Link>
@@ -127,7 +128,6 @@ function Login() {
                 required
               />
             
-              {/* Step 3: Specify button type [cite: 65, 67] */}
               <button 
                 type="submit" 
                 className="btn btn-primary btn-full"

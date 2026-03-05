@@ -1,3 +1,5 @@
+/* Register.css */
+
 /* The main container holding both sides */
 .register-split-container {
   display: flex;
@@ -72,4 +74,40 @@
   .register-form-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── Back Button ── */
+.auth-back-btn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 100;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(63, 155, 132, 0.25);
+  color: #3F9B84;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 12px rgba(63, 155, 132, 0.15);
+  transition: background 0.2s ease,
+              border-color 0.2s ease,
+              transform 0.2s ease,
+              box-shadow 0.2s ease;
+}
+
+.auth-back-btn:hover {
+  background: #ffffff;
+  border-color: #3F9B84;
+  transform: translateX(-4px);
+  box-shadow: 0 4px 16px rgba(63, 155, 132, 0.25);
+}
+
+.auth-back-btn:active {
+  transform: translateX(-2px) scale(0.95);
 }
