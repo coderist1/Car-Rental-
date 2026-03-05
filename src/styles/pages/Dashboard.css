@@ -591,3 +591,126 @@
   font-weight: 700;
   border-radius: var(--r3);
 }
+/* ════════════════════════════════════════════════════
+   VEHICLE FORM  ·  Enhanced sections + photo upload
+════════════════════════════════════════════════════ */
+.vf-section {
+  background: #fff;
+  border: 1.5px solid var(--g200);
+  border-radius: var(--r);
+  padding: 18px 20px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  transition: border-color .15s;
+}
+.vf-section:focus-within { border-color: var(--p); }
+
+.vf-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--g400);
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--g100);
+}
+.vf-section-icon {
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  background: var(--p-lt);
+  color: var(--p);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Photo zone */
+.vf-photo-zone {
+  width: 100%; height: 185px;
+  border: 2px dashed var(--g300);
+  border-radius: var(--r2);
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  background: var(--g50);
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color .16s, background .16s;
+}
+.vf-photo-zone:hover       { border-color: var(--p); background: var(--p-lt); }
+.vf-photo-zone--filled     { border-style: solid; border-color: var(--g200); }
+.vf-photo-zone--filled:hover { border-color: var(--p); }
+
+.vf-photo-preview {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center;
+  display: block;
+}
+.vf-photo-overlay {
+  position: absolute; inset: 0;
+  background: rgba(15,23,42,.45);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 7px; color: #fff;
+  opacity: 0; transition: opacity .16s;
+}
+.vf-photo-zone:hover .vf-photo-overlay { opacity: 1; }
+.vf-photo-overlay span { font-size: 13px; font-weight: 700; }
+
+.vf-photo-empty {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 7px;
+  pointer-events: none; text-align: center; padding: 16px;
+}
+.vf-upload-icon {
+  width: 52px; height: 52px;
+  border-radius: 12px;
+  background: var(--g100);
+  border: 1.5px solid var(--g200);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--g400);
+  margin-bottom: 4px;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.vf-photo-zone:hover .vf-upload-icon { background: rgba(63,155,132,.1); border-color: var(--p); color: var(--p); }
+.vf-upload-title { font-size: 13px; font-weight: 700; color: var(--g700); margin: 0; }
+.vf-upload-hint  { font-size: 11px; color: var(--g400); margin: 0; }
+
+.vf-remove-photo {
+  display: inline-flex; align-items: center; gap: 5px;
+  margin-top: 8px;
+  background: none; border: none;
+  color: var(--danger); font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: inherit; padding: 2px 0;
+  transition: opacity .14s;
+}
+.vf-remove-photo:hover { opacity: .7; }
+
+/* Price prefix */
+.vf-prefix-wrap { position: relative; display: flex; align-items: center; }
+.vf-prefix {
+  position: absolute; left: 13px;
+  font-size: 14px; font-weight: 700; color: var(--p);
+  pointer-events: none;
+}
+.vf-prefixed { padding-left: 28px !important; }
+
+/* Section form inputs */
+.vf-section .form-group  { margin-bottom: 14px; }
+.vf-section .form-group:last-child { margin-bottom: 0; }
+.vf-section .form-label  { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--g500); margin-bottom: 6px; display: block; }
+.vf-section .form-input  {
+  width: 100%; padding: 10px 13px;
+  border: 1.5px solid var(--g200); border-radius: var(--r3);
+  font-size: 14px; font-family: inherit; color: var(--g900);
+  background: var(--g50); outline: none; box-sizing: border-box;
+  transition: border-color .15s, background .15s, box-shadow .15s;
+  appearance: auto;
+}
+.vf-section .form-input:focus  { border-color: var(--p); background: #fff; box-shadow: 0 0 0 3px var(--p-ring); }
+.vf-section .form-input::placeholder { color: var(--g400); }
+.vf-section textarea.form-input { resize: vertical; min-height: 84px; }
+
+.vehicle-form > .form-actions { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--g100); }
