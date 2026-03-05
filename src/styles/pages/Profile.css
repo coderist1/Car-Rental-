@@ -512,8 +512,6 @@
   font-style: italic;
   color: #cbd5e1;
   font-weight: 400;
-<<<<<<< HEAD
-=======
 }
 
 /* ── Photo Confirmation ── */
@@ -621,5 +619,4 @@
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
->>>>>>> origin/angela_app
 }
