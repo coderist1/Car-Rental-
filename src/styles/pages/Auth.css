@@ -177,6 +177,8 @@
 
 /* Role Selection */
 .role-section {
+  border: none;
+  padding: 0;
   margin-bottom: 24px;
 }
 
