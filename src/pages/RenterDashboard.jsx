@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useVehicles } from '../hooks';
 import { useAuth } from '../context/AuthContext';
-import { ProfileMenu, VehicleCard, Modal } from '../components';
+import { ProfileMenu, VehicleCard, Modal, ConfirmModal } from '../components';
 import { loadLogReports, addComment, saveLogReports } from '../hooks/useLogReport';
 import '../styles/pages/RenterDashboard.css';
 
@@ -323,14 +323,17 @@ function ColCard({ title, titleColor, headerBg, headerBorder, date, children }) 
    SIGNATURE SECTION  (renter acknowledgement)
 ═══════════════════════════════════════════════════════════════ */
 function SignatureSection({ localReport, onSigned }) {
-  const [sigText,   setSigText]   = useState('');
-  const [editing,   setEditing]   = useState(false);
-  const [saving,    setSaving]    = useState(false);
+  const [sigText,      setSigText]      = useState('');
+  const [editing,      setEditing]      = useState(false);
+  const [saving,       setSaving]       = useState(false);
+  const [confirmEdit,  setConfirmEdit]  = useState(false); // gate before opening edit form
+  const [confirmSave,  setConfirmSave]  = useState(false); // gate before overwriting signature
   const alreadySigned = !!localReport.renterSignature;
 
   const inp = { width: '100%', padding: '10px 13px', border: `1.5px solid ${C.g200}`, borderRadius: C.r2, fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', transition: 'border-color .15s' };
 
-  const handleSign = () => {
+  /* The actual save — called only after all confirms pass */
+  const doSave = () => {
     if (!sigText.trim()) return;
     setSaving(true);
     const all = loadLogReports();
@@ -346,56 +349,115 @@ function SignatureSection({ localReport, onSigned }) {
     onSigned && onSigned();
   };
 
-  return (
-    <Sec label="Your Acknowledgement">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <span style={{ fontSize: 13, color: C.g500, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <SignIcon /> Acknowledge that you have reviewed this report
-        </span>
-        {!editing && (
-          <button
-            onClick={() => { setSigText(localReport.renterSignature || ''); setEditing(true); }}
-            style={{ background: alreadySigned ? 'none' : C.indigoDk, color: alreadySigned ? C.indigoDk : '#fff', border: alreadySigned ? `1px solid #c7d2fe` : 'none', borderRadius: C.r2, padding: '6px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, transition: 'all .14s' }}>
-            <SignIcon /> {alreadySigned ? 'Edit Signature' : 'Sign Acknowledgement'}
-          </button>
-        )}
-      </div>
+  /* "Edit Signature" clicked — if already signed, ask first */
+  const handleEditClick = () => {
+    if (alreadySigned) {
+      setConfirmEdit(true);
+    } else {
+      setSigText('');
+      setEditing(true);
+    }
+  };
 
-      {alreadySigned && !editing ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: C.r, padding: '14px 18px' }}>
-          <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <CheckIcon />
-          </div>
-          <div>
-            <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: C.navy, fontStyle: 'italic' }}>{localReport.renterSignature}</p>
-            {localReport.renterSignatureAt && <p style={{ margin: '3px 0 0', fontSize: 11, color: C.g400 }}>Signed {fmtDate(localReport.renterSignatureAt)}</p>}
-          </div>
-        </div>
-      ) : editing ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: C.r2, padding: '10px 14px', fontSize: 13, color: '#1e40af', lineHeight: 1.6 }}>
-            {alreadySigned
-              ? 'Update your acknowledgement signature below.'
-              : 'By signing, you confirm you have read this vehicle log report. Type your full name below.'}
-          </div>
-          <input style={inp} value={sigText} onChange={e => setSigText(e.target.value)}
-            placeholder="Type your full name to sign…" autoFocus
-            onFocus={e => e.target.style.borderColor = C.indigoDk}
-            onBlur={e => e.target.style.borderColor = C.g200}
-            onKeyDown={e => e.key === 'Enter' && handleSign()} />
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => { setEditing(false); setSigText(''); }} style={{ padding: '8px 18px', border: `1.5px solid ${C.g200}`, borderRadius: C.r2, background: '#fff', color: C.g700, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-            <button onClick={handleSign} disabled={saving || !sigText.trim()} style={{ padding: '8px 20px', border: 'none', borderRadius: C.r2, background: sigText.trim() ? C.indigoDk : C.g200, color: sigText.trim() ? '#fff' : C.g400, fontSize: 13, fontWeight: 700, cursor: sigText.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', gap: 5, transition: 'all .14s' }}>
-              <SignIcon /> {saving ? 'Saving…' : alreadySigned ? 'Update Signature' : 'Confirm Signature'}
+  /* User confirmed they want to open the edit form */
+  const handleConfirmEditOpen = () => {
+    setSigText(localReport.renterSignature || '');
+    setEditing(true);
+  };
+
+  /* "Update / Confirm Signature" clicked inside the form */
+  const handleSaveClick = () => {
+    if (!sigText.trim()) return;
+    if (alreadySigned) {
+      setConfirmSave(true); // ask before overwriting
+    } else {
+      doSave(); // first-time sign — no extra confirm needed
+    }
+  };
+
+  return (
+    <>
+      <Sec label="Your Acknowledgement">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <span style={{ fontSize: 13, color: C.g500, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <SignIcon /> Acknowledge that you have reviewed this report
+          </span>
+          {!editing && (
+            <button
+              onClick={handleEditClick}
+              style={{ background: alreadySigned ? 'none' : C.indigoDk, color: alreadySigned ? C.indigoDk : '#fff', border: alreadySigned ? `1px solid #c7d2fe` : 'none', borderRadius: C.r2, padding: '6px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, transition: 'all .14s' }}>
+              <SignIcon /> {alreadySigned ? 'Edit Signature' : 'Sign Acknowledgement'}
             </button>
+          )}
+        </div>
+
+        {alreadySigned && !editing ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: C.r, padding: '14px 18px' }}>
+            <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <CheckIcon />
+            </div>
+            <div>
+              <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: C.navy, fontStyle: 'italic' }}>{localReport.renterSignature}</p>
+              {localReport.renterSignatureAt && <p style={{ margin: '3px 0 0', fontSize: 11, color: C.g400 }}>Signed {fmtDate(localReport.renterSignatureAt)}</p>}
+            </div>
           </div>
-        </div>
-      ) : (
-        <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: C.r, padding: '14px 18px', fontSize: 13, color: '#92400e', lineHeight: 1.6 }}>
-          You have not signed this report yet. Click "Sign Acknowledgement" to confirm you've reviewed it.
-        </div>
-      )}
-    </Sec>
+        ) : editing ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: C.r2, padding: '10px 14px', fontSize: 13, color: '#1e40af', lineHeight: 1.6 }}>
+              {alreadySigned
+                ? 'You are updating your existing signature. Type your full name below to confirm the change.'
+                : 'By signing, you confirm you have read this vehicle log report. Type your full name below.'}
+            </div>
+            <input style={inp} value={sigText} onChange={e => setSigText(e.target.value)}
+              placeholder="Type your full name to sign…" autoFocus
+              onFocus={e => e.target.style.borderColor = C.indigoDk}
+              onBlur={e => e.target.style.borderColor = C.g200}
+              onKeyDown={e => { if (e.key === 'Enter') handleSaveClick(); }} />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={() => { setEditing(false); setSigText(''); }}
+                style={{ padding: '8px 18px', border: `1.5px solid ${C.g200}`, borderRadius: C.r2, background: '#fff', color: C.g700, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveClick}
+                disabled={saving || !sigText.trim()}
+                style={{ padding: '8px 20px', border: 'none', borderRadius: C.r2, background: sigText.trim() ? C.indigoDk : C.g200, color: sigText.trim() ? '#fff' : C.g400, fontSize: 13, fontWeight: 700, cursor: sigText.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', gap: 5, transition: 'all .14s' }}>
+                <SignIcon /> {saving ? 'Saving…' : alreadySigned ? 'Update Signature' : 'Confirm Signature'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: C.r, padding: '14px 18px', fontSize: 13, color: '#92400e', lineHeight: 1.6 }}>
+            You have not signed this report yet. Click "Sign Acknowledgement" to confirm you've reviewed it.
+          </div>
+        )}
+      </Sec>
+
+      {/* ── Confirm: open edit when already signed ── */}
+      <ConfirmModal
+        isOpen={confirmEdit}
+        onClose={() => setConfirmEdit(false)}
+        onConfirm={handleConfirmEditOpen}
+        title="Edit Your Signature?"
+        message="You have already signed this report. Are you sure you want to edit your acknowledgement signature?"
+        confirmText="Yes, Edit"
+        cancelText="Keep Current"
+        variant="warning"
+      />
+
+      {/* ── Confirm: save when overwriting an existing signature ── */}
+      <ConfirmModal
+        isOpen={confirmSave}
+        onClose={() => setConfirmSave(false)}
+        onConfirm={doSave}
+        title="Update Signature?"
+        message={`You are replacing your existing signature with "${sigText}". This action will update your acknowledgement on this report. Are you sure?`}
+        confirmText="Yes, Update"
+        cancelText="Go Back"
+        variant="warning"
+      />
+    </>
   );
 }
 
