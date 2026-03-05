@@ -76,8 +76,8 @@
 }
 
 @keyframes heartPulse {
-  0%, 100% { box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3); }
-  50% { box-shadow: 0 4px 12px rgba(34, 197, 94, 0.6); }
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
 }
 
 /* status-badge styling for vehicle cards (non-admin) */
@@ -207,7 +207,7 @@
 }
 
 .saved-btn.saved {
-  background-color: #22c55e !important;
+  background-color: #ef445d !important;
   border-color: #16a34a !important;
   color: white !important;
   animation: heartPulse 0.3s ease;
