@@ -589,9 +589,12 @@ function RenterDashboard() {
           <p className="header-subtitle">Find your perfect ride</p>
         </div>
         <div className="header-actions">
-          <button className="btn btn-outline lr-toolbar-btn" onClick={() => { refreshLogs(); setIsLogListOpen(true); }}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <ClipboardIcon /> Log Reports
+          <button
+            className="btn btn-outline lr-toolbar-btn"
+            onClick={() => { refreshLogs(); setIsLogListOpen(true); }}
+          >
+            <ClipboardIcon />
+            Log Reports
             {logCount > 0 && <span className="lr-badge-pill">{logCount}</span>}
           </button>
           <button className="btn btn-outline" onClick={() => setIsHistoryOpen(true)}>My Rentals</button>
