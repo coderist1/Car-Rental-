@@ -2,3 +2,4 @@
 
 export * from './useAuth';
 export * from './useVehicles';
+export * from './useLogReport';

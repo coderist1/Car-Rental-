@@ -185,6 +185,11 @@
   grid-template-columns: 2fr 2fr 2fr auto;
 }
 
+/* Disputes table: Vehicle | Renter | Type | Date | Actions */
+.admin-table.disputes-table {
+  grid-template-columns: 1.5fr 1.5fr 1fr 1fr auto;
+}
+
 .table-header .th,
 .table-row .td {
   padding: 12px 16px;
@@ -366,6 +371,143 @@
   background: #f8fafc;
   border-radius: 8px;
   font-size: 14px;
+}
+
+/* ─── Dispute Type Badge ────────────────────────────────────────── */
+.dispute-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+  background: #fef3c7;
+  color: #b45309;
+  white-space: nowrap;
+}
+
+.dispute-type-badge--lg {
+  font-size: 13px;
+  padding: 5px 14px;
+}
+
+/* View button */
+.btn-view {
+  background: #e0e7ff;
+  color: #4338ca;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+
+.btn-view:hover {
+  background: #c7d2fe;
+  color: #3730a3;
+}
+
+/* ─── Dispute Detail Modal ──────────────────────────────────────── */
+.dispute-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.dispute-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.dispute-detail-date {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.dispute-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.dispute-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dispute-detail-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dispute-detail-value {
+  font-size: 14px;
+  color: #1a2c5e;
+  font-weight: 500;
+}
+
+.dispute-detail-reason {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  background: #fef9f0;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+}
+
+.dispute-detail-reason-text {
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Renter message highlight box */
+.dispute-message-box {
+  background: #f0f7ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.dispute-message-box-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  background: #dbeafe;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1d4ed8;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.dispute-message-text {
+  padding: 14px 16px;
+  font-size: 14px;
+  color: #1e3a5f;
+  line-height: 1.7;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.dispute-detail-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #f1f5f9;
 }
 
 /* ─── Admin Profile Menu Dropdown ───────────────────────────────── */

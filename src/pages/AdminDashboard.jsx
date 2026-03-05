@@ -1,18 +1,21 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, useVehicles } from '../hooks';
+import { useLogReport } from '../context/LogReportContext';
 import { Modal, ConfirmModal } from '../components';
 import '../styles/pages/AdminDashboard.css';
 
 function AdminDashboard() {
   const { user, getRegisteredUsers, updateUser, deleteUser, logout } = useAuth();
   const { vehicles, rentalHistory, deleteVehicle } = useVehicles();
+  const { reports, removeReport } = useLogReport();
   const navigate = useNavigate();
 
   const [activePanel, setActivePanel] = useState('users');
   const [selectedOwner, setSelectedOwner] = useState(null);
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [selectedDispute, setSelectedDispute] = useState(null);
   const profileMenuRef = useRef(null);
 
   // Close profile menu when clicking outside
@@ -54,7 +57,7 @@ function AdminDashboard() {
   // Analytics calculations
   const analytics = useMemo(() => {
     const activeRentals = rentalHistory.filter(r => r.status === 'active').length;
-    const openDisputes = 0; // Placeholder for future feature
+    const openDisputes = reports.length;
     const estimatedRevenue = rentalHistory
       .filter(r => r.status === 'active')
       .reduce((sum, r) => sum + Number(r.amount || 0), 0);
@@ -66,7 +69,7 @@ function AdminDashboard() {
       openDisputes,
       estimatedRevenue
     };
-  }, [users, vehicles, rentalHistory]);
+  }, [users, vehicles, rentalHistory, reports]);
 
   // Group vehicles by owner
   const vehiclesByOwner = useMemo(() => {
@@ -255,7 +258,52 @@ const renderVehiclesPanel = () => (
   const renderDisputesPanel = () => (
     <div className="admin-panel">
       <h2 className="panel-title">Disputes</h2>
-      <div className="admin-empty">No open disputes</div>
+      {reports.length === 0 ? (
+        <div className="admin-empty">No open disputes</div>
+      ) : (
+        <div className="admin-table disputes-table">
+          <div className="table-header">
+            <div className="th">Vehicle</div>
+            <div className="th">Renter</div>
+            <div className="th">Type</div>
+            <div className="th">Date</div>
+            <div className="th">Actions</div>
+          </div>
+          {reports.slice().reverse().map(r => (
+            <div key={r.id} className="table-row">
+              <div className="td">{r.vehicleName}</div>
+              <div className="td">{r.renterName}</div>
+              <div className="td">
+                <span className="dispute-type-badge">
+                  {r.type || 'Report'}
+                </span>
+              </div>
+              <div className="td">{new Date(r.createdAt).toLocaleDateString()}</div>
+              <div className="td action-buttons">
+                <button
+                  className="btn btn-sm btn-view"
+                  onClick={() => setSelectedDispute(r)}
+                >
+                  View
+                </button>
+                <button
+                  className="btn btn-sm btn-danger"
+                  onClick={() => {
+                    setConfirmState({
+                      open: true,
+                      variant: 'danger',
+                      message: 'Are you sure you want to delete this dispute report?',
+                      onConfirm: () => removeReport(r.id)
+                    });
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 
@@ -396,6 +444,89 @@ const renderVehiclesPanel = () => (
           </section>
         </main>
       </div>
+
+      {/* Dispute Detail Modal */}
+      <Modal
+        isOpen={!!selectedDispute}
+        onClose={() => setSelectedDispute(null)}
+        title="Dispute Details"
+        size="medium"
+      >
+        {selectedDispute && (
+          <div className="dispute-detail">
+            <div className="dispute-detail-header">
+              <span className="dispute-type-badge dispute-type-badge--lg">
+                {selectedDispute.type || 'Report'}
+              </span>
+              <span className="dispute-detail-date">
+                {new Date(selectedDispute.createdAt).toLocaleDateString('en-US', {
+                  year: 'numeric', month: 'long', day: 'numeric'
+                })}
+              </span>
+            </div>
+
+            <div className="dispute-detail-grid">
+              <div className="dispute-detail-item">
+                <span className="dispute-detail-label">Vehicle</span>
+                <span className="dispute-detail-value">{selectedDispute.vehicleName || '—'}</span>
+              </div>
+              <div className="dispute-detail-item">
+                <span className="dispute-detail-label">Reported By</span>
+                <span className="dispute-detail-value">{selectedDispute.renterName || '—'}</span>
+              </div>
+              <div className="dispute-detail-item">
+                <span className="dispute-detail-label">Owner</span>
+                <span className="dispute-detail-value">{selectedDispute.ownerName || '—'}</span>
+              </div>
+              <div className="dispute-detail-item">
+                <span className="dispute-detail-label">Rental Period</span>
+                <span className="dispute-detail-value">
+                  {selectedDispute.startDate && selectedDispute.endDate
+                    ? `${new Date(selectedDispute.startDate).toLocaleDateString()} — ${new Date(selectedDispute.endDate).toLocaleDateString()}`
+                    : '—'}
+                </span>
+              </div>
+            </div>
+
+            <div className="dispute-message-box">
+              <div className="dispute-message-box-header">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                </svg>
+                <span>Report Notes</span>
+              </div>
+              <p className="dispute-message-text">
+                {[
+                  selectedDispute.notes ? `Check-in Notes:\n${selectedDispute.notes}` : null,
+                  selectedDispute.checkout?.notes ? `Check-out Notes:\n${selectedDispute.checkout.notes}` : null
+                ]
+                .filter(Boolean)
+                .join('\n\n') || <em style={{ color: '#94a3b8' }}>No notes provided.</em>}
+              </p>
+            </div>
+
+            <div className="dispute-detail-actions">
+              <button
+                className="btn btn-danger"
+                onClick={() => {
+                  setSelectedDispute(null);
+                  setConfirmState({
+                    open: true,
+                    variant: 'danger',
+                    message: 'Are you sure you want to delete this dispute report?',
+                    onConfirm: () => removeReport(selectedDispute.id)
+                  });
+                }}
+              >
+                Delete Dispute
+              </button>
+              <button className="btn btn-secondary" onClick={() => setSelectedDispute(null)}>
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Owner Vehicles Modal */}
       <Modal
