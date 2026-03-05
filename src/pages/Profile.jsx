@@ -1,248 +1,269 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks';
 import '../styles/pages/Profile.css';
 
+const ROLE_LABELS = { owner: 'Vehicle Owner', renter: 'Renter', admin: 'Administrator' };
+const ROLE_COLORS = {
+  owner:  { bg: 'rgba(63,155,132,.12)',  color: '#2d7a67',  dot: '#3F9B84'  },
+  renter: { bg: 'rgba(59,130,246,.12)',  color: '#1d4ed8',  dot: '#3b82f6'  },
+  admin:  { bg: 'rgba(168,85,247,.12)',  color: '#7e22ce',  dot: '#a855f7'  },
+};
+
 function Profile() {
   const { user, updateProfile } = useAuth();
   const navigate = useNavigate();
-  
+  const fileRef  = useRef(null);
+
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    middleName: '',
-    sex: '',
-    dateOfBirth: '',
-    email: ''
+    firstName: '', lastName: '', middleName: '',
+    sex: '', dateOfBirth: '', email: '', phone: '',
   });
-  
-  const [errors, setErrors] = useState({});
+  const [avatar,      setAvatar]      = useState(null);   // base64 preview
+  const [errors,      setErrors]      = useState({});
   const [showSuccess, setShowSuccess] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading,     setLoading]     = useState(false);
+
+  const userRole   = user?.role || 'renter';
+  const roleStyle  = ROLE_COLORS[userRole] || ROLE_COLORS.renter;
+  const roleLabel  = ROLE_LABELS[userRole] || userRole;
 
   useEffect(() => {
     if (user) {
       setFormData({
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        middleName: user.middleName || '',
-        sex: user.sex || '',
+        firstName:   user.firstName   || '',
+        lastName:    user.lastName    || '',
+        middleName:  user.middleName  || '',
+        sex:         user.sex         || '',
         dateOfBirth: user.dateOfBirth || '',
-        email: user.email || ''
+        email:       user.email       || '',
+        phone:       user.phone       || '',
       });
+      if (user.avatar) setAvatar(user.avatar);
     }
   }, [user]);
 
   const getInitials = () => {
-    const first = formData.firstName?.charAt(0) || '';
-    const last = formData.lastName?.charAt(0) || '';
-    return (first + last).toUpperCase() || 'U';
+    const f = formData.firstName?.charAt(0) || '';
+    const l = formData.lastName?.charAt(0)  || '';
+    return (f + l).toUpperCase() || 'U';
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    // Clear error on change
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
+    setFormData(p => ({ ...p, [name]: value }));
+    if (errors[name]) setErrors(p => ({ ...p, [name]: '' }));
+  };
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setAvatar(reader.result);
+    reader.readAsDataURL(file);
   };
 
   const validate = () => {
-    const newErrors = {};
-    
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = 'First name is required';
-    }
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Last name is required';
-    }
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Invalid email format';
-    }
-    if (!formData.sex) {
-      newErrors.sex = 'Please select sex';
-    }
-    if (!formData.dateOfBirth) {
-      newErrors.dateOfBirth = 'Date of birth is required';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const e = {};
+    if (!formData.firstName.trim()) e.firstName = 'First name is required';
+    if (!formData.lastName.trim())  e.lastName  = 'Last name is required';
+    if (!formData.email.trim())     e.email     = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) e.email = 'Invalid email format';
+    if (!formData.sex)         e.sex         = 'Please select sex';
+    if (!formData.dateOfBirth) e.dateOfBirth = 'Date of birth is required';
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
+  const handleSubmit = async (ev) => {
+    ev.preventDefault();
     if (!validate()) return;
-    
     setLoading(true);
-    
     try {
       const result = updateProfile({
         ...formData,
-        fullName: `${formData.firstName} ${formData.lastName}`.trim()
+        fullName: `${formData.firstName} ${formData.lastName}`.trim(),
+        avatar,
       });
-
-      if (result.success) {
+      if (result?.success !== false) {
         setShowSuccess(true);
         setTimeout(() => setShowSuccess(false), 3000);
       }
-    } catch (error) {
-      console.error('Error updating profile:', error);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleBack = () => {
-    navigate(-1);
-  };
+  /* ── Derived display values ── */
+  const fullName    = [formData.firstName, formData.lastName].filter(Boolean).join(' ') || 'Your Name';
+  const memberSince = user?.createdAt
+    ? new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+    : null;
 
   return (
-    <div className="profile-container">
-      <div className="profile-header">
-        <button className="back-button" onClick={handleBack}>
-          <span className="back-icon">←</span>
-          <span>Back</span>
+    <div className="profile-page">
+
+      {/* ── Top bar ── */}
+      <div className="profile-topbar">
+        <button className="prof-back-btn" onClick={() => navigate(-1)}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
+          </svg>
+          Back
         </button>
-        <div className="header-title-group">
-          <h1 className="profile-title">Edit Profile</h1>
-          <p className="profile-subtitle">Account Settings</p>
-        </div>
-        <div className="header-spacer"></div>
+        <h1 className="profile-topbar-title">My Profile</h1>
+        <div style={{ width: 80 }} />
       </div>
 
-      <div className="profile-content">
-        <div className="profile-picture-section">
-          <div className="profile-picture-container">
-            <div className="profile-picture">{getInitials()}</div>
-            <label className="picture-upload-label">
-              <span className="upload-icon">📷</span>
-            </label>
+      {/* ── Two-column layout ── */}
+      <div className="profile-layout">
+
+        {/* ── LEFT: identity card ── */}
+        <aside className="profile-sidebar">
+          <div className="sidebar-avatar-wrap">
+            <div className="sidebar-avatar" onClick={() => fileRef.current?.click()}>
+              {avatar
+                ? <img src={avatar} alt="avatar" className="sidebar-avatar-img" />
+                : <span className="sidebar-avatar-initials">{getInitials()}</span>}
+              <div className="sidebar-avatar-overlay">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+                <span>Change Photo</span>
+              </div>
+            </div>
+            <input ref={fileRef} type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} />
+            <p className="sidebar-avatar-hint">Click photo to change</p>
           </div>
-          <p className="picture-hint">Click the camera to upload a new photo</p>
-        </div>
 
-        <div className="form-panel">
-          <div className="form-panel-header">
-            <div className="form-panel-header-icon"></div>
-            <span className="form-panel-title">Personal Information</span>
-          </div>
-
-          <div className="form-panel-body">
-            <form className="profile-form" onSubmit={handleSubmit}>
-              <p className="form-section-label">Name</p>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">First Name <span className="req">*</span></label>
-                  <input
-                    type="text"
-                    name="firstName"
-                    className={`form-input ${errors.firstName ? 'error' : ''}`}
-                    placeholder="Enter first name"
-                    value={formData.firstName}
-                    onChange={handleChange}
-                  />
-                  {errors.firstName && <span className="error-message">{errors.firstName}</span>}
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Last Name <span className="req">*</span></label>
-                  <input
-                    type="text"
-                    name="lastName"
-                    className={`form-input ${errors.lastName ? 'error' : ''}`}
-                    placeholder="Enter last name"
-                    value={formData.lastName}
-                    onChange={handleChange}
-                  />
-                  {errors.lastName && <span className="error-message">{errors.lastName}</span>}
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Middle Name <span className="opt">(Optional)</span></label>
-                  <input
-                    type="text"
-                    name="middleName"
-                    className="form-input"
-                    placeholder="Enter middle name"
-                    value={formData.middleName}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-
-              <p className="form-section-label">Details</p>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Sex <span className="req">*</span></label>
-                  <select
-                    name="sex"
-                    className={`form-input form-select ${errors.sex ? 'error' : ''}`}
-                    value={formData.sex}
-                    onChange={handleChange}
-                  >
-                    <option value="">Select sex</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                    <option value="prefer-not-to-say">Prefer not to say</option>
-                  </select>
-                  {errors.sex && <span className="error-message">{errors.sex}</span>}
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Date of Birth <span className="req">*</span></label>
-                  <input
-                    type="date"
-                    name="dateOfBirth"
-                    className={`form-input ${errors.dateOfBirth ? 'error' : ''}`}
-                    value={formData.dateOfBirth}
-                    onChange={handleChange}
-                  />
-                  {errors.dateOfBirth && <span className="error-message">{errors.dateOfBirth}</span>}
-                </div>
-              </div>
-
-              <p className="form-section-label">Contact</p>
-
-              <div className="form-row">
-                <div className="form-group full-width">
-                  <label className="form-label">Email Address <span className="req">*</span></label>
-                  <input
-                    type="email"
-                    name="email"
-                    className={`form-input ${errors.email ? 'error' : ''}`}
-                    placeholder="Enter email address"
-                    value={formData.email}
-                    onChange={handleChange}
-                  />
-                  {errors.email && <span className="error-message">{errors.email}</span>}
-                </div>
-              </div>
-
-              <div className="form-actions">
-                <button type="button" className="btn btn-secondary" onClick={handleBack}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={loading}>
-                  {loading ? 'Saving...' : '✓ Save Changes'}
-                </button>
-              </div>
-            </form>
-
-            {showSuccess && (
-              <div className="success-message">
-                <span className="success-icon">✓</span>
-                <span>Profile updated successfully!</span>
-              </div>
+          <div className="sidebar-info">
+            <p className="sidebar-fullname">{fullName}</p>
+            <span className="sidebar-role-badge" style={{ background: roleStyle.bg, color: roleStyle.color }}>
+              <span className="sidebar-role-dot" style={{ background: roleStyle.dot }} />
+              {roleLabel}
+            </span>
+            {formData.email && <p className="sidebar-email">{formData.email}</p>}
+            {formData.phone && <p className="sidebar-phone">{formData.phone}</p>}
+            {memberSince && (
+              <p className="sidebar-since">Member since {memberSince}</p>
             )}
           </div>
+
+          {/* Quick links */}
+          <div className="sidebar-links">
+            <button className="sidebar-link" onClick={() => navigate('/change-password')}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="11" width="18" height="11" rx="2"/><path strokeLinecap="round" strokeLinejoin="round" d="M7 11V7a5 5 0 0110 0v4"/>
+              </svg>
+              Change Password
+            </button>
+            {userRole !== 'admin' && (
+              <button className="sidebar-link" onClick={() => navigate('/bookings')}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+                My Bookings
+              </button>
+            )}
+          </div>
+        </aside>
+
+        {/* ── RIGHT: edit form ── */}
+        <div className="profile-form-panel">
+          <div className="form-panel-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3F9B84" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+            <span>Edit Personal Information</span>
+          </div>
+
+          <form className="profile-form" onSubmit={handleSubmit}>
+
+            {/* Name section */}
+            <p className="form-section-label">Name</p>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">First Name <span className="req">*</span></label>
+                <input type="text" name="firstName" className={`form-input ${errors.firstName ? 'input-error' : ''}`}
+                  placeholder="First name" value={formData.firstName} onChange={handleChange} />
+                {errors.firstName && <span className="error-msg">{errors.firstName}</span>}
+              </div>
+              <div className="form-group">
+                <label className="form-label">Last Name <span className="req">*</span></label>
+                <input type="text" name="lastName" className={`form-input ${errors.lastName ? 'input-error' : ''}`}
+                  placeholder="Last name" value={formData.lastName} onChange={handleChange} />
+                {errors.lastName && <span className="error-msg">{errors.lastName}</span>}
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Middle Name <span className="opt">(Optional)</span></label>
+                <input type="text" name="middleName" className="form-input"
+                  placeholder="Middle name" value={formData.middleName} onChange={handleChange} />
+              </div>
+            </div>
+
+            {/* Details */}
+            <p className="form-section-label">Details</p>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Sex <span className="req">*</span></label>
+                <select name="sex" className={`form-input form-select ${errors.sex ? 'input-error' : ''}`}
+                  value={formData.sex} onChange={handleChange}>
+                  <option value="">Select sex</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                  <option value="prefer-not-to-say">Prefer not to say</option>
+                </select>
+                {errors.sex && <span className="error-msg">{errors.sex}</span>}
+              </div>
+              <div className="form-group">
+                <label className="form-label">Date of Birth <span className="req">*</span></label>
+                <input type="date" name="dateOfBirth" className={`form-input ${errors.dateOfBirth ? 'input-error' : ''}`}
+                  value={formData.dateOfBirth} onChange={handleChange} />
+                {errors.dateOfBirth && <span className="error-msg">{errors.dateOfBirth}</span>}
+              </div>
+            </div>
+
+            {/* Contact */}
+            <p className="form-section-label">Contact</p>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Email Address <span className="req">*</span></label>
+                <input type="email" name="email" className={`form-input ${errors.email ? 'input-error' : ''}`}
+                  placeholder="your@email.com" value={formData.email} onChange={handleChange} />
+                {errors.email && <span className="error-msg">{errors.email}</span>}
+              </div>
+              <div className="form-group">
+                <label className="form-label">Phone Number <span className="opt">(Optional)</span></label>
+                <input type="tel" name="phone" className="form-input"
+                  placeholder="+63 900 000 0000" value={formData.phone} onChange={handleChange} />
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="form-actions">
+              {showSuccess && (
+                <div className="success-toast">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
+                  </svg>
+                  Profile updated successfully!
+                </div>
+              )}
+              <div className="form-action-btns">
+                <button type="button" className="btn btn-secondary" onClick={() => navigate(-1)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={loading}>
+                  {loading ? 'Saving…' : 'Save Changes'}
+                </button>
+              </div>
+            </div>
+
+          </form>
         </div>
       </div>
     </div>
