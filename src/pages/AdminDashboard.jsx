@@ -1,15 +1,30 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth, useVehicles } from '../hooks';
-import { ProfileMenu, Modal, ConfirmModal } from '../components';
+import { Modal, ConfirmModal } from '../components';
 import '../styles/pages/AdminDashboard.css';
 
 function AdminDashboard() {
-  const { user, getRegisteredUsers, updateUser, deleteUser } = useAuth();
+  const { user, getRegisteredUsers, updateUser, deleteUser, logout } = useAuth();
   const { vehicles, rentalHistory, deleteVehicle } = useVehicles();
-  
+  const navigate = useNavigate();
+
   const [activePanel, setActivePanel] = useState('users');
   const [selectedOwner, setSelectedOwner] = useState(null);
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef(null);
+
+  // Close profile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) {
+        setProfileMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Confirmation dialog state used for any destructive/important action
   const [confirmState, setConfirmState] = useState({
@@ -18,6 +33,19 @@ function AdminDashboard() {
     onConfirm: null,
     variant: 'danger'
   });
+
+  const handleLogout = () => {
+    setProfileMenuOpen(false);
+    setConfirmState({
+      open: true,
+      variant: 'danger',
+      message: 'Are you sure you want to log out?',
+      onConfirm: () => {
+        logout();
+        navigate('/login');
+      }
+    });
+  };
 
   const users = getRegisteredUsers();
   const userName = user?.fullName || 'Admin';
@@ -312,7 +340,53 @@ const renderVehiclesPanel = () => (
             </div>
             <div className="user-info">
               <span className="welcome-text">Welcome, {userName}</span>
-              <ProfileMenu />
+              <div className="admin-profile-menu" ref={profileMenuRef}>
+                <button
+                  className="admin-avatar-btn"
+                  onClick={() => setProfileMenuOpen(o => !o)}
+                >
+                  {user?.avatar
+                    ? <img src={user.avatar} alt="avatar" className="admin-avatar-img" />
+                    : <span className="admin-avatar-initials">
+                        {(user?.fullName || user?.firstName || 'A').charAt(0).toUpperCase()}
+                      </span>
+                  }
+                </button>
+
+                {profileMenuOpen && (
+                  <div className="admin-profile-dropdown">
+                    <div className="apd-header">
+                      <div className="apd-avatar">
+                        {user?.avatar
+                          ? <img src={user.avatar} alt="avatar" className="admin-avatar-img" />
+                          : <span className="admin-avatar-initials">
+                              {(user?.fullName || user?.firstName || 'A').charAt(0).toUpperCase()}
+                            </span>
+                        }
+                      </div>
+                      <div>
+                        <div className="apd-name">{userName}</div>
+                        <div className="apd-email">{user?.email || ''}</div>
+                        <span className="apd-role-badge">Administrator</span>
+                      </div>
+                    </div>
+                    <div className="apd-divider" />
+                    <button className="apd-item" onClick={() => { setProfileMenuOpen(false); navigate('/profile'); }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                      </svg>
+                      My Profile
+                    </button>
+                    <div className="apd-divider" />
+                    <button className="apd-item apd-logout" onClick={handleLogout}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h6a2 2 0 012 2v1"/>
+                      </svg>
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </header>
 
