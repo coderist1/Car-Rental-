@@ -62,6 +62,22 @@ function AdminDashboard() {
     setIsVehicleModalOpen(true);
   };
 
+  // Status badge color map — guarantees colors even if CSS is overridden
+  const getStatusStyle = (status = 'available') => {
+    const map = {
+      available:   { background: '#dcfce7', color: '#16a34a' },
+      rented:      { background: '#dbeafe', color: '#2563eb' },
+      active:      { background: '#dbeafe', color: '#2563eb' },
+      pending:     { background: '#fef3c7', color: '#d97706' },
+      maintenance: { background: '#ffedd5', color: '#ea580c' },
+      inactive:    { background: '#f1f5f9', color: '#64748b' },
+      unavailable: { background: '#f1f5f9', color: '#64748b' },
+      rejected:    { background: '#fee2e2', color: '#dc2626' },
+      declined:    { background: '#fee2e2', color: '#dc2626' },
+    };
+    return map[status.toLowerCase()] || { background: '#f1f5f9', color: '#64748b' };
+  };
+
   const renderUsersPanel = () => {
     return (
       <div className="admin-panel">
@@ -130,18 +146,27 @@ const renderVehiclesPanel = () => (
     {vehicles.length === 0 ? (
       <div className="admin-empty">No registered vehicles</div>
     ) : (
-      <div className="admin-table no-status">  {/* ← key change */}
+      <div className="admin-table vehicles-table">
         <div className="table-header">
           <div className="th">Vehicle</div>
           <div className="th">Owner</div>
           <div className="th">Price/Day</div>
-          <div className="th">Actions</div>   {/* ← removed Status column */}
+          <div className="th">Status</div>
+          <div className="th">Actions</div>
         </div>
         {vehicles.map(v => (
           <div key={v.id} className="table-row">
             <div className="td">{v.brand} {v.name}</div>
             <div className="td">{v.owner || 'Unknown'}</div>
             <div className="td">₱{Number(v.pricePerDay || 0).toLocaleString()}</div>
+            <div className="td">
+              <span
+                className={`vehicle-status-badge vehicle-status-${(v.status || 'available').toLowerCase()}`}
+                style={getStatusStyle(v.status || 'available')}
+              >
+                {v.status || 'Available'}
+              </span>
+            </div>
             <div className="td action-buttons">
               <button
                 className="btn btn-danger btn-sm"
@@ -310,7 +335,12 @@ const renderVehiclesPanel = () => (
             {selectedOwner.vehicles.map(v => (
               <div key={v.id} className="owner-vehicle-item">
                 <span>{v.brand} {v.name}</span>
-                <span className="status-text">{v.status}</span>
+                <span
+                  className={`vehicle-status-badge vehicle-status-${(v.status || 'available').toLowerCase()}`}
+                  style={getStatusStyle(v.status || 'available')}
+                >
+                  {v.status || 'Available'}
+                </span>
                 <span>₱{v.pricePerDay?.toLocaleString()}/day</span>
               </div>
             ))}

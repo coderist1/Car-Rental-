@@ -162,13 +162,11 @@
   font-size: 14px;
 }
 
-/* Admin Table */
+/* Admin Table — base (Users: Name | Email | Role | Actions) */
 .admin-table {
   width: 100%;
   display: grid;
-  /* define shared column track sizes once on the container */
   grid-template-columns: 2fr 4fr 1fr auto;
-  /* row gaps will be provided by cell padding/borders */
 }
 
 /* header and data rows should not create new grids; they just provide cells */
@@ -177,9 +175,14 @@
   display: contents;
 }
 
-/* variant for tables without a status column (vehicles) */
+/* Vehicles table: Vehicle | Owner | Price/Day | Status | Actions */
+.admin-table.vehicles-table {
+  grid-template-columns: 2fr 2fr 1.2fr 1.4fr 120px;
+}
+
+/* Rentals / other tables without a status column */
 .admin-table.no-status {
-  grid-template-columns: 2fr 4fr 1fr auto; /* drop the status track */
+  grid-template-columns: 2fr 2fr 2fr auto;
 }
 
 .table-header .th,
@@ -213,11 +216,17 @@
   gap: 8px;
 }
 
+/* ensure status cell aligns badge correctly */
+.admin-table.vehicles-table .table-row .td:nth-child(4) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* smaller action buttons inside admin tables */
 .admin-dashboard .btn-sm {
   padding: 4px 10px;
   font-size: 12px;
-  /* optionally limit width so they don't grow too large */
   min-width: 80px;
 }
 
@@ -232,10 +241,15 @@
   text-align: center;
 }
 
+/* center role column only in the users table (not vehicles) */
+.admin-table:not(.vehicles-table) .table-header .th:nth-child(3),
+.admin-table:not(.vehicles-table) .table-row .td:nth-child(3) {
+  text-align: center;
+}
 
-/* center role column (third column now) */
-.table-header .th:nth-child(3),
-.table-row .td:nth-child(3) {
+/* center status column (4th column) in vehicles table */
+.admin-table.vehicles-table .table-header .th:nth-child(4),
+.admin-table.vehicles-table .table-row .td:nth-child(4) {
   text-align: center;
 }
 
@@ -245,7 +259,7 @@
 }
 
 /* hover state for rows */
-.table-row:hover {
+.table-row:hover .td {
   background: #f8fafc;
 }
 
@@ -281,19 +295,60 @@
   gap: 16px;
 }
 
-/* status badge styling used in admin vehicle panel */
-.status-badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: capitalize;
+/* ─── Vehicle Status Badges (unique class, no conflicts) ────────── */
+.vehicle-status-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 4px 12px !important;
+  border-radius: 20px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  text-transform: capitalize !important;
+  white-space: nowrap !important;
 }
 
-/* variant for tables without a status column (rentals) */
-.admin-table.no-status {
-  grid-template-columns: 2fr 4fr 1fr auto; /* drop the status track */
+.vehicle-status-badge::before {
+  content: '' !important;
+  display: inline-block !important;
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background: currentColor !important;
+  flex-shrink: 0 !important;
+}
+
+.vehicle-status-badge.vehicle-status-available {
+  background: #dcfce7 !important;
+  color: #16a34a !important;
+}
+
+.vehicle-status-badge.vehicle-status-rented,
+.vehicle-status-badge.vehicle-status-active {
+  background: #dbeafe !important;
+  color: #2563eb !important;
+}
+
+.vehicle-status-badge.vehicle-status-pending {
+  background: #fef3c7 !important;
+  color: #d97706 !important;
+}
+
+.vehicle-status-badge.vehicle-status-maintenance {
+  background: #ffedd5 !important;
+  color: #ea580c !important;
+}
+
+.vehicle-status-badge.vehicle-status-inactive,
+.vehicle-status-badge.vehicle-status-unavailable {
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+}
+
+.vehicle-status-badge.vehicle-status-rejected,
+.vehicle-status-badge.vehicle-status-declined {
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
 }
 
 /* Owner Vehicles List */
@@ -301,13 +356,6 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-
-/* simple status text shown in admin owner modal */
-.status-text {
-  font-size: 12px;
-  color: #374151;
-  text-transform: capitalize;
 }
 
 .owner-vehicle-item {
@@ -318,13 +366,6 @@
   background: #f8fafc;
   border-radius: 8px;
   font-size: 14px;
-}
-
-/* simple status text shown in admin owner modal */
-.status-text {
-  font-size: 12px;
-  color: #374151;
-  text-transform: capitalize;
 }
 
 /* Responsive */
