@@ -1,13 +1,5 @@
-/* ═══════════════════════════════════════════════════════════════
-   RENTER DASHBOARD  ·  Enhanced Design
-   Font: Plus Jakarta Sans  ·  Palette: navy #1a2c5e / teal #3F9B84
-═══════════════════════════════════════════════════════════════ */
-
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-/* ══════════════════════════════════════
-   BASE
-══════════════════════════════════════ */
 .renter-dashboard {
   min-height: 100vh;
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
@@ -18,12 +10,6 @@
   padding: 0 0 60px;
 }
 
-/* ══════════════════════════════════════
-   HEADER
-   Matches owner .dashboard-header + .header-content exactly.
-   The renter JSX has no inner wrapper div, so we replicate the
-   1200px centred band using calc() padding on the header itself.
-══════════════════════════════════════ */
 .renter-header {
   background: #fff;
   border-bottom: 1px solid #e5e7eb;
@@ -31,13 +17,11 @@
   position: sticky;
   top: 0;
   z-index: 200;
-  /* Flex row — same as owner's .header-content */
   display: flex;
   justify-content: space-between;
   align-items: center;
   height: 68px;
   box-sizing: border-box;
-  /* Mirrors owner: 28px gutters capped at the 1200px content band */
   padding-left:  max(28px, calc((100% - 1200px) / 2 + 28px));
   padding-right: max(28px, calc((100% - 1200px) / 2 + 28px));
 }
@@ -70,9 +54,6 @@
   gap: 10px;
 }
 
-/* ══════════════════════════════════════
-   SEARCH SECTION
-══════════════════════════════════════ */
 .search-section {
   max-width: 1200px;
   margin: 28px auto 20px;
@@ -176,9 +157,6 @@
   border: 2px solid #fff;
 }
 
-/* ══════════════════════════════════════
-   VEHICLES SECTION + GRID
-══════════════════════════════════════ */
 .vehicles-section {
   max-width: 1200px;
   margin: 0 auto;
@@ -191,9 +169,6 @@
   gap: 20px;
 }
 
-/* ══════════════════════════════════════
-   EMPTY STATE
-══════════════════════════════════════ */
 .empty-state {
   grid-column: 1 / -1;
   text-align: center;
@@ -219,9 +194,6 @@
   max-width: 300px;
 }
 
-/* ══════════════════════════════════════
-   FILTER MODAL
-══════════════════════════════════════ */
 .filter-content {
   display: flex;
   flex-direction: column;
@@ -285,9 +257,6 @@
 .price-input:focus { border-color: #3F9B84; }
 .price-separator { color: #9ca3af; font-size: 13px; }
 
-/* ══════════════════════════════════════
-   VEHICLE DETAIL MODAL
-══════════════════════════════════════ */
 .vehicle-detail {
   display: flex;
   flex-direction: column;
@@ -401,9 +370,6 @@
   font-weight: 600;
 }
 
-/* ══════════════════════════════════════
-   RENTAL HISTORY
-══════════════════════════════════════ */
 .rental-history-list {
   max-height: 500px;
   overflow-y: auto;
@@ -473,9 +439,6 @@
 
 .rental-actions { margin-top: 12px; }
 
-/* ══════════════════════════════════════
-   RESPONSIVE
-══════════════════════════════════════ */
 @media (max-width: 768px) {
   .renter-header    { padding: 0 16px; height: auto; min-height: 60px; }
   .search-section   { padding: 0 16px; margin-top: 20px; }

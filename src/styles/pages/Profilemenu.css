@@ -1,4 +1,3 @@
-/* ─── Trigger button (Navbar Icon) ────────────────────────── */
 .profile-menu-container {
   position: relative;
 }
@@ -20,10 +19,9 @@
   transition: all 0.3s ease;
   flex-shrink: 0;
   padding: 0;
-  overflow: hidden; /* Ensures the image stays circular */
+  overflow: hidden;
 }
 
-/* Specific style when the button contains an image */
 .profile-icon-button.has-img {
   background: white;
   border: 2px solid #ff7a59;
@@ -32,7 +30,7 @@
 .pm-btn-img {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* Prevents stretching */
+  object-fit: cover;
   display: block;
 }
 
@@ -45,7 +43,6 @@
   transform: scale(0.95);
 }
 
-/* ─── Dropdown panel ─────────────────────────────────────── */
 .pm-dropdown {
   position: absolute;
   top: calc(100% + 8px);
@@ -65,7 +62,6 @@
   to   { opacity: 1; transform: translateY(0);    }
 }
 
-/* ─── Dropdown Header ────────────────────────────────────── */
 .pm-header {
   display: flex;
   align-items: center;
@@ -90,7 +86,6 @@
   overflow: hidden;
 }
 
-/* Specific style when the header avatar contains an image */
 .pm-avatar-lg.has-img {
   background: white;
   border: 2px solid #3F9B84;
@@ -148,7 +143,6 @@
   flex-shrink: 0;
 }
 
-/* ─── View Profile button ─────────────────────────────────── */
 .pm-profile-btn {
   display: flex;
   align-items: center;
@@ -178,13 +172,11 @@
   align-items: center;
 }
 
-/* ─── Divider ─────────────────────────────────────────────── */
 .pm-divider {
   height: 1px;
   background: #e2e8f0;
 }
 
-/* ─── Menu items ─────────────────────────────────────────── */
 .pm-items {
   padding: 6px 0;
 }
@@ -227,7 +219,6 @@
   color: #374151;
 }
 
-/* ─── Logout ─────────────────────────────────────────────── */
 .pm-logout {
   color: #ef4444;
   margin-bottom: 4px;

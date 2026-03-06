@@ -19,7 +19,6 @@ function ForgotPassword() {
 
   return (
     <div className="auth-container">
-      {/* Step 1: Use Semantic HTML <main> [cite: 49, 52] */}
       <main className="forgot-pw-card">
         <h1 className="auth-title">Reset Password</h1>
         <p className="auth-subtitle">
@@ -31,7 +30,6 @@ function ForgotPassword() {
         {!submitted ? (
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="input-group">
-              {/* Step 2: Form Accessibility - Label linked to ID [cite: 60, 61, 62] */}
               <label className="input-label" htmlFor="reset-email">Email Address</label>
               <input
                 id="reset-email"
@@ -44,7 +42,6 @@ function ForgotPassword() {
               />
             </div>
 
-            {/* Step 3: Use Proper Button Type [cite: 67] */}
             <button 
               type="submit" 
               className="btn btn-primary btn-full" 

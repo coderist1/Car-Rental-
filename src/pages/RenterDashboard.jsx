@@ -5,9 +5,6 @@ import { ProfileMenu, VehicleCard, Modal, ConfirmModal } from '../components';
 import { loadLogReports, addComment, saveLogReports } from '../hooks/useLogReport';
 import '../styles/pages/RenterDashboard.css';
 
-/* ═══════════════════════════════════════════════════════════════
-   DESIGN TOKENS  — identical to OwnerLogReport
-═══════════════════════════════════════════════════════════════ */
 const C = {
   primary:   '#3F9B84',
   primaryDk: '#2e7d67',
@@ -55,9 +52,6 @@ const fmtDate      = iso => iso ? new Date(iso).toLocaleString() : '—';
 const fmtShortDate = iso => iso ? new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
 const tripDays     = (s, e) => { if (!s || !e) return null; return Math.max(1, Math.round((new Date(e) - new Date(s)) / 86400000)); };
 
-/* ═══════════════════════════════════════════════════════════════
-   SHARED ICONS
-═══════════════════════════════════════════════════════════════ */
 const Ico = ({ d, w = 14 }) => (
   <svg width={w} height={w} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     {typeof d === 'string' ? <path d={d} /> : d}
@@ -80,9 +74,6 @@ const EyeIcon       = () => <Ico w={13} d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-
 const PrintIcon     = () => <Ico w={13} d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-2-4H8v8h8v-8z" />;
 const CloseSmIcon   = () => <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M6 18L18 6M6 6l12 12" /></svg>;
 
-/* ═══════════════════════════════════════════════════════════════
-   SECTION WRAPPER
-═══════════════════════════════════════════════════════════════ */
 function Sec({ label, children, style }) {
   return (
     <div style={{ marginBottom: 22, ...style }}>
@@ -96,9 +87,6 @@ function Sec({ label, children, style }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   FUEL GAUGE
-═══════════════════════════════════════════════════════════════ */
 function FuelGauge({ level }) {
   if (!level) return null;
   const pct   = FUEL_PCT[level] ?? 0;
@@ -113,9 +101,6 @@ function FuelGauge({ level }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   CONDITION BADGE
-═══════════════════════════════════════════════════════════════ */
 function ConditionBadge({ rating }) {
   if (!rating) return null;
   const c = CONDITION_COLORS[rating] || { bg: C.g100, color: C.g700, border: C.g200 };
@@ -126,9 +111,6 @@ function ConditionBadge({ rating }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   DATA GRID  (odometer / fuel / condition tiles)
-═══════════════════════════════════════════════════════════════ */
 function DataGrid({ odometer, fuelLevel, conditionRating }) {
   if (!odometer && !fuelLevel && !conditionRating) return null;
   const lbl = { fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: C.g400, marginBottom: 3 };
@@ -142,9 +124,6 @@ function DataGrid({ odometer, fuelLevel, conditionRating }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   RENTAL BANNER
-═══════════════════════════════════════════════════════════════ */
 function RentalBanner({ report }) {
   const items = [
     { icon: <CarIcon />,  label: 'Vehicle', val: report.vehicleName },
@@ -169,9 +148,6 @@ function RentalBanner({ report }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   TRIP SUMMARY CARD
-═══════════════════════════════════════════════════════════════ */
 function TripSummaryCard({ report }) {
   if (!report.checkout) return null;
   const days      = tripDays(report.startDate, report.endDate);
@@ -216,9 +192,6 @@ function TripSummaryCard({ report }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   STATS BAR  (list view)
-═══════════════════════════════════════════════════════════════ */
 function StatsBar({ reports }) {
   const complete  = reports.filter(r => !!r.checkout).length;
   const awaiting  = reports.filter(r => !r.checkout).length;
@@ -245,9 +218,6 @@ function StatsBar({ reports }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   PHOTO GALLERY  (read-only with lightbox)
-═══════════════════════════════════════════════════════════════ */
 function PhotoGallery({ photos = [], label }) {
   const [lb, setLb] = useState(null);
   if (!photos.length) return null;
@@ -274,9 +244,6 @@ function PhotoGallery({ photos = [], label }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   ISSUE BLOCK  (read-only)
-═══════════════════════════════════════════════════════════════ */
 function IssueBlock({ issues, labelFn, newIssues = [] }) {
   if (!issues.length) return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 7, color: C.success, fontSize: 13, fontWeight: 600, padding: '8px 0' }}>
@@ -304,9 +271,6 @@ function IssueBlock({ issues, labelFn, newIssues = [] }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   COLUMN CARD  (used in compare view)
-═══════════════════════════════════════════════════════════════ */
 function ColCard({ title, titleColor, headerBg, headerBorder, date, children }) {
   return (
     <div style={{ border: `1px solid ${C.g200}`, borderRadius: C.r, overflow: 'hidden', background: '#fff', boxShadow: C.shadow }}>
@@ -319,20 +283,16 @@ function ColCard({ title, titleColor, headerBg, headerBorder, date, children }) 
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   SIGNATURE SECTION  (renter acknowledgement)
-═══════════════════════════════════════════════════════════════ */
 function SignatureSection({ localReport, onSigned }) {
   const [sigText,      setSigText]      = useState('');
   const [editing,      setEditing]      = useState(false);
   const [saving,       setSaving]       = useState(false);
-  const [confirmEdit,  setConfirmEdit]  = useState(false); // gate before opening edit form
-  const [confirmSave,  setConfirmSave]  = useState(false); // gate before overwriting signature
+  const [confirmEdit,  setConfirmEdit]  = useState(false);
+  const [confirmSave,  setConfirmSave]  = useState(false);
   const alreadySigned = !!localReport.renterSignature;
 
   const inp = { width: '100%', padding: '10px 13px', border: `1.5px solid ${C.g200}`, borderRadius: C.r2, fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', transition: 'border-color .15s' };
 
-  /* The actual save — called only after all confirms pass */
   const doSave = () => {
     if (!sigText.trim()) return;
     setSaving(true);
@@ -349,7 +309,6 @@ function SignatureSection({ localReport, onSigned }) {
     onSigned && onSigned();
   };
 
-  /* "Edit Signature" clicked — if already signed, ask first */
   const handleEditClick = () => {
     if (alreadySigned) {
       setConfirmEdit(true);
@@ -359,19 +318,17 @@ function SignatureSection({ localReport, onSigned }) {
     }
   };
 
-  /* User confirmed they want to open the edit form */
   const handleConfirmEditOpen = () => {
     setSigText(localReport.renterSignature || '');
     setEditing(true);
   };
 
-  /* "Update / Confirm Signature" clicked inside the form */
   const handleSaveClick = () => {
     if (!sigText.trim()) return;
     if (alreadySigned) {
-      setConfirmSave(true); // ask before overwriting
+      setConfirmSave(true);
     } else {
-      doSave(); // first-time sign — no extra confirm needed
+      doSave();
     }
   };
 
@@ -434,7 +391,6 @@ function SignatureSection({ localReport, onSigned }) {
         )}
       </Sec>
 
-      {/* ── Confirm: open edit when already signed ── */}
       <ConfirmModal
         isOpen={confirmEdit}
         onClose={() => setConfirmEdit(false)}
@@ -446,7 +402,6 @@ function SignatureSection({ localReport, onSigned }) {
         variant="warning"
       />
 
-      {/* ── Confirm: save when overwriting an existing signature ── */}
       <ConfirmModal
         isOpen={confirmSave}
         onClose={() => setConfirmSave(false)}
@@ -461,9 +416,6 @@ function SignatureSection({ localReport, onSigned }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   COMMENTS SECTION
-═══════════════════════════════════════════════════════════════ */
 function CommentsSection({ localReport, user, onCommentAdded }) {
   const [text,       setText]       = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -529,9 +481,6 @@ function CommentsSection({ localReport, user, onCommentAdded }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   PRINT  (renter version — no edit buttons, same layout)
-═══════════════════════════════════════════════════════════════ */
 function printReport(report) {
   const allLabels = id => {
     const d = DEFAULT_CHECKLIST.find(x => x.id === id);
@@ -579,9 +528,6 @@ function printReport(report) {
   win.document.close(); win.focus(); setTimeout(() => win.print(), 500);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   RENTER LOG LIST MODAL
-═══════════════════════════════════════════════════════════════ */
 function RenterLogListModal({ isOpen, onClose, reports, onView }) {
   const [search, setSearch] = useState('');
   const filtered = useMemo(() => {
@@ -595,7 +541,6 @@ function RenterLogListModal({ isOpen, onClose, reports, onView }) {
         Log reports created by vehicle owners for your rentals. View condition details and leave comments.
       </p>
 
-      {/* Search */}
       <div style={{ position: 'relative', marginBottom: 18 }}>
         <span style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: C.g400, display: 'flex', pointerEvents: 'none' }}><SearchIcon /></span>
         <input
@@ -629,7 +574,6 @@ function RenterLogListModal({ isOpen, onClose, reports, onView }) {
                 onMouseEnter={e => { e.currentTarget.style.borderColor = C.primary; e.currentTarget.style.boxShadow = C.shadowHover; e.currentTarget.style.transform = 'translateY(-1px)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = C.g200;    e.currentTarget.style.boxShadow = C.shadow;       e.currentTarget.style.transform = 'none'; }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  {/* Tag row */}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
                     <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 9px', borderRadius: 999, background: 'rgba(16,185,129,.1)', color: '#059669', border: '1px solid rgba(16,185,129,.25)', textTransform: 'uppercase', letterSpacing: '.04em' }}>Check-in</span>
                     {r.checkout
@@ -652,9 +596,7 @@ function RenterLogListModal({ isOpen, onClose, reports, onView }) {
                       </span>
                     )}
                   </div>
-                  {/* Vehicle name */}
                   <div style={{ fontSize: 15, fontWeight: 700, color: C.navy, marginBottom: 5 }}>{r.vehicleName}</div>
-                  {/* Meta row */}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 12, color: C.g500 }}>
                     <span>{fmtDate(r.createdAt)}</span>
                     {ciIssues.length > 0
@@ -677,9 +619,6 @@ function RenterLogListModal({ isOpen, onClose, reports, onView }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   RENTER LOG VIEW MODAL
-═══════════════════════════════════════════════════════════════ */
 function RenterLogViewModal({ isOpen, onClose, report, onCommentAdded, user, userRentals }) {
   const [localReport, setLocalReport] = useState(report);
   React.useEffect(() => { setLocalReport(report); }, [report]);
@@ -711,7 +650,6 @@ function RenterLogViewModal({ isOpen, onClose, report, onCommentAdded, user, use
       title={hasCheckout ? 'Trip Log Report' : 'Check-in Log Report'}
       size="xlarge"
     >
-      {/* ── Top nav ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, paddingBottom: 16, borderBottom: `1px solid ${C.g100}` }}>
         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: C.primary, fontWeight: 600, fontSize: 13, padding: 0 }}>
           <ChevronLIcon /> Back to Log Reports
@@ -724,7 +662,6 @@ function RenterLogViewModal({ isOpen, onClose, report, onCommentAdded, user, use
         </button>
       </div>
 
-      {/* Read-only notice */}
       <div style={{ background: `${C.indigo}08`, border: `1px solid ${C.indigo}28`, borderRadius: C.r, padding: '11px 16px', fontSize: 13, color: C.indigoDk, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8, lineHeight: 1.6 }}>
         <EyeIcon /> This report was created by the vehicle owner. You can view the condition details and leave a comment if you have concerns.
       </div>
@@ -732,7 +669,6 @@ function RenterLogViewModal({ isOpen, onClose, report, onCommentAdded, user, use
       <RentalBanner report={enrichedReport} />
       {hasCheckout && <TripSummaryCard report={localReport} />}
 
-      {/* ── Compare or single view ── */}
       {hasCheckout ? (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24, alignItems: 'start' }}>
           <ColCard title="Before Trip" titleColor="#065f46" headerBg="rgba(16,185,129,.07)" headerBorder="rgba(16,185,129,.18)" date={localReport.createdAt}>
@@ -777,19 +713,14 @@ function RenterLogViewModal({ isOpen, onClose, report, onCommentAdded, user, use
         </>
       )}
 
-      {/* Divider */}
       <div style={{ height: 1, background: C.g100, margin: '24px 0' }} />
 
-      {/* Signature */}
       <SignatureSection localReport={localReport} onSigned={refresh} />
 
-      {/* Divider */}
       <div style={{ height: 1, background: C.g100, margin: '24px 0' }} />
 
-      {/* Comments */}
       <CommentsSection localReport={localReport} user={user} onCommentAdded={refresh} />
 
-      {/* Footer close */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20, paddingTop: 16, borderTop: `1px solid ${C.g100}` }}>
         <button onClick={onClose} style={{ padding: '9px 22px', border: `1.5px solid ${C.g200}`, borderRadius: C.r2, background: '#fff', color: C.g700, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Close</button>
       </div>
@@ -797,9 +728,6 @@ function RenterLogViewModal({ isOpen, onClose, report, onCommentAdded, user, use
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   RENTER DASHBOARD  (unchanged structure, log report wired up)
-═══════════════════════════════════════════════════════════════ */
 function RenterDashboard() {
   const { user } = useAuth();
   const { vehicles, toggleSavedCar, isCarSaved, savedCars, addRentalRecord, getUserRentals, requestReturn } = useVehicles();
@@ -934,7 +862,6 @@ function RenterDashboard() {
         )}
       </section>
 
-      {/* Filter Modal */}
       <Modal isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} title="Filters"
         footer={<><button className="btn btn-secondary" onClick={clearFilters}>Reset</button><button className="btn btn-primary" onClick={() => setIsFilterOpen(false)}>Apply</button></>}>
         <div className="filter-content">
@@ -973,7 +900,6 @@ function RenterDashboard() {
         </div>
       </Modal>
 
-      {/* Vehicle Detail Modal */}
       <Modal isOpen={isDetailOpen} onClose={() => { setIsDetailOpen(false); setSelectedVehicle(null); }}
         title={selectedVehicle ? `${selectedVehicle.brand} ${selectedVehicle.name}` : 'Vehicle Details'} size="large">
         {selectedVehicle && (
@@ -1007,7 +933,6 @@ function RenterDashboard() {
         )}
       </Modal>
 
-      {/* My Rentals Modal */}
       <Modal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} title="My Rentals" size="large">
         {userRentals.length === 0
           ? <div className="empty-state"><p>You have no rentals yet.</p></div>
@@ -1036,7 +961,6 @@ function RenterDashboard() {
         }
       </Modal>
 
-      {/* Log Report Modals */}
       <RenterLogListModal isOpen={isLogListOpen} onClose={() => setIsLogListOpen(false)} reports={renterLogReports} onView={handleViewLog} />
       <RenterLogViewModal isOpen={isLogViewOpen} onClose={() => { setIsLogViewOpen(false); setIsLogListOpen(true); }} report={viewingReport} onCommentAdded={refreshLogs} user={user} userRentals={userRentals} />
     </div>

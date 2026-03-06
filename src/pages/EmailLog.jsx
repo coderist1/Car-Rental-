@@ -9,22 +9,18 @@ function EmailLog() {
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState('');
 
-  // Get email logs from localStorage
   const emailLogs = useMemo(() => {
     const stored = localStorage.getItem('emailLogs');
     return stored ? JSON.parse(stored) : [];
   }, []);
 
-  // Filter emails
   const filteredEmails = useMemo(() => {
     let emails = [...emailLogs];
 
-    // Filter by type
     if (activeTab !== 'all') {
       emails = emails.filter(e => e.type === activeTab);
     }
 
-    // Filter by search
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       emails = emails.filter(e => 
@@ -34,7 +30,6 @@ function EmailLog() {
       );
     }
 
-    // Filter by date
     if (dateFilter) {
       const filterDate = new Date(dateFilter).toDateString();
       emails = emails.filter(e => {
@@ -43,13 +38,11 @@ function EmailLog() {
       });
     }
 
-    // Sort by date descending
     emails.sort((a, b) => new Date(b.sentAt) - new Date(a.sentAt));
 
     return emails;
   }, [emailLogs, activeTab, searchQuery, dateFilter]);
 
-  // Stats
   const stats = useMemo(() => ({
     total: emailLogs.length,
     registration: emailLogs.filter(e => e.type === 'registration').length,
@@ -112,7 +105,6 @@ function EmailLog() {
         </div>
       </header>
 
-      {/* Stats Cards */}
       <div className="stats-row">
         <div className="stat-card total">
           <div className="stat-info">
@@ -140,7 +132,6 @@ function EmailLog() {
         </div>
       </div>
 
-      {/* Filters */}
       <div className="filters-section">
         <div className="tabs">
           <button 
@@ -193,7 +184,6 @@ function EmailLog() {
         </div>
       </div>
 
-      {/* Email List */}
       <div className="email-list">
         {filteredEmails.length === 0 ? (
           <div className="empty-state">

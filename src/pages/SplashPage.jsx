@@ -2,11 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/pages/SplashPage.css';
 
-/**
- * SplashPage Component
- * The very first page users see before the LandingPage.
- * Showcases the hero car image with animated entrance and Get Started CTA.
- */
 const SplashPage = () => {
   const navigate = useNavigate();
   const [loaded, setLoaded] = useState(false);
@@ -19,24 +14,15 @@ const SplashPage = () => {
   return (
     <div className="splash-wrapper">
 
-      {/* ── Background: car hero image with overlay ── */}
       <div className="splash-bg">
-        {/*
-          INSTRUCTIONS: Place your car image at /public/car-hero.jpg
-          OR replace the background-image URL in SplashPage.css .splash-bg
-          with any image path you prefer.
-        */}
       </div>
 
-      {/* Dark gradient overlays for readability */}
       <div className="splash-overlay-left" />
       <div className="splash-overlay-top" />
       <div className="splash-overlay-bottom" />
 
-      {/* Grain texture */}
       <div className="splash-grain" />
 
-      {/* ── Top nav bar ── */}
       <nav className={`splash-nav ${loaded ? 'splash-nav--in' : ''}`}>
         <div className="splash-logo">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
@@ -53,27 +39,22 @@ const SplashPage = () => {
         </div>
       </nav>
 
-      {/* ── Hero content (right-aligned like the reference image) ── */}
       <main className="splash-content">
 
-        {/* Badge */}
         <div className={`splash-badge ${loaded ? 'splash-badge--in' : ''}`}>
           <span className="splash-badge-dot" />
           1,000+ vehicles available now
         </div>
 
-        {/* Headline */}
         <h1 className={`splash-headline ${loaded ? 'splash-headline--in' : ''}`}>
           <span className="splash-headline-top">DRIVE YOUR WAY</span>
           <span className="splash-headline-bottom">ANY DAY.</span>
         </h1>
 
-        {/* Subtext */}
         <p className={`splash-subtext ${loaded ? 'splash-subtext--in' : ''}`}>
           Premium rentals for every journey — hourly, daily, or long-term.
         </p>
 
-        {/* CTA Button */}
         <div className={`splash-cta-row ${loaded ? 'splash-cta-row--in' : ''}`}>
           <button
             className="splash-btn-primary"
@@ -94,7 +75,6 @@ const SplashPage = () => {
           </button>
         </div>
 
-        {/* Stats row */}
         <div className={`splash-stats ${loaded ? 'splash-stats--in' : ''}`}>
           {[
             { val: '1,200+', label: 'Vehicles' },

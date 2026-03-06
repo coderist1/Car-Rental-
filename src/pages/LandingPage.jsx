@@ -3,16 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks';
 import '../styles/pages/LandingPage.css';
 
-/**
- * LandingPage Component
- * Main entry point for the Car Rental application
- * Provides navigation to Login, Register, and Admin Login pages
- */
 const LandingPage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
 
-  // Redirect authenticated users to their appropriate dashboard
   React.useEffect(() => {
     if (isAuthenticated) {
       if (user?.role === 'owner') {
@@ -25,22 +19,16 @@ const LandingPage = () => {
     }
   }, [isAuthenticated, user, navigate]);
 
-  /**
-   * Handle navigation to different routes
-   * @param {string} path - The route path to navigate to
-   */
   const handleNavigation = (path) => {
     navigate(path);
   };
 
   return (
     <div className="landing-page-container">
-      {/* Decorative background shapes */}
       <div className="decoration shape-1"></div>
       <div className="decoration shape-2"></div>
 
       <main className="auth-card">
-        {/* Brand Identity Section */}
         <div className="brand-identity">
           <div className="logo-box">
             <svg
@@ -64,11 +52,9 @@ const LandingPage = () => {
           </div>
         </div>
 
-        {/* Page Title and Description */}
         <h1>Welcome</h1>
         <p className="subtitle">Find your perfect ride for your next big adventure.</p>
 
-        {/* Action Buttons */}
         <div className="button-group">
           <button
             className="btn btn-primary"

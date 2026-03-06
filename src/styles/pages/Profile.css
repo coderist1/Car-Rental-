@@ -1,11 +1,9 @@
-/* ── Page wrapper ── */
 .profile-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
   padding: 24px 20px 48px;
 }
 
-/* ── Top bar ── */
 .profile-topbar {
   max-width: 960px;
   margin: 0 auto 28px;
@@ -41,7 +39,6 @@
   color: #1a2c5e;
 }
 
-/* ── Two-column layout ── */
 .profile-layout {
   max-width: 960px;
   margin: 0 auto;
@@ -57,7 +54,6 @@
   }
 }
 
-/* ── Sidebar ── */
 .profile-sidebar {
   background: white;
   border-radius: 18px;
@@ -65,7 +61,6 @@
   overflow: hidden;
 }
 
-/* Avatar */
 .sidebar-avatar-wrap {
   background: linear-gradient(135deg, #1a2c5e 0%, #2d4a8a 100%);
   padding: 28px 20px 20px;
@@ -135,7 +130,6 @@
   margin: 0;
 }
 
-/* ── Sidebar Remove Photo Button (added by Angela) ── */
 .sidebar-remove-photo-btn {
   background: none;
   border: none;
@@ -156,7 +150,6 @@
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* ── Sidebar Success Message (added by Angela) ── */
 .sidebar-success-msg {
   background: rgba(255, 255, 255, 0.2);
   color: #ffffff;
@@ -172,7 +165,6 @@
   animation: slideUpFade 0.3s ease-out;
 }
 
-/* Sidebar info */
 .sidebar-info {
   padding: 18px 20px;
   display: flex;
@@ -222,7 +214,6 @@
   margin: 4px 0 0;
 }
 
-/* Sidebar quick links */
 .sidebar-links {
   padding: 10px 0 8px;
 }
@@ -257,7 +248,6 @@
   color: #3F9B84;
 }
 
-/* ── Form panel ── */
 .profile-form-panel {
   background: white;
   border-radius: 18px;
@@ -277,7 +267,6 @@
   color: #1a2c5e;
 }
 
-/* ── Edit button in panel header ── */
 .prof-edit-btn {
   margin-left: auto;
   display: flex;
@@ -299,7 +288,6 @@
   transform: translateY(-1px);
 }
 
-/* ── Form styles ── */
 .profile-form {
   padding: 24px;
 }
@@ -380,7 +368,6 @@
   margin-top: 4px;
 }
 
-/* ── Form actions ── */
 .form-actions {
   margin-top: 28px;
   padding-top: 20px;
@@ -396,7 +383,6 @@
   gap: 10px;
 }
 
-/* ── Success toast ── */
 .success-toast {
   display: flex;
   align-items: center;
@@ -411,7 +397,6 @@
   animation: fadeIn .3s ease;
 }
 
-/* ── Read-only view ── */
 .profile-view {
   padding: 24px;
 }
@@ -459,7 +444,6 @@
   font-weight: 400;
 }
 
-/* ── Photo Confirmation Dialog (added by Angela) ── */
 .photo-confirm-wrapper {
   margin-top: 12px;
   width: 100%;
@@ -554,7 +538,6 @@
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* ── Animations ── */
 @keyframes slideUpFade {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0);   }

@@ -11,21 +11,17 @@ function Bookings() {
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Filter rentals for current user
   const userRentals = useMemo(() => {
     return rentalHistory.filter(rental => rental.renterId === user?.email);
   }, [rentalHistory, user]);
 
-  // Filter by tab and search
   const filteredRentals = useMemo(() => {
     let rentals = userRentals;
 
-    // Filter by status tab
     if (activeTab !== 'all') {
       rentals = rentals.filter(r => r.status === activeTab);
     }
 
-    // Filter by search
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       rentals = rentals.filter(r => 
@@ -38,7 +34,6 @@ function Bookings() {
     return rentals;
   }, [userRentals, activeTab, searchQuery]);
 
-  // Stats
   const stats = useMemo(() => ({
     total: userRentals.length,
     pending: userRentals.filter(r => r.status === 'pending').length,
@@ -91,7 +86,6 @@ function Bookings() {
         </div>
       </header>
 
-      {/* Stats Cards */}
       <div className="stats-row">
         <div className="stat-card total">
           <div className="stat-icon">📋</div>
@@ -123,7 +117,6 @@ function Bookings() {
         </div>
       </div>
 
-      {/* Filters */}
       <div className="filters-section">
         <div className="tabs">
           <button 
@@ -169,7 +162,6 @@ function Bookings() {
         </div>
       </div>
 
-      {/* Bookings List */}
       <div className="bookings-list">
         {filteredRentals.length === 0 ? (
           <div className="empty-state">

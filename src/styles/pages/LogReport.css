@@ -1,9 +1,3 @@
-/* ════════════════════════════════════════════════════════════
-   LogReport.css
-   Place at:  src/styles/pages/LogReport.css
-   Import in: Dashboard.jsx and RenterDashboard.jsx
-════════════════════════════════════════════════════════════ */
-
 .lr-toolbar-btn {
   position: relative;
   display: inline-flex;

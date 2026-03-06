@@ -61,12 +61,10 @@ function Dashboard() {
     description: '', image: '',
   });
 
-  /* Confirmation modals */
   const [confirmAdd,         setConfirmAdd]         = useState(false);
   const [confirmSaveEdit,    setConfirmSaveEdit]     = useState(false);
   const [confirmRemovePhoto, setConfirmRemovePhoto]  = useState(false);
 
-  /* Photo upload */
   const fileInputRef = useRef(null);
 
   const handlePhotoUpload = (e) => {
@@ -163,7 +161,6 @@ function Dashboard() {
     description: '', image: '',
   });
 
-  /* Add: form submits → show confirm first */
   const handleAddVehicle = (e) => {
     e.preventDefault();
     setConfirmAdd(true);
@@ -174,7 +171,6 @@ function Dashboard() {
     setIsAddModalOpen(false);
   };
 
-  /* Edit: form submits → show confirm first */
   const handleEditVehicle = (e) => {
     e.preventDefault();
     setConfirmSaveEdit(true);
@@ -223,7 +219,6 @@ function Dashboard() {
   const renderVehicleForm = (onSubmit, isEdit = false) => (
     <form onSubmit={onSubmit} className="vehicle-form">
 
-      {/* ── Photo upload ── */}
       <div className="vf-section">
         <div className="vf-section-header">
           <span className="vf-section-icon">
@@ -265,7 +260,6 @@ function Dashboard() {
         )}
       </div>
 
-      {/* ── Basic info ── */}
       <div className="vf-section">
         <div className="vf-section-header">
           <span className="vf-section-icon">
@@ -307,7 +301,6 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* ── Specs ── */}
       <div className="vf-section">
         <div className="vf-section-header">
           <span className="vf-section-icon">
@@ -340,7 +333,6 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* ── Pricing & location ── */}
       <div className="vf-section">
         <div className="vf-section-header">
           <span className="vf-section-icon">
@@ -367,7 +359,6 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* ── Description ── */}
       <div className="vf-section" style={{ marginBottom: 0 }}>
         <div className="vf-section-header">
           <span className="vf-section-icon">
@@ -475,7 +466,6 @@ function Dashboard() {
         )}
       </section>
 
-      {/* Filter Modal */}
       <Modal isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} title="Filters"
         footer={
           <>
@@ -636,7 +626,6 @@ function Dashboard() {
         variant="danger"
       />
 
-      {/* ── Confirm: Add vehicle ── */}
       <ConfirmModal
         isOpen={confirmAdd}
         onClose={() => setConfirmAdd(false)}
@@ -648,7 +637,6 @@ function Dashboard() {
         variant="primary"
       />
 
-      {/* ── Confirm: Save edits ── */}
       <ConfirmModal
         isOpen={confirmSaveEdit}
         onClose={() => setConfirmSaveEdit(false)}
@@ -660,7 +648,6 @@ function Dashboard() {
         variant="primary"
       />
 
-      {/* ── Confirm: Remove photo ── */}
       <ConfirmModal
         isOpen={confirmRemovePhoto}
         onClose={() => setConfirmRemovePhoto(false)}

@@ -14,7 +14,7 @@ function AdminRegister() {
   });
 
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false); // Added for confirm field
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
@@ -86,7 +86,6 @@ function AdminRegister() {
     <div className="auth-container">
       <main className="register-split-container">
         
-        {/* LEFT PANEL - Admin Branding & Security Info */}
         <div className="register-left-panel">
           <div className="auth-logo-box">
             <svg width="55" height="55" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="auth-logo-svg">
@@ -109,7 +108,6 @@ function AdminRegister() {
           </div>
         </div>
 
-        {/* RIGHT PANEL - The Form */}
         <div className="register-right-panel">
           {error && <div className="error-message" role="alert">{error}</div>}
 
@@ -164,7 +162,6 @@ function AdminRegister() {
                 </p>
               </div>
 
-              {/* Password Field */}
               <div className="input-group">
                 <label className="input-label" htmlFor="reg-password">Password <span className="required">*</span></label>
                 <div style={{ position: 'relative' }}>
@@ -208,7 +205,6 @@ function AdminRegister() {
                 )}
               </div>
 
-              {/* Confirm Password Field */}
               <div className="input-group">
                 <label className="input-label" htmlFor="confirmPassword">Confirm <span className="required">*</span></label>
                 <div style={{ position: 'relative' }}>

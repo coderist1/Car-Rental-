@@ -18,7 +18,6 @@ function AdminDashboard() {
   const [selectedDispute, setSelectedDispute] = useState(null);
   const profileMenuRef = useRef(null);
 
-  // Close profile menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) {
@@ -29,7 +28,6 @@ function AdminDashboard() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Confirmation dialog state used for any destructive/important action
   const [confirmState, setConfirmState] = useState({
     open: false,
     message: '',
@@ -54,7 +52,6 @@ function AdminDashboard() {
   const userName = user?.fullName || 'Admin';
 
 
-  // Analytics calculations
   const analytics = useMemo(() => {
     const activeRentals = rentalHistory.filter(r => r.status === 'active').length;
     const openDisputes = reports.length;
@@ -71,7 +68,6 @@ function AdminDashboard() {
     };
   }, [users, vehicles, rentalHistory, reports]);
 
-  // Group vehicles by owner
   const vehiclesByOwner = useMemo(() => {
     const grouped = {};
     vehicles.forEach(v => {
@@ -93,7 +89,6 @@ function AdminDashboard() {
     setIsVehicleModalOpen(true);
   };
 
-  // Status badge color map — guarantees colors even if CSS is overridden
   const getStatusStyle = (status = 'available') => {
     const map = {
       available:   { background: '#dcfce7', color: '#16a34a' },
@@ -131,7 +126,6 @@ function AdminDashboard() {
                 <span className={`role-badge ${u.role}`}>{u.role}</span>
               </div>
               <div className="td action-buttons">
-                {/* action buttons with confirmation */}
                 <button
                   className="btn btn-warning btn-sm"
                   onClick={() => {
@@ -445,7 +439,6 @@ const renderVehiclesPanel = () => (
         </main>
       </div>
 
-      {/* Dispute Detail Modal */}
       <Modal
         isOpen={!!selectedDispute}
         onClose={() => setSelectedDispute(null)}
@@ -528,7 +521,6 @@ const renderVehiclesPanel = () => (
         )}
       </Modal>
 
-      {/* Owner Vehicles Modal */}
       <Modal
         isOpen={isVehicleModalOpen}
         onClose={() => { setIsVehicleModalOpen(false); setSelectedOwner(null); }}
@@ -553,7 +545,6 @@ const renderVehiclesPanel = () => (
         )}
       </Modal>
 
-      {/* universal confirmation modal for admin actions */}
       <ConfirmModal
         isOpen={confirmState.open}
         onClose={() => setConfirmState(s => ({ ...s, open: false }))}

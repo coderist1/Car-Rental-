@@ -97,7 +97,6 @@ function Register() {
     <div className="auth-container">
       <main className="register-split-container">
         
-        {/* LEFT PANEL - Branding & Role Selection */}
         <div className="register-left-panel">
           <div className="auth-logo-box">
             <svg 
@@ -153,7 +152,6 @@ function Register() {
           </fieldset>
         </div>
 
-        {/* RIGHT PANEL - The Form */}
         <div className="register-right-panel">
           {error && <div className="error-message" role="alert" aria-live="polite">{error}</div>}
 
@@ -266,7 +264,6 @@ function Register() {
               </div>
 
 
-              {/* Password Group */}
               <div className="input-group span-full">
                 <p 
                   style={{ 

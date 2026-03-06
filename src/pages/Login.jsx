@@ -18,12 +18,9 @@ function Login() {
     setLoading(true);
 
     try {
-      // trim whitespace so users don't accidentally include spaces
       const cleanEmail = email.trim();
       const cleanPassword = password.trim();
 
-      // `login` may be synchronous today but could change to async later,
-      // so await its return value to correctly handle promises.
       const result = await login(cleanEmail, cleanPassword);
 
       if (result && result.success) {
@@ -48,10 +45,8 @@ function Login() {
 
   return (
     <div className="auth-container">
-      {/* Use <main> for the primary content area [cite: 52] */}
       <main className="register-split-container">
         
-        {/* LEFT PANEL */}
         <div className="register-left-panel login-theme-panel">
           <div className="auth-logo-box">
             <svg
@@ -73,7 +68,6 @@ function Login() {
             </svg>
           </div>
 
-          {/* Correct Heading Levels [cite: 71, 73] */}
           <h1 className="auth-title">Welcome Back</h1>
           <p className="auth-subtitle">Sign in to continue to CarRental</p>
 
@@ -85,7 +79,6 @@ function Login() {
           </div>
         </div>
 
-        {/* RIGHT PANEL */}
         <div className="register-right-panel">
           <div className="login-form-wrapper">
             <h2 className="auth-title" style={{ textAlign: 'left', fontSize: '24px' }}>Sign In</h2>
@@ -97,7 +90,6 @@ function Login() {
 
             <form onSubmit={handleSubmit} className="auth-form">
               <div className="input-group">
-                {/* Step 2: Form Accessibility - Labels linked to IDs [cite: 61, 62] */}
                 <label className="input-label" htmlFor="login-email">Email Address</label>
                 <input
                   id="login-email"
@@ -112,7 +104,6 @@ function Login() {
 
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <label className="input-label" htmlFor="login-password">Password</label>
-                {/* Step 2: Improved Usability with functional Link */}
                 <Link to="/forgot-password" style={{ fontSize: '12px', color: '#3F9B84', textDecoration: 'none', fontWeight: '500' }}>
                   Forgot Password?
                 </Link>
@@ -127,7 +118,6 @@ function Login() {
                 required
               />
             
-              {/* Step 3: Specify button type [cite: 65, 67] */}
               <button 
                 type="submit" 
                 className="btn btn-primary btn-full"

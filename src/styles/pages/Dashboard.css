@@ -1,12 +1,5 @@
-/* ═══════════════════════════════════════════════════════════════
-   OWNER DASHBOARD  ·  Enhanced Design
-   Font: Plus Jakarta Sans  ·  Palette: navy #1a2c5e / teal #3F9B84
-   Every className from Dashboard.jsx is styled here.
-═══════════════════════════════════════════════════════════════ */
-
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-/* ── Tokens ── */
 :root {
   --p:      #3F9B84;
   --p-dk:   #2e7d67;
@@ -29,9 +22,6 @@
   --r3: 8px;
 }
 
-/* ══════════════════════════════════════
-   BASE
-══════════════════════════════════════ */
 .dashboard-container {
   min-height: 100vh;
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
@@ -42,9 +32,6 @@
   padding-bottom: 60px;
 }
 
-/* ══════════════════════════════════════
-   HEADER
-══════════════════════════════════════ */
 .dashboard-header {
   background: #fff;
   border-bottom: 1px solid var(--g200);
@@ -121,7 +108,6 @@
   white-space: nowrap;
 }
 
-/* ── Log Report badge pill ── */
 .lr-toolbar-btn {
   position: relative;
   display: inline-flex;
@@ -144,9 +130,6 @@
   line-height: 1;
 }
 
-/* ══════════════════════════════════════
-   STATS SECTION
-══════════════════════════════════════ */
 .stats-section {
   max-width: 1200px;
   margin: 32px auto 24px;
@@ -220,9 +203,6 @@
   letter-spacing: .08em;
 }
 
-/* ══════════════════════════════════════
-   SEARCH SECTION
-══════════════════════════════════════ */
 .search-section {
   max-width: 1200px;
   margin: 0 auto 24px;
@@ -280,7 +260,6 @@
 .search-input::placeholder { color: var(--g400); }
 .search-input:focus { outline: none; border: none; box-shadow: none; }
 
-/* Filter button (owner side uses it too) */
 .filter-button {
   background: #fff;
   border: 1.5px solid var(--g200);
@@ -324,9 +303,6 @@
   border: 2px solid #fff;
 }
 
-/* ══════════════════════════════════════
-   VEHICLES SECTION + GRID
-══════════════════════════════════════ */
 .vehicles-section {
   max-width: 1200px;
   margin: 0 auto;
@@ -342,16 +318,12 @@
   gap: 20px;
 }
 
-/* when vehicles-section wraps vehicles-grid, avoid double padding */
 .vehicles-section .vehicles-grid {
   padding: 0;
   max-width: 100%;
   margin: 0;
 }
 
-/* ══════════════════════════════════════
-   EMPTY STATE
-══════════════════════════════════════ */
 .empty-state {
   grid-column: 1 / -1;
   text-align: center;
@@ -379,9 +351,6 @@
   max-width: 300px;
 }
 
-/* ══════════════════════════════════════
-   FILTER MODAL
-══════════════════════════════════════ */
 .filter-content {
   display: flex;
   flex-direction: column;
@@ -445,9 +414,6 @@
 .price-input:focus { border-color: var(--p); }
 .price-separator { color: var(--g400); font-size: 13px; }
 
-/* ══════════════════════════════════════
-   VEHICLE FORM
-══════════════════════════════════════ */
 .vehicle-form .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -506,9 +472,6 @@
   border-top: 1px solid var(--g100);
 }
 
-/* ══════════════════════════════════════
-   RENTAL HISTORY
-══════════════════════════════════════ */
 .rental-history-list {
   max-height: 500px;
   overflow-y: auto;
@@ -591,9 +554,6 @@
   font-weight: 700;
   border-radius: var(--r3);
 }
-/* ════════════════════════════════════════════════════
-   VEHICLE FORM  ·  Enhanced sections + photo upload
-════════════════════════════════════════════════════ */
 .vf-section {
   background: #fff;
   border: 1.5px solid var(--g200);
@@ -627,7 +587,6 @@
   flex-shrink: 0;
 }
 
-/* Photo zone */
 .vf-photo-zone {
   width: 100%; height: 185px;
   border: 2px dashed var(--g300);
@@ -688,7 +647,6 @@
 }
 .vf-remove-photo:hover { opacity: .7; }
 
-/* Price prefix */
 .vf-prefix-wrap { position: relative; display: flex; align-items: center; }
 .vf-prefix {
   position: absolute; left: 13px;
@@ -697,7 +655,6 @@
 }
 .vf-prefixed { padding-left: 28px !important; }
 
-/* Section form inputs */
 .vf-section .form-group  { margin-bottom: 14px; }
 .vf-section .form-group:last-child { margin-bottom: 0; }
 .vf-section .form-label  { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--g500); margin-bottom: 6px; display: block; }
