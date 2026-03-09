@@ -360,7 +360,11 @@ const renderVehiclesPanel = () => (
     <div className="admin-dashboard">
       <div className="admin-layout">
         <aside className="sidebar">
-          <div className="sidebar-brand">CarRental</div>
+          <div className="sidebar-brand"><svg width="30" height="30" viewBox="0 0 24 23" fill="none" stroke="currentColor" strokeWidth="2.5" className="auth-logo-svg">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              <path d="M12 8v4" />
+              <path d="M12 17h.01" />
+            </svg> CarRental</div>
           <nav className="sidebar-nav">
             {navItems.map(item => (
               <button

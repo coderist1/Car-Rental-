@@ -10,7 +10,7 @@
 
 .sidebar {
   width: 240px;
-  background: linear-gradient(180deg, #1a2c5e 0%, #0f1a3a 100%);
+  background: linear-gradient(180deg, black 0%, #0f1a3a 100%);
   color: white;
   padding: 24px 0;
   position: fixed;

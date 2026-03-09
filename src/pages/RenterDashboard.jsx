@@ -1,3 +1,8 @@
+/**
+ * RENTER DASHBOARD - Updated to display log reports in panel
+ * The RenterLogViewModal has been replaced with inline log viewing
+ */
+
 import React, { useState, useMemo, useCallback } from 'react';
 import { useVehicles } from '../hooks';
 import { useAuth } from '../context/AuthContext';
@@ -57,9 +62,10 @@ const Ico = ({ d, w = 14 }) => (
     {typeof d === 'string' ? <path d={d} /> : d}
   </svg>
 );
+
 const SearchIcon    = () => <Ico w={15} d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z" />;
 const FilterIcon    = () => <Ico w={16} d="M3 4h18M7 10h10M11 16h2" />;
-const ClipboardIcon = () => <Ico w={15} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />;
+
 const CarIcon       = () => <Ico w={14} d="M5 17H3a2 2 0 01-2-2V9a2 2 0 012-2h3.5l2-3h7l2 3H21a2 2 0 012 2v6a2 2 0 01-2 2h-2M8 17a2 2 0 104 0 2 2 0 00-4 0zm8 0a2 2 0 104 0 2 2 0 00-4 0z" />;
 const UserIcon      = () => <Ico w={13} d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z" />;
 const AlertIcon     = () => <Ico w={13} d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />;
@@ -72,8 +78,12 @@ const DamageIcon    = () => <Ico w={13} d="M12 9v2m0 4h.01M5.07 19H19a2 2 0 001.
 const SignIcon      = () => <Ico w={14} d="M15.232 5.232l3.536 3.536M9 11l-5 5v3h3l5-5m0 0l3.536-3.536M9 11l3.536-3.536" />;
 const EyeIcon       = () => <Ico w={13} d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 100 6 3 3 0 000-6z" />;
 const PrintIcon     = () => <Ico w={13} d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-2-4H8v8h8v-8z" />;
-const CloseSmIcon   = () => <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M6 18L18 6M6 6l12 12" /></svg>;
+const HomeIcon      = () => <Ico w={14} d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />;
+const HeartIcon     = () => <Ico w={14} d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />;
+const HistoryIcon   = () => <Ico w={14} d="M13 2H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V9z" />;
+const ClipboardIcon = () => <Ico w={15} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />;
 
+// Helper Components
 function Sec({ label, children, style }) {
   return (
     <div style={{ marginBottom: 22, ...style }}>
@@ -192,31 +202,7 @@ function TripSummaryCard({ report }) {
   );
 }
 
-function StatsBar({ reports }) {
-  const complete  = reports.filter(r => !!r.checkout).length;
-  const awaiting  = reports.filter(r => !r.checkout).length;
-  const newDamage = reports.filter(r => {
-    if (!r.checkout) return false;
-    const ci = r.issues || [], co = r.checkout.issues || [];
-    return co.some(i => !ci.includes(i));
-  }).length;
-  const stats = [
-    { label: 'Total Reports',     value: reports.length, color: C.primary  },
-    { label: 'Trips Complete',    value: complete,        color: '#3b82f6'  },
-    { label: 'Awaiting Check-out',value: awaiting,        color: C.warning  },
-    { label: 'New Damage',        value: newDamage,       color: C.danger   },
-  ];
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12, marginBottom: 22 }}>
-      {stats.map(s => (
-        <div key={s.label} style={{ background: '#fff', borderRadius: C.r, padding: '14px 16px', borderLeft: `4px solid ${s.color}`, border: `1px solid ${s.color}18`, borderLeftWidth: 4, boxShadow: C.shadow }}>
-          <div style={{ fontSize: 26, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</div>
-          <div style={{ fontSize: 11, color: C.g500, fontWeight: 500, marginTop: 3 }}>{s.label}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
+
 
 function PhotoGallery({ photos = [], label }) {
   const [lb, setLb] = useState(null);
@@ -528,205 +514,7 @@ function printReport(report) {
   win.document.close(); win.focus(); setTimeout(() => win.print(), 500);
 }
 
-function RenterLogListModal({ isOpen, onClose, reports, onView }) {
-  const [search, setSearch] = useState('');
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase();
-    return reports.filter(r => !q || (r.vehicleName || '').toLowerCase().includes(q) || (r.ownerName || '').toLowerCase().includes(q));
-  }, [reports, search]);
 
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title="My Vehicle Log Reports" size="xlarge">
-      <p style={{ fontSize: 13, color: C.g500, marginBottom: 20, marginTop: -4 }}>
-        Log reports created by vehicle owners for your rentals. View condition details and leave comments.
-      </p>
-
-      <div style={{ position: 'relative', marginBottom: 18 }}>
-        <span style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: C.g400, display: 'flex', pointerEvents: 'none' }}><SearchIcon /></span>
-        <input
-          style={{ width: '100%', padding: '11px 14px 11px 40px', border: `1.5px solid ${C.g200}`, borderRadius: C.r2, fontSize: 14, color: C.g900, background: '#fff', outline: 'none', boxSizing: 'border-box', transition: 'border-color .15s' }}
-          placeholder="Search by vehicle name…"
-          value={search} onChange={e => setSearch(e.target.value)}
-          onFocus={e => e.target.style.borderColor = C.primary}
-          onBlur={e => e.target.style.borderColor = C.g200}
-        />
-      </div>
-
-      {filtered.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '50px 20px', background: C.g50, borderRadius: C.r, border: `1px dashed ${C.g200}` }}>
-          <div style={{ margin: '0 auto 14px', color: C.g300, display: 'flex', justifyContent: 'center' }}>
-            <svg width={48} height={48} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-          </div>
-          <h3 style={{ fontSize: 17, color: C.g700, margin: '0 0 8px' }}>No log reports yet</h3>
-          <p style={{ fontSize: 13, color: C.g400, margin: 0 }}>Reports will appear here after the owner logs your vehicle check-in.</p>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {filtered.slice().reverse().map(r => {
-            const ciIssues  = r.issues || [];
-            const coIssues  = r.checkout?.issues || [];
-            const newDamage = r.checkout ? coIssues.filter(i => !ciIssues.includes(i)) : [];
-            const hasSig    = !!r.renterSignature;
-            const hasComments = (r.comments || []).length > 0;
-            return (
-              <div key={r.id} onClick={() => onView(r)}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', border: `1.5px solid ${C.g200}`, borderRadius: C.r, cursor: 'pointer', background: '#fff', boxShadow: C.shadow, transition: 'all .14s' }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = C.primary; e.currentTarget.style.boxShadow = C.shadowHover; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = C.g200;    e.currentTarget.style.boxShadow = C.shadow;       e.currentTarget.style.transform = 'none'; }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
-                    <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 9px', borderRadius: 999, background: 'rgba(16,185,129,.1)', color: '#059669', border: '1px solid rgba(16,185,129,.25)', textTransform: 'uppercase', letterSpacing: '.04em' }}>Check-in</span>
-                    {r.checkout
-                      ? <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 9px', borderRadius: 999, background: `${C.primary}14`, color: C.primary, border: `1px solid ${C.primary}35` }}>Trip Complete</span>
-                      : <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 9px', borderRadius: 999, background: 'rgba(245,158,11,.1)', color: '#b45309', border: '1px solid rgba(245,158,11,.3)' }}>Awaiting Check-out</span>}
-                    {r.conditionRating && <ConditionBadge rating={r.conditionRating} />}
-                    {newDamage.length > 0 && (
-                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 9px', borderRadius: 999, background: '#fef2f2', color: '#991b1b', border: '1px solid #fca5a5', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        <DamageIcon /> {newDamage.length} new damage
-                      </span>
-                    )}
-                    {hasComments && (
-                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 9px', borderRadius: 999, background: `${C.indigo}14`, color: C.indigoDk, border: `1px solid ${C.indigo}28`, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        <CommentIcon /> {r.comments.length}
-                      </span>
-                    )}
-                    {hasSig && (
-                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 9px', borderRadius: 999, background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        <CheckIcon /> Signed
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: C.navy, marginBottom: 5 }}>{r.vehicleName}</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 12, color: C.g500 }}>
-                    <span>{fmtDate(r.createdAt)}</span>
-                    {ciIssues.length > 0
-                      ? <span style={{ color: '#b45309', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}><AlertIcon />{ciIssues.length} issue{ciIssues.length > 1 ? 's' : ''} at check-in</span>
-                      : <span style={{ color: C.success, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}><CheckIcon />Clean check-in</span>}
-                    {r.ownerName && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><UserIcon />{r.ownerName}</span>}
-                  </div>
-                </div>
-                <span style={{ color: C.g400, display: 'flex', marginLeft: 12 }}><ChevronRIcon /></span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20, paddingTop: 16, borderTop: `1px solid ${C.g100}` }}>
-        <button onClick={onClose} style={{ padding: '9px 22px', border: `1.5px solid ${C.g200}`, borderRadius: C.r2, background: '#fff', color: C.g700, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Close</button>
-      </div>
-    </Modal>
-  );
-}
-
-function RenterLogViewModal({ isOpen, onClose, report, onCommentAdded, user, userRentals }) {
-  const [localReport, setLocalReport] = useState(report);
-  React.useEffect(() => { setLocalReport(report); }, [report]);
-  if (!localReport) return null;
-  const matchedRental = (userRentals || []).find(r => String(r.id) === String(localReport.rentalId));
-  const enrichedReport = { ...localReport, ownerName: localReport.ownerName || matchedRental?.ownerName || matchedRental?.owner || '—' };
-
-  const hasCheckout = !!localReport.checkout;
-  const ciIssues    = localReport.issues || [];
-  const coIssues    = localReport.checkout?.issues || [];
-  const newIssues   = hasCheckout ? coIssues.filter(i => !ciIssues.includes(i)) : [];
-  const noteStyle   = { fontFamily: 'inherit', fontSize: 13, color: C.g700, background: C.g50, border: `1px solid ${C.g200}`, borderRadius: C.r2, padding: '10px 12px', whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0, lineHeight: 1.6 };
-
-  const allLabels = id => {
-    const d = DEFAULT_CHECKLIST.find(x => x.id === id);
-    return (localReport.customLabels || {})[id] || (localReport.checkout?.customLabels || {})[id] || d?.label || id;
-  };
-
-  const refresh = () => {
-    const fresh = loadLogReports().find(r => r.id === localReport.id);
-    if (fresh) setLocalReport(fresh);
-    onCommentAdded && onCommentAdded();
-  };
-
-  return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={hasCheckout ? 'Trip Log Report' : 'Check-in Log Report'}
-      size="xlarge"
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, paddingBottom: 16, borderBottom: `1px solid ${C.g100}` }}>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: C.primary, fontWeight: 600, fontSize: 13, padding: 0 }}>
-          <ChevronLIcon /> Back to Log Reports
-        </button>
-        <button onClick={() => printReport(localReport)}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, border: `1.5px solid ${C.g200}`, background: '#fff', color: C.g700, fontWeight: 600, fontSize: 12, padding: '7px 14px', borderRadius: C.r2, cursor: 'pointer', transition: 'all .14s' }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = C.primary; e.currentTarget.style.color = C.primary; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = C.g200;    e.currentTarget.style.color = C.g700; }}>
-          <PrintIcon /> Print / Export
-        </button>
-      </div>
-
-      <div style={{ background: `${C.indigo}08`, border: `1px solid ${C.indigo}28`, borderRadius: C.r, padding: '11px 16px', fontSize: 13, color: C.indigoDk, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8, lineHeight: 1.6 }}>
-        <EyeIcon /> This report was created by the vehicle owner. You can view the condition details and leave a comment if you have concerns.
-      </div>
-
-      <RentalBanner report={enrichedReport} />
-      {hasCheckout && <TripSummaryCard report={localReport} />}
-
-      {hasCheckout ? (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24, alignItems: 'start' }}>
-          <ColCard title="Before Trip" titleColor="#065f46" headerBg="rgba(16,185,129,.07)" headerBorder="rgba(16,185,129,.18)" date={localReport.createdAt}>
-            <DataGrid odometer={localReport.odometer} fuelLevel={localReport.fuelLevel} conditionRating={localReport.conditionRating} />
-            <Sec label="Issues"><IssueBlock issues={ciIssues} labelFn={allLabels} newIssues={[]} /></Sec>
-            <Sec label="Notes"><pre style={noteStyle}>{localReport.notes || 'No notes.'}</pre></Sec>
-            <PhotoGallery photos={localReport.photos} label="Check-in Photos" />
-          </ColCard>
-          <ColCard title="After Trip" titleColor="#92400e" headerBg="rgba(245,158,11,.07)" headerBorder="rgba(245,158,11,.2)" date={localReport.checkout.createdAt}>
-            <DataGrid odometer={localReport.checkout.odometer} fuelLevel={localReport.checkout.fuelLevel} conditionRating={localReport.checkout.conditionRating} />
-            <Sec label="Issues"><IssueBlock issues={coIssues} labelFn={allLabels} newIssues={newIssues} /></Sec>
-            <Sec label="Notes"><pre style={noteStyle}>{localReport.checkout.notes || 'No notes.'}</pre></Sec>
-            <PhotoGallery photos={localReport.checkout.photos} label="Check-out Photos" />
-          </ColCard>
-        </div>
-      ) : (
-        <>
-          <div style={{ background: 'rgba(245,158,11,.07)', border: '1px dashed rgba(245,158,11,.4)', borderRadius: C.r, padding: '14px 18px', marginBottom: 20, textAlign: 'center', fontSize: 13, color: '#92400e', lineHeight: 1.6 }}>
-            No check-out report has been added by the owner yet.
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10, marginBottom: 20 }}>
-            {[
-              { l: 'Logged On', v: fmtDate(localReport.createdAt) },
-              localReport.odometer        && { l: 'Odometer',  v: `${localReport.odometer} km`              },
-              localReport.conditionRating && { l: 'Condition', v: <ConditionBadge rating={localReport.conditionRating} /> },
-            ].filter(Boolean).map((f, i) => (
-              <div key={i} style={{ background: C.g50, border: `1px solid ${C.g200}`, borderRadius: C.r2, padding: '12px 14px' }}>
-                <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: C.g400, marginBottom: 4 }}>{f.l}</div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: C.navy }}>{f.v}</div>
-              </div>
-            ))}
-            {localReport.fuelLevel && (
-              <div style={{ background: C.g50, border: `1px solid ${C.g200}`, borderRadius: C.r2, padding: '12px 14px' }}>
-                <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: C.g400, marginBottom: 6 }}>Fuel Level</div>
-                <FuelGauge level={localReport.fuelLevel} />
-              </div>
-            )}
-          </div>
-          <Sec label="Condition Issues"><IssueBlock issues={ciIssues} labelFn={allLabels} newIssues={[]} /></Sec>
-          <Sec label="Notes"><pre style={noteStyle}>{localReport.notes || 'No notes.'}</pre></Sec>
-          <PhotoGallery photos={localReport.photos} label="Check-in Photos" />
-        </>
-      )}
-
-      <div style={{ height: 1, background: C.g100, margin: '24px 0' }} />
-
-      <SignatureSection localReport={localReport} onSigned={refresh} />
-
-      <div style={{ height: 1, background: C.g100, margin: '24px 0' }} />
-
-      <CommentsSection localReport={localReport} user={user} onCommentAdded={refresh} />
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20, paddingTop: 16, borderTop: `1px solid ${C.g100}` }}>
-        <button onClick={onClose} style={{ padding: '9px 22px', border: `1.5px solid ${C.g200}`, borderRadius: C.r2, background: '#fff', color: C.g700, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Close</button>
-      </div>
-    </Modal>
-  );
-}
 
 function RenterDashboard() {
   const { user } = useAuth();
@@ -735,14 +523,13 @@ function RenterDashboard() {
   const [searchQuery,     setSearchQuery]     = useState('');
   const [isFilterOpen,    setIsFilterOpen]    = useState(false);
   const [isDetailOpen,    setIsDetailOpen]    = useState(false);
-  const [isHistoryOpen,   setIsHistoryOpen]   = useState(false);
-  const [selectedVehicle, setSelectedVehicle] = useState(null);
-  const [showingSaved,    setShowingSaved]    = useState(false);
 
-  const [logReports,    setLogReports]    = useState(() => loadLogReports());
-  const [isLogListOpen, setIsLogListOpen] = useState(false);
-  const [isLogViewOpen, setIsLogViewOpen] = useState(false);
-  const [viewingReport, setViewingReport] = useState(null);
+  const [selectedVehicle, setSelectedVehicle] = useState(null);
+  const [activeNav,       setActiveNav]       = useState('browse');
+
+  const [logReports,      setLogReports]      = useState(() => loadLogReports());
+  const [viewingReport,   setViewingReport]   = useState(null);
+  const [logSearchQuery,  setLogSearchQuery]  = useState('');
 
   const refreshLogs = useCallback(() => setLogReports(loadLogReports()), []);
 
@@ -759,11 +546,20 @@ function RenterDashboard() {
     );
   }, [logReports, userRentals, user]);
 
+  const filteredLogReports = useMemo(() => {
+    if (!logSearchQuery.trim()) return renterLogReports;
+    const q = logSearchQuery.toLowerCase();
+    return renterLogReports.filter(r =>
+      (r.vehicleName || '').toLowerCase().includes(q) ||
+      (r.ownerName || '').toLowerCase().includes(q)
+    );
+  }, [renterLogReports, logSearchQuery]);
+
   const logCount          = renterLogReports.length;
   const availableVehicles = useMemo(() => vehicles.filter(v => v.available), [vehicles]);
 
   const filteredVehicles = useMemo(() => {
-    let result = showingSaved ? vehicles.filter(v => savedCars.includes(v.id)) : availableVehicles;
+    let result = availableVehicles;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(v =>
@@ -777,7 +573,11 @@ function RenterDashboard() {
     if (filters.minPrice)             result = result.filter(v => Number(v.pricePerDay || 0) >= Number(filters.minPrice));
     if (filters.maxPrice)             result = result.filter(v => Number(v.pricePerDay || 0) <= Number(filters.maxPrice));
     return result;
-  }, [availableVehicles, vehicles, savedCars, showingSaved, searchQuery, filters]);
+  }, [availableVehicles, searchQuery, filters]);
+
+  const favoriteVehicles = useMemo(() => {
+    return vehicles.filter(v => savedCars.includes(v.id));
+  }, [vehicles, savedCars]);
 
   const stats = useMemo(() => {
     const avgPrice = availableVehicles.length > 0
@@ -805,65 +605,317 @@ function RenterDashboard() {
   const handleRequestReturn = rentalId => {
     if (window.confirm('Request to return this vehicle?')) { requestReturn(rentalId); alert('Return request sent!'); }
   };
-  const handleViewLog = report => { setViewingReport(report); setIsLogViewOpen(true); setIsLogListOpen(false); };
+  const handleViewLog = report => { setViewingReport(report); };
+
+  const currentTitle = {
+    browse: 'Browse Vehicles',
+    favorites: 'Saved Vehicles',
+    rentals: 'My Rentals',
+    logs: 'Log Reports',
+  }[activeNav];
+
+  const currentSubtitle = {
+    browse: `${filteredVehicles.length} available`,
+    favorites: `${favoriteVehicles.length} saved`,
+    rentals: `${userRentals.length} rental${userRentals.length !== 1 ? 's' : ''}`,
+    logs: `${logCount} report${logCount !== 1 ? 's' : ''}`,
+  }[activeNav];
 
   return (
     <div className="renter-dashboard">
-      <header className="renter-header">
-        <div className="header-info">
-          <h1 className="greeting">Hello, {userName}</h1>
-          <p className="header-subtitle">Find your perfect ride</p>
+      {/* Sidebar - Similar to Admin */}
+      <aside className="renter-sidebar">
+        <div className="sidebar-brand">
+          <svg width="55" height="55" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="auth-logo-svg" aria-hidden="true">
+            <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
+            <circle cx="7" cy="17" r="2" />
+            <path d="M9 17h6" />
+            <circle cx="17" cy="17" r="2" />
+          </svg> CarRental
         </div>
-        <div className="header-actions">
-          <button className="btn btn-outline" style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-            onClick={() => { refreshLogs(); setIsLogListOpen(true); }}>
-            <ClipboardIcon />
-            Log Reports
-            {logCount > 0 && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 18, height: 18, padding: '0 5px', background: C.danger, color: '#fff', fontSize: 10, fontWeight: 700, borderRadius: 999, pointerEvents: 'none' }}>
-                {logCount}
-              </span>
-            )}
+        <nav className="sidebar-nav">
+          <button className={`nav-item ${activeNav === 'browse' ? 'active' : ''}`} onClick={() => setActiveNav('browse')}>
+            <HomeIcon /> Browse
           </button>
-          <button className="btn btn-outline" onClick={() => setIsHistoryOpen(true)}>My Rentals</button>
-          <ProfileMenu />
-        </div>
-      </header>
-
-      <section className="search-section">
-        <div className="search-container">
-          <div className="search-input-wrapper">
-            <span className="search-icon"><SearchIcon /></span>
-            <input type="text" className="search-input" placeholder="Search cars…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-          </div>
-          <button className="filter-button" onClick={() => setIsFilterOpen(true)}>
-            <span className="filter-icon"><FilterIcon /></span>
-            {activeFiltersCount > 0 && <span className="filter-badge">{activeFiltersCount}</span>}
+          <button className={`nav-item ${activeNav === 'favorites' ? 'active' : ''}`} onClick={() => setActiveNav('favorites')}>
+            <HeartIcon /> Favorites {savedCars.length > 0 && `(${savedCars.length})`}
           </button>
+          <button className={`nav-item ${activeNav === 'rentals' ? 'active' : ''}`} onClick={() => setActiveNav('rentals')}>
+            <HistoryIcon /> My Rentals
+          </button>
+          <button className={`nav-item ${activeNav === 'logs' ? 'active' : ''}`} onClick={() => { setActiveNav('logs'); refreshLogs(); }}>
+            <ClipboardIcon /> Log Reports {logCount > 0 && <span className="nav-badge">{logCount}</span>}
+          </button>
+        </nav>
+      </aside>
+
+      {/* Main Content */}
+      <div className="renter-main">
+        {/* Header - Similar to Admin */}
+        <div className="renter-header">
+          <div className="renter-heading">
+            <h1>{currentTitle}</h1>
+            <p className="renter-subtitle">{currentSubtitle}</p>
+          </div>
+          <div className="user-info">
+            <span className="welcome-text">Welcome, {userName}</span>
+            <ProfileMenu />
+          </div>
         </div>
-      </section>
 
-      <section className="vehicles-section">
-        {filteredVehicles.length === 0 ? (
-          <div className="empty-state">
-            <h3>{showingSaved ? 'No saved vehicles' : 'No vehicles found'}</h3>
-            <p>{showingSaved ? 'Save vehicles you like by clicking the heart icon.' : 'Try adjusting your search or filters.'}</p>
-          </div>
-        ) : (
-          <div className="vehicles-grid">
-            {filteredVehicles.map(vehicle => (
-              <VehicleCard key={vehicle.id} vehicle={vehicle} mode="renter"
-                isSaved={isCarSaved(vehicle.id)}
-                onSave={() => toggleSavedCar(vehicle.id)}
-                onRent={() => handleRentVehicle(vehicle)}
-                onView={() => handleViewVehicle(vehicle)} />
-            ))}
-          </div>
-        )}
-      </section>
+        {/* Content Panel */}
+        <div className="renter-content">
+          {/* Browse View */}
+          {activeNav === 'browse' && (
+            <>
+              <div className="search-filter-bar">
+                <div className="search-container">
+                  <span className="search-icon"><SearchIcon /></span>
+                  <input type="text" className="search-input" placeholder="Search vehicles…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                </div>
+                <button className="filter-button" onClick={() => setIsFilterOpen(true)}>
+                  <span className="filter-icon"><FilterIcon /></span>
+                  {activeFiltersCount > 0 && <span className="filter-badge">{activeFiltersCount}</span>}
+                </button>
+              </div>
 
-      <Modal isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} title="Filters"
-        footer={<><button className="btn btn-secondary" onClick={clearFilters}>Reset</button><button className="btn btn-primary" onClick={() => setIsFilterOpen(false)}>Apply</button></>}>
+              <div className="panel">
+                {filteredVehicles.length === 0 ? (
+                  <div className="empty-state">
+                    <h3>No vehicles found</h3>
+                    <p>Try adjusting your search or filters.</p>
+                  </div>
+                ) : (
+                  <div className="vehicles-grid">
+                    {filteredVehicles.map(vehicle => (
+                      <VehicleCard key={vehicle.id} vehicle={vehicle} mode="renter"
+                        isSaved={isCarSaved(vehicle.id)}
+                        onSave={() => toggleSavedCar(vehicle.id)}
+                        onRent={() => handleRentVehicle(vehicle)}
+                        onView={() => handleViewVehicle(vehicle)} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Favorites View */}
+          {activeNav === 'favorites' && (
+            <div className="panel">
+              {favoriteVehicles.length === 0 ? (
+                <div className="empty-state">
+                  <h3>No saved vehicles</h3>
+                  <p>Save vehicles you like by clicking the heart icon.</p>
+                </div>
+              ) : (
+                <div className="vehicles-grid">
+                  {favoriteVehicles.map(vehicle => (
+                    <VehicleCard key={vehicle.id} vehicle={vehicle} mode="renter"
+                      isSaved={isCarSaved(vehicle.id)}
+                      onSave={() => toggleSavedCar(vehicle.id)}
+                      onRent={() => handleRentVehicle(vehicle)}
+                      onView={() => handleViewVehicle(vehicle)} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Rentals View */}
+          {activeNav === 'rentals' && (
+            <div className="panel">
+              {userRentals.length === 0 ? (
+                <div className="empty-state">
+                  <h3>No active rentals</h3>
+                  <p>Browse our vehicles to get started.</p>
+                </div>
+              ) : (
+                <div className="rentals-list">
+                  {userRentals.slice().reverse().map(rental => (
+                    <div key={rental.id} className="rental-card">
+                      <div className="rental-header">
+                        <div className="rental-info">
+                          <h3 className="rental-vehicle">{rental.vehicleName}</h3>
+                          <p className="rental-owner">Owner: {rental.ownerName}</p>
+                        </div>
+                        <span className={`rental-status ${rental.status}`}>{rental.status}</span>
+                      </div>
+                      <div className="rental-details">
+                        <span className="rental-price">₱{rental.amount}/day</span>
+                        <span className="rental-dates">{new Date(rental.startDate).toLocaleDateString()} → {rental.endDate ? new Date(rental.endDate).toLocaleDateString() : 'Ongoing'}</span>
+                      </div>
+                      {rental.status === 'active' && (
+                        <button className="btn btn-outline btn-sm" onClick={() => handleRequestReturn(rental.id)}>Request Return</button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Log Reports View - DISPLAYED DIRECTLY IN PANEL */}
+          {activeNav === 'logs' && (
+            <>
+              {renterLogReports.length === 0 ? (
+                <div className="panel">
+                  <div className="empty-state">
+                    <h3>No log reports yet</h3>
+                    <p>Reports will appear here after the owner logs your vehicle check-in.</p>
+                  </div>
+                </div>
+              ) : !viewingReport ? (
+                <div className="panel">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                    {/* Search Bar */}
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                      <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', background: '#fff', border: '1.5px solid var(--g200)', borderRadius: 'var(--radius-sm)', boxShadow: 'var(--shadow)' }}>
+                        <span style={{ position: 'absolute', left: 12, color: 'var(--g400)', display: 'flex', flexShrink: 0, pointerEvents: 'none' }}><SearchIcon /></span>
+                        <input type="text" style={{ flex: 1, padding: '10px 14px 10px 38px', border: 'none', background: 'transparent', fontSize: 14, fontFamily: 'inherit', color: 'var(--g900)', outline: 'none' }} placeholder="Search by vehicle or owner…" value={logSearchQuery} onChange={e => setLogSearchQuery(e.target.value)} />
+                      </div>
+                    </div>
+
+                    {/* Log List */}
+                    {filteredLogReports.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '50px 20px', background: 'var(--g50)', borderRadius: 'var(--radius)', border: '1px dashed var(--g200)' }}>
+                        <div style={{ fontSize: 44, marginBottom: 12 }}>📋</div>
+                        <h3 style={{ fontSize: 17, color: 'var(--g700)', margin: '0 0 8px' }}>No reports found</h3>
+                        <p style={{ fontSize: 13, color: 'var(--g400)', margin: 0 }}>Try adjusting your search query.</p>
+                      </div>
+                    ) : (
+                      <div className="logs-list">
+                        {filteredLogReports.slice().reverse().map(r => {
+                          const ciIssues  = r.issues || [];
+                          const coIssues  = r.checkout?.issues || [];
+                          const newDamage = r.checkout ? coIssues.filter(i => !ciIssues.includes(i)) : [];
+                          const hasSig    = !!r.renterSignature;
+                          const hasComments = (r.comments || []).length > 0;
+                          return (
+                            <div key={r.id} onClick={() => handleViewLog(r)} className="log-card">
+                              <div className="log-header">
+                                <div>
+                                  <div className="log-vehicle"><CarIcon /> {r.vehicleName}</div>
+                                  {r.ownerName && <div className="log-owner"><UserIcon /> {r.ownerName}</div>}
+                                </div>
+                                <ChevronRIcon />
+                              </div>
+
+                              <div className="log-meta">
+                                <span className="log-date"><CalIcon /> {fmtShortDate(r.createdAt)}</span>
+                                {ciIssues.length > 0 ? (
+                                  <span className="log-issues"><AlertIcon /> {ciIssues.length} issue{ciIssues.length > 1 ? 's' : ''}</span>
+                                ) : (
+                                  <span className="log-status-clean"><CheckIcon /> Clean</span>
+                                )}
+                              </div>
+
+                              {(r.odometer || r.fuelLevel || r.conditionRating) && (
+                                <div className="log-details">
+                                  {r.odometer && <span>{r.odometer} km</span>}
+                                  {r.fuelLevel && <span>⚡ {r.fuelLevel}</span>}
+                                  {r.conditionRating && <span><ConditionBadge rating={r.conditionRating} /></span>}
+                                </div>
+                              )}
+
+                              <div className="log-tags">
+                                <span className="tag-complete"><CheckIcon /> Check-in</span>
+                                {r.checkout ? (
+                                  <span className="tag-trip-complete">Trip Complete</span>
+                                ) : (
+                                  <span className="tag-pending"><AlertIcon /> Awaiting Check-out</span>
+                                )}
+                                {newDamage.length > 0 && <span className="tag-damage"><DamageIcon /> {newDamage.length} dmg</span>}
+                                {hasComments && <span className="tag-comments"><CommentIcon /> {r.comments.length}</span>}
+                                {hasSig && <span className="tag-signed"><CheckIcon /> Signed</span>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                /* Log Detail View - Displayed in panel */
+                <div className="panel">
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, paddingBottom: 16, borderBottom: `1px solid ${C.g100}` }}>
+                      <button onClick={() => setViewingReport(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: C.primary, fontWeight: 600, fontSize: 13, padding: 0 }}>
+                        <ChevronLIcon /> Back to Log Reports
+                      </button>
+                      <button onClick={() => printReport(viewingReport)} style={{ display: 'flex', alignItems: 'center', gap: 6, border: `1.5px solid ${C.g200}`, background: '#fff', color: C.g700, fontWeight: 600, fontSize: 12, padding: '7px 14px', borderRadius: C.r2, cursor: 'pointer', transition: 'all .14s' }}>
+                        <PrintIcon /> Print/Export
+                      </button>
+                    </div>
+
+                    <div style={{ background: `${C.indigo}08`, border: `1px solid ${C.indigo}28`, borderRadius: C.r, padding: '11px 16px', fontSize: 13, color: C.indigoDk, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8, lineHeight: 1.6 }}>
+                      <EyeIcon /> This report was created by the vehicle owner. You can view the condition details and leave a comment if you have concerns.
+                    </div>
+
+                    <RentalBanner report={viewingReport} />
+                    {viewingReport.checkout && <TripSummaryCard report={viewingReport} />}
+
+                    {viewingReport.checkout ? (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24, alignItems: 'start' }}>
+                        <ColCard title="Before Trip" titleColor="#065f46" headerBg="rgba(16,185,129,.07)" headerBorder="rgba(16,185,129,.18)" date={viewingReport.createdAt}>
+                          <DataGrid odometer={viewingReport.odometer} fuelLevel={viewingReport.fuelLevel} conditionRating={viewingReport.conditionRating} />
+                          <Sec label="Issues"><IssueBlock issues={viewingReport.issues || []} labelFn={id => DEFAULT_CHECKLIST.find(x => x.id === id)?.label || id} /></Sec>
+                          <Sec label="Notes"><pre style={{ fontFamily: 'inherit', fontSize: 13, color: C.g700, background: C.g50, border: `1px solid ${C.g200}`, borderRadius: C.r2, padding: '10px 12px', whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0, lineHeight: 1.6 }}>{viewingReport.notes || 'No notes.'}</pre></Sec>
+                          <PhotoGallery photos={viewingReport.photos} label="Check-in Photos" />
+                        </ColCard>
+                        <ColCard title="After Trip" titleColor="#92400e" headerBg="rgba(245,158,11,.07)" headerBorder="rgba(245,158,11,.2)" date={viewingReport.checkout.createdAt}>
+                          <DataGrid odometer={viewingReport.checkout.odometer} fuelLevel={viewingReport.checkout.fuelLevel} conditionRating={viewingReport.checkout.conditionRating} />
+                          <Sec label="Issues"><IssueBlock issues={viewingReport.checkout.issues || []} labelFn={id => DEFAULT_CHECKLIST.find(x => x.id === id)?.label || id} newIssues={(viewingReport.checkout.issues || []).filter(i => !(viewingReport.issues || []).includes(i))} /></Sec>
+                          <Sec label="Notes"><pre style={{ fontFamily: 'inherit', fontSize: 13, color: C.g700, background: C.g50, border: `1px solid ${C.g200}`, borderRadius: C.r2, padding: '10px 12px', whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0, lineHeight: 1.6 }}>{viewingReport.checkout.notes || 'No notes.'}</pre></Sec>
+                          <PhotoGallery photos={viewingReport.checkout.photos} label="Check-out Photos" />
+                        </ColCard>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ background: 'rgba(245,158,11,.07)', border: '1px dashed rgba(245,158,11,.4)', borderRadius: C.r, padding: '14px 18px', marginBottom: 20, textAlign: 'center', fontSize: 13, color: '#92400e', lineHeight: 1.6 }}>
+                          No check-out report has been added by the owner yet.
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10, marginBottom: 20 }}>
+                          {[
+                            { l: 'Logged On', v: fmtDate(viewingReport.createdAt), always: true },
+                            viewingReport.odometer && { l: 'Odometer', v: `${viewingReport.odometer} km` },
+                            viewingReport.conditionRating && { l: 'Condition', v: <ConditionBadge rating={viewingReport.conditionRating} /> },
+                          ].filter(Boolean).map((f, i) => (
+                            <div key={i} style={{ background: C.g50, border: `1px solid ${C.g200}`, borderRadius: C.r2, padding: '12px 14px' }}>
+                              <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: C.g400, marginBottom: 4 }}>{f.l}</div>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: C.navy }}>{f.v}</div>
+                            </div>
+                          ))}
+                          {viewingReport.fuelLevel && (
+                            <div style={{ background: C.g50, border: `1px solid ${C.g200}`, borderRadius: C.r2, padding: '12px 14px' }}>
+                              <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: C.g400, marginBottom: 6 }}>Fuel Level</div>
+                              <FuelGauge level={viewingReport.fuelLevel} />
+                            </div>
+                          )}
+                        </div>
+                        
+                        <Sec label="Condition Issues"><IssueBlock issues={viewingReport.issues || []} labelFn={id => DEFAULT_CHECKLIST.find(x => x.id === id)?.label || id} /></Sec>
+                        <Sec label="Notes"><pre style={{ fontFamily: 'inherit', fontSize: 13, color: C.g700, background: C.g50, border: `1px solid ${C.g200}`, borderRadius: C.r2, padding: '10px 12px', whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0, lineHeight: 1.6 }}>{viewingReport.notes || 'No notes.'}</pre></Sec>
+                        <PhotoGallery photos={viewingReport.photos} label="Check-in Photos" />
+                      </>
+                    )}
+
+                    <div style={{ height: 1, background: C.g100, margin: '24px 0' }} />
+                    <SignatureSection localReport={viewingReport} onSigned={refreshLogs} />
+                    <div style={{ height: 1, background: C.g100, margin: '24px 0' }} />
+                    <CommentsSection localReport={viewingReport} user={user} onCommentAdded={refreshLogs} />
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Modals */}
+      <Modal isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} title="Filters" footer={<><button className="btn btn-secondary" onClick={clearFilters}>Reset</button><button className="btn btn-primary" onClick={() => setIsFilterOpen(false)}>Apply</button></>}>
         <div className="filter-content">
           <div className="filter-group">
             <label className="filter-label">Vehicle Type</label>
@@ -890,7 +942,7 @@ function RenterDashboard() {
             </div>
           </div>
           <div className="filter-group">
-            <label className="filter-label">Price Range (&#8369;/day)</label>
+            <label className="filter-label">Price Range (₱/day)</label>
             <div className="price-inputs">
               <input type="number" className="price-input" placeholder="Min" value={filters.minPrice} onChange={e => setFilters(p => ({ ...p, minPrice: e.target.value }))} />
               <span className="price-separator">to</span>
@@ -900,24 +952,23 @@ function RenterDashboard() {
         </div>
       </Modal>
 
-      <Modal isOpen={isDetailOpen} onClose={() => { setIsDetailOpen(false); setSelectedVehicle(null); }}
-        title={selectedVehicle ? `${selectedVehicle.brand} ${selectedVehicle.name}` : 'Vehicle Details'} size="large">
+      <Modal isOpen={isDetailOpen} onClose={() => { setIsDetailOpen(false); setSelectedVehicle(null); }} title={selectedVehicle ? `${selectedVehicle.brand} ${selectedVehicle.name}` : 'Vehicle Details'} size="large">
         {selectedVehicle && (
           <div className="vehicle-detail">
             <div className="detail-image">
               {selectedVehicle.image ? <img src={selectedVehicle.image} alt={selectedVehicle.name} /> : <div className="image-placeholder"><CarIcon /></div>}
             </div>
             <div className="detail-info">
-              <div className="detail-price"><span className="price-amount">&#8369;{selectedVehicle.pricePerDay?.toLocaleString()}</span><span className="price-period">/day</span></div>
+              <div className="detail-price"><span className="price-amount">₱{selectedVehicle.pricePerDay?.toLocaleString()}</span><span className="price-period">/day</span></div>
               <div className="detail-specs">
-                {selectedVehicle.type         && <div className="spec-item"><span>{selectedVehicle.type}</span></div>}
+                {selectedVehicle.type && <div className="spec-item"><span>{selectedVehicle.type}</span></div>}
                 {selectedVehicle.transmission && <div className="spec-item"><span>{selectedVehicle.transmission}</span></div>}
-                {selectedVehicle.seats        && <div className="spec-item"><span>{selectedVehicle.seats} seats</span></div>}
-                {selectedVehicle.fuel         && <div className="spec-item"><span>{selectedVehicle.fuel}</span></div>}
-                {selectedVehicle.year         && <div className="spec-item"><span>{selectedVehicle.year}</span></div>}
+                {selectedVehicle.seats && <div className="spec-item"><span>{selectedVehicle.seats} seats</span></div>}
+                {selectedVehicle.fuel && <div className="spec-item"><span>{selectedVehicle.fuel}</span></div>}
+                {selectedVehicle.year && <div className="spec-item"><span>{selectedVehicle.year}</span></div>}
               </div>
-              {selectedVehicle.location    && <div className="detail-location"><span>{selectedVehicle.location}</span></div>}
-              {selectedVehicle.owner       && <div className="detail-owner"><span>Owner: {selectedVehicle.owner}</span></div>}
+              {selectedVehicle.location && <div className="detail-location"><span>{selectedVehicle.location}</span></div>}
+              {selectedVehicle.owner && <div className="detail-owner"><span>Owner: {selectedVehicle.owner}</span></div>}
               {selectedVehicle.description && <div className="detail-description"><p>{selectedVehicle.description}</p></div>}
               {selectedVehicle.features?.length > 0 && (
                 <div className="detail-features">
@@ -933,36 +984,7 @@ function RenterDashboard() {
         )}
       </Modal>
 
-      <Modal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} title="My Rentals" size="large">
-        {userRentals.length === 0
-          ? <div className="empty-state"><p>You have no rentals yet.</p></div>
-          : (
-            <div className="rental-history-list">
-              {userRentals.slice().reverse().map(rental => (
-                <div key={rental.id} className="rental-item">
-                  <div className="rental-header">
-                    <span className="rental-vehicle">{rental.vehicleName}</span>
-                    <span className={`rental-status ${rental.status}`}>{rental.status}</span>
-                  </div>
-                  <div className="rental-details"><span>Owner: {rental.ownerName}</span><span>&#8369;{rental.amount}/day</span></div>
-                  <div className="rental-dates">
-                    {new Date(rental.startDate).toLocaleDateString()} &rarr;{' '}
-                    {rental.endDate ? new Date(rental.endDate).toLocaleDateString() : 'Ongoing'}
-                  </div>
-                  {rental.status === 'active' && (
-                    <div className="rental-actions">
-                      <button className="btn btn-outline btn-sm" onClick={() => handleRequestReturn(rental.id)}>Request Return</button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )
-        }
-      </Modal>
 
-      <RenterLogListModal isOpen={isLogListOpen} onClose={() => setIsLogListOpen(false)} reports={renterLogReports} onView={handleViewLog} />
-      <RenterLogViewModal isOpen={isLogViewOpen} onClose={() => { setIsLogViewOpen(false); setIsLogListOpen(true); }} report={viewingReport} onCommentAdded={refreshLogs} user={user} userRentals={userRentals} />
     </div>
   );
 }

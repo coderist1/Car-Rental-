@@ -842,7 +842,7 @@ function DetailView({ report, ownerName, onEdit, onAddCheckout, onEditCheckout, 
 }
 
 /* ═══════════════ MAIN COMPONENT ═══════════════ */
-export default function OwnerLogReport({ isOpen, onClose, ownerRentals, ownerName }) {
+export default function OwnerLogReport({ isOpen, onClose, ownerRentals, ownerName, displayInPanel = false }) {
   const { reports, editCheckin, addCheckoutReport, editCheckout, removeReport, postComment } = useLogReport();
 
   const [search,   setSearch]   = useState('');
@@ -881,9 +881,9 @@ export default function OwnerLogReport({ isOpen, onClose, ownerRentals, ownerNam
 
   const titleMap = { list: 'Log Book', detail: 'Log Entry Details', 'edit-checkin': 'Edit Check-in Record', 'add-checkout': 'Record Check-out', 'edit-checkout': 'Edit Check-out Record' };
 
-  return (
-    <Modal isOpen={isOpen} onClose={() => { onClose(); setView('list'); setSel(null); }} title={titleMap[view] || 'Log Book'} size="xlarge">
-
+  // Content wrapper that can render with or without Modal
+  const content = (
+    <>
       <ConfirmDialog isOpen={!!delId} title="Delete Log Entry?" message="This log entry will be permanently deleted. This cannot be undone." confirmLabel="Yes, Delete" variant="danger" onConfirm={doDelete} onCancel={() => setDelId(null)} />
 
       {/* ── LIST ── */}
@@ -1002,6 +1002,18 @@ export default function OwnerLogReport({ isOpen, onClose, ownerRentals, ownerNam
           isCheckout checkinIssues={sel.issues || []}
           onSave={handleSaveCO} onCancel={() => setView('detail')} />
       )}
+    </>
+  );
+
+  // If displayInPanel is true, render content directly without Modal wrapper
+  if (displayInPanel) {
+    return content;
+  }
+
+  // Otherwise, render with Modal wrapper (for backward compatibility)
+  return (
+    <Modal isOpen={isOpen} onClose={() => { onClose(); setView('list'); setSel(null); }} title={titleMap[view] || 'Log Book'} size="xlarge">
+      {content}
     </Modal>
   );
 }
