@@ -80,6 +80,7 @@ function Dashboard() {
     description: '', image: '',
   });
 
+  const [viewingVehicle, setViewingVehicle] = useState(null);
   const [confirmAdd, setConfirmAdd] = useState(false);
   const [confirmSaveEdit, setConfirmSaveEdit] = useState(false);
   const [confirmRemovePhoto, setConfirmRemovePhoto] = useState(false);
@@ -473,6 +474,7 @@ function Dashboard() {
                         key={vehicle.id}
                         vehicle={vehicle}
                         mode="owner"
+                        onView={(v) => setViewingVehicle(v)}
                         onEdit={() => openEditModal(vehicle)}
                         onDelete={() => setDeleteConfirm({ open: true, vehicleId: vehicle.id })}
                       />
@@ -681,6 +683,65 @@ function Dashboard() {
         cancelText="No, Keep"
         variant="warning"
       />
+
+      {/* Vehicle Detail View Modal */}
+      <Modal
+        isOpen={!!viewingVehicle}
+        onClose={() => setViewingVehicle(null)}
+        title="Vehicle Details"
+        size="large"
+        footer={
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <button className="btn btn-secondary" onClick={() => { openEditModal(viewingVehicle); setViewingVehicle(null); }}>
+              Edit
+            </button>
+            <button className="btn btn-danger" onClick={() => { setDeleteConfirm({ open: true, vehicleId: viewingVehicle.id }); setViewingVehicle(null); }}>
+              Delete
+            </button>
+          </div>
+        }
+      >
+        {viewingVehicle && (
+          <div className="vehicle-detail-view">
+            {viewingVehicle.image ? (
+              <img
+                src={viewingVehicle.image}
+                alt={viewingVehicle.name}
+                style={{ width: '100%', maxHeight: 260, objectFit: 'cover', borderRadius: 10, marginBottom: 20 }}
+              />
+            ) : (
+              <div style={{ width: '100%', height: 180, background: '#f1f5f9', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48, marginBottom: 20 }}>
+                🚗
+              </div>
+            )}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 24px' }}>
+              {[
+                ['Brand', viewingVehicle.brand],
+                ['Model', viewingVehicle.name],
+                ['Year', viewingVehicle.year],
+                ['Type', viewingVehicle.type],
+                ['Transmission', viewingVehicle.transmission],
+                ['Fuel', viewingVehicle.fuel],
+                ['Seats', viewingVehicle.seats ? `${viewingVehicle.seats} seats` : null],
+                ['Location', viewingVehicle.location],
+                ['Price', viewingVehicle.pricePerDay ? `₱${Number(viewingVehicle.pricePerDay).toLocaleString()}/day` : null],
+                ['Status', viewingVehicle.status || (viewingVehicle.available ? 'Available' : 'Rented')],
+              ].filter(([, v]) => v).map(([label, val]) => (
+                <div key={label}>
+                  <div style={{ fontSize: 12, color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>{label}</div>
+                  <div style={{ fontSize: 15, color: '#1e293b', fontWeight: 500, textTransform: label === 'Status' ? 'capitalize' : 'none' }}>{val}</div>
+                </div>
+              ))}
+            </div>
+            {viewingVehicle.description && (
+              <div style={{ marginTop: 16 }}>
+                <div style={{ fontSize: 12, color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Description</div>
+                <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.6, margin: 0 }}>{viewingVehicle.description}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
