@@ -54,7 +54,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 48px;
+}
+
+.vehicle-image-placeholder svg {
+  width: 56px;
+  height: 56px;
+  opacity: 0.5;
 }
 
 .save-button {
@@ -68,7 +73,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   border: none;
   cursor: pointer;
@@ -164,7 +168,10 @@
 }
 
 .detail-icon {
-  font-size: 12px;
+  display: flex;
+  align-items: center;
+  color: #94a3b8;
+  flex-shrink: 0;
 }
 
 .vehicle-location {
@@ -177,7 +184,10 @@
 }
 
 .location-icon {
-  font-size: 12px;
+  display: flex;
+  align-items: center;
+  color: #94a3b8;
+  flex-shrink: 0;
 }
 
 .vehicle-footer {
@@ -211,13 +221,14 @@
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
+  gap: 5px !important;
   line-height: 1 !important;
 }
 
 .saved-btn.saved {
-  background-color: #ef445d !important;
-  border-color: #16a34a !important;
-  color: white !important;
+  background-color: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
+  color: #ef4444 !important;
   animation: heartPulse 0.3s ease;
 }
 
