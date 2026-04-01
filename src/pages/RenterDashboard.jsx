@@ -524,6 +524,17 @@ function RenterDashboard() {
   const [isFilterOpen,    setIsFilterOpen]    = useState(false);
   const [isDetailOpen,    setIsDetailOpen]    = useState(false);
 
+  // state used for rent confirmation
+  const [rentConfirmOpen, setRentConfirmOpen] = useState(false);
+  const [pendingVehicle,  setPendingVehicle]  = useState(null);
+
+  // return confirmation state
+  const [returnConfirmOpen, setReturnConfirmOpen] = useState(false);
+  const [pendingReturn,     setPendingReturn]     = useState(null);
+
+  // informational modal for success messages
+  const [infoMessage, setInfoMessage] = useState('');
+
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [activeNav,       setActiveNav]       = useState('browse');
 
@@ -596,14 +607,33 @@ function RenterDashboard() {
   const handleViewVehicle = vehicle => { setSelectedVehicle(vehicle); setIsDetailOpen(true); };
   const handleRentVehicle = vehicle => {
     if (!vehicle) return;
-    if (window.confirm(`Request to rent ${vehicle.brand} ${vehicle.name} for ₱${vehicle.pricePerDay}/day?`)) {
-      addRentalRecord(vehicle);
-      alert('Rental request sent! The owner will review your request.');
+    // show confirmation modal instead of native confirm dialog
+    setPendingVehicle(vehicle);
+    setRentConfirmOpen(true);
+  };
+
+  const confirmRent = () => {
+    if (pendingVehicle) {
+      addRentalRecord(pendingVehicle);
+      // show non-blocking message instead of alert
+      setInfoMessage('Rental request sent! The owner will review your request.');
       setIsDetailOpen(false);
+      setPendingVehicle(null);
     }
   };
-  const handleRequestReturn = rentalId => {
-    if (window.confirm('Request to return this vehicle?')) { requestReturn(rentalId); alert('Return request sent!'); }
+
+  const handleRequestReturn = rental => {
+    // store rental object for more informative message
+    setPendingReturn(rental);
+    setReturnConfirmOpen(true);
+  };
+
+  const confirmReturn = () => {
+    if (pendingReturn) {
+      requestReturn(pendingReturn.id);
+      setInfoMessage('Return request sent!');
+      setPendingReturn(null);
+    }
   };
   const handleViewLog = report => { setViewingReport(report); };
 
@@ -746,7 +776,7 @@ function RenterDashboard() {
                         <span className="rental-dates">{new Date(rental.startDate).toLocaleDateString()} → {rental.endDate ? new Date(rental.endDate).toLocaleDateString() : 'Ongoing'}</span>
                       </div>
                       {rental.status === 'active' && (
-                        <button className="btn btn-outline btn-sm" onClick={() => handleRequestReturn(rental.id)}>Request Return</button>
+                        <button className="btn btn-outline btn-sm" onClick={() => handleRequestReturn(rental)}>Request Return</button>
                       )}
                     </div>
                   ))}
@@ -984,6 +1014,47 @@ function RenterDashboard() {
         )}
       </Modal>
 
+      {/* confirm rental modal */}
+      <ConfirmModal
+        isOpen={rentConfirmOpen}
+        onClose={() => { setRentConfirmOpen(false); setPendingVehicle(null); }}
+        onConfirm={confirmRent}
+        title="Confirm Rental"
+        message={
+          pendingVehicle
+            ? `Request to rent ${pendingVehicle.brand} ${pendingVehicle.name} for ₱${pendingVehicle.pricePerDay}/day?`
+            : ''
+        }
+        confirmText="Confirm"
+        cancelText="Cancel"
+        variant="primary"
+      />
+
+      {/* confirm return modal */}
+      <ConfirmModal
+        isOpen={returnConfirmOpen}
+        onClose={() => { setReturnConfirmOpen(false); setPendingReturn(null); }}
+        onConfirm={confirmReturn}
+        title="Confirm Return"
+        message={
+          pendingReturn
+            ? `Request to return ${pendingReturn.vehicleName}?`
+            : ''
+        }
+        confirmText="Confirm"
+        cancelText="Cancel"
+        variant="warning"
+      />
+
+      {/* informational modal for alerts */}
+      <Modal
+        isOpen={!!infoMessage}
+        onClose={() => setInfoMessage('')}
+        title="Success"
+        footer={<button className="btn btn-primary" onClick={() => setInfoMessage('')}>OK</button>}
+      >
+        <p>{infoMessage}</p>
+      </Modal>
 
     </div>
   );
