@@ -1,315 +1,224 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { apiRequest } from '../lib/api';
 
 const AuthContext = createContext(null);
 
-// Shared across tabs (user registry)
-const STORAGE_KEY = 'carRentalUsers';
-// Per-tab session (sessionStorage) so each tab keeps its own login
 const PROFILE_KEY = 'userProfile';
-const AUTH_TOKEN_KEY = 'authToken';
-// Legacy keys to migrate from
-const LEGACY_USER_KEY = 'user';
+const ACCESS_TOKEN_KEY = 'authAccessToken';
 
-const DEMO_ACCOUNTS = [
-  {
-    email: 'owner@test.com',
-    password: 'password',
-    userData: {
-      id: 'demo-owner-1',
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'owner@test.com',
-      role: 'owner',
-      fullName: 'John Doe'
-    }
-  },
-  {
-    email: 'renter@test.com',
-    password: 'password',
-    userData: {
-      id: 'demo-renter-1',
-      firstName: 'Jane',
-      lastName: 'Smith',
-      email: 'renter@test.com',
-      role: 'renter',
-      fullName: 'Jane Smith'
-    }
-  },
-  {
-    email: 'admin@test.com',
-    password: 'admin123',
-    userData: {
-      id: 'demo-admin-1',
-      firstName: 'Admin',
-      lastName: 'User',
-      email: 'admin@test.com',
-      role: 'admin',
-      fullName: 'Admin User'
-    }
-  }
-];
-
-// Parse JSON safely from a specific storage
-const safeParseFrom = (storage, key) => {
+function readSessionAuth() {
   try {
-    const raw = storage.getItem(key);
-    return raw ? JSON.parse(raw) : null;
+    const rawUser = sessionStorage.getItem(PROFILE_KEY);
+    const accessToken = sessionStorage.getItem(ACCESS_TOKEN_KEY);
+    if (!rawUser || !accessToken) return { user: null, token: null };
+    return { user: JSON.parse(rawUser), token: accessToken };
   } catch {
-    return null;
+    return { user: null, token: null };
   }
-};
+}
 
-const toProfile = (userData) => ({
-  id: userData.id,
-  firstName: userData.firstName,
-  lastName: userData.lastName,
-  middleName: userData.middleName,
-  fullName: userData.fullName || `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
-  email: userData.email,
-  role: userData.role,
-  sex: userData.sex,
-  dateOfBirth: userData.dateOfBirth
-});
+function persistSession(user, token) {
+  sessionStorage.setItem(PROFILE_KEY, JSON.stringify(user));
+  sessionStorage.setItem(ACCESS_TOKEN_KEY, token);
+}
 
-// Synchronously read auth state from sessionStorage (per-tab) so the very
-// first render already knows the correct user & role.
-// Falls back to localStorage for legacy/migration, then cleans up.
-function getInitialAuth() {
-  try {
-    // 1. Try sessionStorage first (per-tab, the correct source)
-    const sessionProfile = safeParseFrom(sessionStorage, PROFILE_KEY);
-    const sessionToken = sessionStorage.getItem(AUTH_TOKEN_KEY);
-
-    if (sessionProfile?.role && sessionProfile?.email && sessionToken) {
-      return { user: sessionProfile, isAuthenticated: true };
-    }
-
-    // 2. Migrate from localStorage / legacy key (one-time on first load after update)
-    const lsProfile = safeParseFrom(localStorage, PROFILE_KEY);
-    const lsToken = localStorage.getItem(AUTH_TOKEN_KEY);
-    const legacyUser = safeParseFrom(localStorage, LEGACY_USER_KEY);
-
-    const seed = lsProfile || legacyUser;
-    if (seed?.role && seed?.email) {
-      const normalized = toProfile(seed);
-      const token = String(normalized.id ?? lsToken);
-
-      // Move into sessionStorage for this tab
-      sessionStorage.setItem(PROFILE_KEY, JSON.stringify(normalized));
-      sessionStorage.setItem(AUTH_TOKEN_KEY, token);
-
-      // Clean up localStorage session keys (registry stays)
-      localStorage.removeItem(PROFILE_KEY);
-      localStorage.removeItem(AUTH_TOKEN_KEY);
-      localStorage.removeItem(LEGACY_USER_KEY);
-
-      return { user: normalized, isAuthenticated: true };
-    }
-
-    // 3. Nothing found – clean slate
-    localStorage.removeItem(PROFILE_KEY);
-    localStorage.removeItem(AUTH_TOKEN_KEY);
-    localStorage.removeItem(LEGACY_USER_KEY);
-  } catch (e) {
-    console.error('Error reading auth state:', e);
-  }
-  return { user: null, isAuthenticated: false };
+function clearSession() {
+  sessionStorage.removeItem(PROFILE_KEY);
+  sessionStorage.removeItem(ACCESS_TOKEN_KEY);
 }
 
 export function AuthProvider({ children }) {
-  const initialAuth = getInitialAuth();
-  const [user, setUser] = useState(initialAuth.user);
-  const [isAuthenticated, setIsAuthenticated] = useState(initialAuth.isAuthenticated);
-  const [loading] = useState(false);
+  const initial = readSessionAuth();
+  const [user, setUser] = useState(initial.user);
+  const [token, setToken] = useState(initial.token);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Ensure default admin exists on mount
+  const isAuthenticated = Boolean(user && token);
+
   useEffect(() => {
-    ensureDefaultAdmin();
-  }, []);
+    let active = true;
 
-  const ensureDefaultAdmin = () => {
-    let users = [];
-    try {
-      users = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-    } catch (e) {
-      users = [];
-    }
-    
-    if (!users.some(u => u.role === 'admin')) {
-      const id = Date.now();
-      users.push({
-        id,
-        firstName: 'Admin',
-        lastName: 'User',
-        fullName: 'Admin User',
-        email: 'admin@rentacar.com',
-        password: 'admin123',
-        role: 'admin',
-        active: true,
-        createdAt: new Date().toISOString()
-      });
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
-    }
-  };
-
-  const getRegisteredUsers = () => {
-    try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-    } catch {
-      return [];
-    }
-  };
-
-  const saveUserProfile = (userData) => {
-    const profile = toProfile(userData);
-
-    // Store session in sessionStorage (per-tab)
-    sessionStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
-    sessionStorage.setItem(AUTH_TOKEN_KEY, String(userData.id));
-
-    // Clean up any leftover localStorage session keys
-    localStorage.removeItem(PROFILE_KEY);
-    localStorage.removeItem(AUTH_TOKEN_KEY);
-    localStorage.removeItem(LEGACY_USER_KEY);
-
-    setUser(profile);
-    setIsAuthenticated(true);
-
-    return profile;
-  };
-
-  const login = (email, password) => {
-    const registeredUsers = getRegisteredUsers();
-    const matchedUser = registeredUsers.find(
-      u => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-    );
-
-    if (matchedUser) {
-      return { success: true, user: saveUserProfile(matchedUser) };
-    }
-
-    const demoAccount = DEMO_ACCOUNTS.find(
-      acc => acc.email.toLowerCase() === email.toLowerCase() && acc.password === password
-    );
-
-    if (demoAccount) {
-      // Persist demo account into registered users so it survives reloads
-      const users = getRegisteredUsers();
-      if (!users.some(u => u.id === demoAccount.userData.id)) {
-        users.push({ ...demoAccount.userData, password: demoAccount.password, active: true, createdAt: new Date().toISOString() });
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+    const hydrate = async () => {
+      if (!initial.token) {
+        if (active) setLoading(false);
+        return;
       }
-      return { success: true, user: saveUserProfile(demoAccount.userData) };
-    }
 
-    return { success: false, error: 'Invalid email or password' };
-  };
-
-  const register = (userData) => {
-    const users = getRegisteredUsers();
-    
-    // Check if email already exists
-    if (users.some(u => u.email.toLowerCase() === userData.email.toLowerCase())) {
-      return { success: false, error: 'Email already registered' };
-    }
-
-    const newUser = {
-      id: Date.now(),
-      ...userData,
-      fullName: `${userData.firstName} ${userData.lastName}`.trim(),
-      active: true,
-      createdAt: new Date().toISOString()
+      try {
+        const me = await apiRequest('/api/me/', { token: initial.token });
+        if (!active) return;
+        setUser(me);
+        persistSession(me, initial.token);
+      } catch {
+        if (!active) return;
+        clearSession();
+        setUser(null);
+        setToken(null);
+      } finally {
+        if (active) setLoading(false);
+      }
     };
 
-    users.push(newUser);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
-    
-    return { success: true, user: saveUserProfile(newUser) };
+    hydrate();
+    return () => {
+      active = false;
+    };
+  }, [initial.token]);
+
+  useEffect(() => {
+    let active = true;
+
+    const fetchUsers = async () => {
+      if (!token || user?.role !== 'admin') {
+        setUsers([]);
+        return;
+      }
+
+      try {
+        const data = await apiRequest('/api/users/', { token });
+        if (active) setUsers(Array.isArray(data) ? data : []);
+      } catch {
+        if (active) setUsers([]);
+      }
+    };
+
+    fetchUsers();
+    return () => {
+      active = false;
+    };
+  }, [token, user?.role]);
+
+  const login = async (email, password) => {
+    try {
+      const loginData = await apiRequest('/api/login/', {
+        method: 'POST',
+        body: { username: email.trim().toLowerCase(), password },
+      });
+
+      const access = loginData?.access;
+      if (!access) return { success: false, error: 'Login failed. Missing access token.' };
+
+      const me = await apiRequest('/api/me/', { token: access });
+
+      setToken(access);
+      setUser(me);
+      persistSession(me, access);
+
+      return { success: true, user: me };
+    } catch (error) {
+      return { success: false, error: error.message || 'Invalid email or password' };
+    }
   };
 
-  const registerAdmin = (userData, adminKey) => {
+  const register = async (userData) => {
+    try {
+      const email = userData.email.trim().toLowerCase();
+      await apiRequest('/api/register/', {
+        method: 'POST',
+        body: {
+          email,
+          username: email,
+          password: userData.password,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          middleName: userData.middleName || '',
+          sex: userData.sex || '',
+          dateOfBirth: userData.dateOfBirth || null,
+          role: userData.role || 'renter',
+        },
+      });
+
+      return await login(email, userData.password);
+    } catch (error) {
+      return { success: false, error: error.message || 'Registration failed' };
+    }
+  };
+
+  const registerAdmin = async (userData, adminKey) => {
     if (adminKey !== 'ADMIN2026') {
       return { success: false, error: 'Invalid admin key' };
     }
-
     return register({ ...userData, role: 'admin' });
   };
 
   const logout = () => {
-    sessionStorage.removeItem(PROFILE_KEY);
-    sessionStorage.removeItem(AUTH_TOKEN_KEY);
-    localStorage.removeItem(PROFILE_KEY);
-    localStorage.removeItem(AUTH_TOKEN_KEY);
-    localStorage.removeItem(LEGACY_USER_KEY);
+    clearSession();
     setUser(null);
-    setIsAuthenticated(false);
+    setToken(null);
+    setUsers([]);
   };
 
-  // admin helpers --------------------------------------------------------
-  const updateUser = (userId, updates) => {
-    const users = getRegisteredUsers();
-    const idx = users.findIndex(u => u.id === userId);
-    if (idx !== -1) {
-      users[idx] = { ...users[idx], ...updates };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
-      // if the updated user is the current session, refresh profile
-      if (user?.id === userId) {
-        const updatedProfile = { ...user, ...updates };
-        sessionStorage.setItem(PROFILE_KEY, JSON.stringify(updatedProfile));
-        setUser(updatedProfile);
-      }
+  const updateProfile = async (updates) => {
+    if (!token) return { success: false, error: 'Not authenticated' };
+
+    try {
+      const updated = await apiRequest('/api/me/', {
+        method: 'PATCH',
+        token,
+        body: {
+          firstName: updates.firstName,
+          lastName: updates.lastName,
+          middleName: updates.middleName,
+          sex: updates.sex,
+          dateOfBirth: updates.dateOfBirth,
+        },
+      });
+
+      setUser(updated);
+      persistSession(updated, token);
+      return { success: true, user: updated };
+    } catch (error) {
+      return { success: false, error: error.message || 'Profile update failed' };
+    }
+  };
+
+  const changePassword = () => ({
+    success: false,
+    error: 'Password change endpoint is not configured on the backend yet.',
+  });
+
+  const getRegisteredUsers = () => users;
+
+  const updateUser = async (userId, updates) => {
+    if (!token || user?.role !== 'admin') return false;
+
+    try {
+      const updated = await apiRequest(`/api/users/${userId}/`, {
+        method: 'PATCH',
+        token,
+        body: {
+          active: updates.active,
+          firstName: updates.firstName,
+          lastName: updates.lastName,
+          middleName: updates.middleName,
+          sex: updates.sex,
+          dateOfBirth: updates.dateOfBirth,
+        },
+      });
+      setUsers((prev) => prev.map((item) => (item.id === userId ? updated : item)));
       return true;
-    }
-    return false;
-  };
-
-  const deleteUser = (userId) => {
-    let users = getRegisteredUsers().filter(u => u.id !== userId);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
-    if (user?.id === userId) {
-      logout();
+    } catch {
+      return false;
     }
   };
 
-  const updateProfile = (updates) => {
-    if (!user) return { success: false, error: 'Not authenticated' };
+  const deleteUser = async (userId) => {
+    if (!token || user?.role !== 'admin') return;
 
-    const users = getRegisteredUsers();
-    const userIndex = users.findIndex(u => u.id === user.id);
-    
-    if (userIndex !== -1) {
-      users[userIndex] = { ...users[userIndex], ...updates };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+    try {
+      await apiRequest(`/api/users/${userId}/`, {
+        method: 'DELETE',
+        token,
+      });
+      setUsers((prev) => prev.filter((item) => item.id !== userId));
+      if (user?.id === userId) logout();
+    } catch {
+      // no-op
     }
-
-    const updatedProfile = { ...user, ...updates };
-    sessionStorage.setItem(PROFILE_KEY, JSON.stringify(updatedProfile));
-    setUser(updatedProfile);
-    
-    return { success: true, user: updatedProfile };
   };
 
-  const changePassword = (currentPassword, newPassword) => {
-    if (!user) return { success: false, error: 'Not authenticated' };
-
-    const users = getRegisteredUsers();
-    const userIndex = users.findIndex(u => u.id === user.id);
-    
-    if (userIndex === -1) {
-      return { success: false, error: 'User not found' };
-    }
-
-    if (users[userIndex].password !== currentPassword) {
-      return { success: false, error: 'Current password is incorrect' };
-    }
-
-    users[userIndex].password = newPassword;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
-    
-    return { success: true };
-  };
-
-  const value = {
+  const value = useMemo(() => ({
     user,
     isAuthenticated,
     loading,
@@ -320,16 +229,11 @@ export function AuthProvider({ children }) {
     updateProfile,
     changePassword,
     getRegisteredUsers,
-    // admin helpers
     updateUser,
-    deleteUser
-  };
+    deleteUser,
+  }), [user, isAuthenticated, loading, users]);
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

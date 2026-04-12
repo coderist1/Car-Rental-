@@ -1,11 +1,47 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import { apiRequest } from '../lib/api';
 
 const VehicleContext = createContext(null);
 
-const VEHICLE_STORAGE_KEY = 'ownerVehicles';
+const ACCESS_TOKEN_KEY = 'authAccessToken';
 const SAVED_CARS_KEY = 'renterSavedCars';
 const RENTAL_HISTORY_KEY = 'rentalHistory';
+
+const getToken = () => sessionStorage.getItem(ACCESS_TOKEN_KEY);
+
+const fromApiVehicle = (vehicle) => {
+  const price = Number(vehicle.pricePerDay ?? vehicle.daily_rate ?? 0);
+  const status = vehicle.status || (vehicle.available ? 'available' : 'rented');
+
+  return {
+    ...vehicle,
+    id: Number(vehicle.id),
+    name: vehicle.name || vehicle.model || '',
+    model: vehicle.model || vehicle.name || '',
+    pricePerDay: Number.isNaN(price) ? 0 : price,
+    price: Number.isNaN(price) ? 0 : price,
+    available: status === 'available',
+    status,
+    owner: vehicle.owner || '',
+    ownerId: vehicle.ownerId || null,
+    ownerEmail: vehicle.ownerEmail || '',
+    features: Array.isArray(vehicle.features) && vehicle.features.length > 0
+      ? vehicle.features
+      : ['Aircon', 'Bluetooth', 'ABS', 'Backup Camera'],
+  };
+};
+
+const toApiVehicle = (vehicleData) => {
+  const rawPrice = Number(vehicleData.pricePerDay ?? vehicleData.price ?? 0);
+  return {
+    brand: vehicleData.brand || '',
+    model: vehicleData.model || vehicleData.name || '',
+    year: Number(vehicleData.year || new Date().getFullYear()),
+    daily_rate: Number.isNaN(rawPrice) ? 0 : rawPrice,
+    available: (vehicleData.status || 'available') === 'available',
+  };
+};
 
 export function VehicleProvider({ children }) {
   const { user } = useAuth();
@@ -13,24 +49,16 @@ export function VehicleProvider({ children }) {
   const [savedCars, setSavedCars] = useState([]);
   const [rentalHistory, setRentalHistory] = useState([]);
 
-  // Load vehicles from storage
-  const loadVehicles = useCallback(() => {
+  const loadVehicles = useCallback(async () => {
     try {
-      const raw = localStorage.getItem(VEHICLE_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          setVehicles(parsed.map(normalizeVehicle));
-          return;
-        }
-      }
+      const rows = await apiRequest('/api/cars/');
+      setVehicles(Array.isArray(rows) ? rows.map(fromApiVehicle) : []);
     } catch (e) {
       console.error('Error loading vehicles:', e);
+      setVehicles([]);
     }
-    setVehicles([]);
   }, []);
 
-  // Load saved cars
   const loadSavedCars = useCallback(() => {
     try {
       const raw = localStorage.getItem(SAVED_CARS_KEY);
@@ -45,7 +73,6 @@ export function VehicleProvider({ children }) {
     setSavedCars([]);
   }, []);
 
-  // Load rental history
   const loadRentalHistory = useCallback(() => {
     try {
       const raw = localStorage.getItem(RENTAL_HISTORY_KEY);
@@ -65,9 +92,7 @@ export function VehicleProvider({ children }) {
     loadSavedCars();
     loadRentalHistory();
 
-    // Listen for storage changes
     const handleStorageChange = (e) => {
-      if (e.key === VEHICLE_STORAGE_KEY) loadVehicles();
       if (e.key === SAVED_CARS_KEY) loadSavedCars();
       if (e.key === RENTAL_HISTORY_KEY) loadRentalHistory();
     };
@@ -76,67 +101,51 @@ export function VehicleProvider({ children }) {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [loadVehicles, loadSavedCars, loadRentalHistory]);
 
-  const normalizeVehicle = (vehicle) => {
-    const status = vehicle.status || (vehicle.available ? 'available' : 'rented');
-    const priceValue = Number(vehicle.pricePerDay ?? vehicle.price ?? 0);
-    return {
-      ...vehicle,
-      price: Number.isNaN(priceValue) ? 0 : priceValue,
-      pricePerDay: Number.isNaN(priceValue) ? 0 : priceValue,
-      imageUri: vehicle.imageUri || vehicle.image || '',
-      image: vehicle.image || vehicle.imageUri || '',
-      status,
-      available: status === 'available',
-      owner: vehicle.owner || '',
-      ownerEmail: vehicle.ownerEmail || '',
-      features: Array.isArray(vehicle.features) && vehicle.features.length > 0
-        ? vehicle.features
-        : ['Aircon', 'Bluetooth', 'ABS', 'Backup Camera']
-    };
-  };
+  const addVehicle = async (vehicleData) => {
+    const token = getToken();
+    if (!token) throw new Error('Not authenticated');
 
-  const saveVehicles = (vehiclesToSave) => {
-    try {
-      localStorage.setItem(VEHICLE_STORAGE_KEY, JSON.stringify(vehiclesToSave.map(normalizeVehicle)));
-      setVehicles(vehiclesToSave.map(normalizeVehicle));
-    } catch (e) {
-      console.error('Error saving vehicles:', e);
-    }
-  };
-
-  const addVehicle = (vehicleData) => {
-    const ownerName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '';
-    const newVehicle = normalizeVehicle({
-      id: Date.now(),
-      ...vehicleData,
-      owner: ownerName,
-      ownerEmail: user?.email || '',
-      ownerId: user?.id,
-      createdAt: new Date().toISOString()
+    const created = await apiRequest('/api/cars/', {
+      method: 'POST',
+      token,
+      body: toApiVehicle(vehicleData),
     });
 
-    const updatedVehicles = [...vehicles, newVehicle];
-    saveVehicles(updatedVehicles);
-    return newVehicle;
+    const normalized = fromApiVehicle(created);
+    setVehicles((prev) => [normalized, ...prev]);
+    return normalized;
   };
 
-  const updateVehicle = (vehicleId, updates) => {
-    const updatedVehicles = vehicles.map(v => 
-      v.id === vehicleId ? normalizeVehicle({ ...v, ...updates }) : v
-    );
-    saveVehicles(updatedVehicles);
+  const updateVehicle = async (vehicleId, updates) => {
+    const token = getToken();
+    if (!token) return;
+
+    const updated = await apiRequest(`/api/cars/${vehicleId}/`, {
+      method: 'PATCH',
+      token,
+      body: toApiVehicle({ ...updates, model: updates.model || updates.name, brand: updates.brand }),
+    });
+
+    const normalized = fromApiVehicle(updated);
+    setVehicles((prev) => prev.map((v) => (v.id === vehicleId ? normalized : v)));
   };
 
-  const deleteVehicle = (vehicleId) => {
-    const updatedVehicles = vehicles.filter(v => v.id !== vehicleId);
-    saveVehicles(updatedVehicles);
+  const deleteVehicle = async (vehicleId) => {
+    const token = getToken();
+    if (!token) return;
+
+    await apiRequest(`/api/cars/${vehicleId}/`, {
+      method: 'DELETE',
+      token,
+    });
+
+    setVehicles((prev) => prev.filter((v) => v.id !== vehicleId));
   };
 
-  // Saved cars functions
   const toggleSavedCar = (vehicleId) => {
     let updated;
     if (savedCars.includes(vehicleId)) {
-      updated = savedCars.filter(id => id !== vehicleId);
+      updated = savedCars.filter((id) => id !== vehicleId);
     } else {
       updated = [...savedCars, vehicleId];
     }
@@ -146,7 +155,6 @@ export function VehicleProvider({ children }) {
 
   const isCarSaved = (vehicleId) => savedCars.includes(vehicleId);
 
-  // Rental history functions
   const saveRentalHistoryToStorage = (history) => {
     try {
       localStorage.setItem(RENTAL_HISTORY_KEY, JSON.stringify(history));
@@ -170,7 +178,7 @@ export function VehicleProvider({ children }) {
       startDate: new Date().toISOString(),
       endDate: null,
       amount: vehicle.pricePerDay || 0,
-      status: 'pending'
+      status: 'pending',
     };
 
     const updatedHistory = [...rentalHistory, record];
@@ -179,50 +187,43 @@ export function VehicleProvider({ children }) {
   };
 
   const updateRentalStatus = (recordId, status, additionalData = {}) => {
-    const updatedHistory = rentalHistory.map(r => 
+    const updatedHistory = rentalHistory.map((r) =>
       r.id === recordId ? { ...r, status, ...additionalData } : r
     );
     saveRentalHistoryToStorage(updatedHistory);
   };
 
   const approveBooking = (recordId) => {
-    const record = rentalHistory.find(r => r.id === recordId);
+    const record = rentalHistory.find((r) => r.id === recordId);
     if (!record) return;
-
     updateRentalStatus(recordId, 'active');
-    
-    // Update vehicle status
     updateVehicle(record.vehicleId, { status: 'rented', available: false });
   };
 
   const rejectBooking = (recordId) => {
-    const record = rentalHistory.find(r => r.id === recordId);
+    const record = rentalHistory.find((r) => r.id === recordId);
     if (!record) return;
-
     updateRentalStatus(recordId, 'rejected', { endDate: new Date().toISOString() });
-    
-    // Make vehicle available again
     updateVehicle(record.vehicleId, { status: 'available', available: true });
   };
 
   const requestReturn = (recordId) => {
-    updateRentalStatus(recordId, 'return_requested', { 
+    updateRentalStatus(recordId, 'return_requested', {
       returnRequested: true,
-      returnRequestedAt: new Date().toISOString()
+      returnRequestedAt: new Date().toISOString(),
     });
   };
 
   const acceptReturn = (recordId) => {
-    const record = rentalHistory.find(r => r.id === recordId);
+    const record = rentalHistory.find((r) => r.id === recordId);
     if (!record) return;
 
     updateRentalStatus(recordId, 'returned', {
       returnAccepted: true,
       returnAcceptedAt: new Date().toISOString(),
-      endDate: new Date().toISOString()
+      endDate: new Date().toISOString(),
     });
 
-    // Make vehicle available again
     updateVehicle(record.vehicleId, { status: 'available', available: true });
   };
 
@@ -230,32 +231,29 @@ export function VehicleProvider({ children }) {
     saveRentalHistoryToStorage([]);
   };
 
-  // Stats calculations
   const getStats = () => {
     const total = vehicles.length;
-    const available = vehicles.filter(v => v.available).length;
+    const available = vehicles.filter((v) => v.available).length;
     const rented = total - available;
     const estimatedDailyEarnings = vehicles
-      .filter(v => v.status === 'rented')
+      .filter((v) => v.status === 'rented')
       .reduce((sum, v) => sum + Number(v.pricePerDay || 0), 0);
-    const avgPrice = total > 0 
+    const avgPrice = total > 0
       ? Math.round(vehicles.reduce((sum, v) => sum + Number(v.pricePerDay || 0), 0) / total)
       : 0;
 
     return { total, available, rented, estimatedDailyEarnings, avgPrice, savedCount: savedCars.length };
   };
 
-  // Get rentals for current user
   const getUserRentals = () => {
     if (!user) return [];
-    return rentalHistory.filter(r => r.renterId === user.id);
+    return rentalHistory.filter((r) => r.renterId === user.id);
   };
 
-  // Get rentals for owner's vehicles
   const getOwnerRentals = () => {
     if (!user) return [];
-    const ownerVehicleIds = vehicles.filter(v => v.ownerId === user.id).map(v => v.id);
-    return rentalHistory.filter(r => ownerVehicleIds.includes(r.vehicleId));
+    const ownerVehicleIds = vehicles.filter((v) => v.ownerId === user.id).map((v) => v.id);
+    return rentalHistory.filter((r) => ownerVehicleIds.includes(r.vehicleId));
   };
 
   const value = {
@@ -277,14 +275,10 @@ export function VehicleProvider({ children }) {
     clearRentalHistory,
     getStats,
     getUserRentals,
-    getOwnerRentals
+    getOwnerRentals,
   };
 
-  return (
-    <VehicleContext.Provider value={value}>
-      {children}
-    </VehicleContext.Provider>
-  );
+  return <VehicleContext.Provider value={value}>{children}</VehicleContext.Provider>;
 }
 
 export function useVehicles() {

@@ -36,3 +36,19 @@ npm run dev
 ```
 
 Then open: http://localhost:3000
+
+## Backend Connection
+
+This app now calls the Django backend API.
+
+- Default API base URL: `http://127.0.0.1:8000`
+- Override with env var: `VITE_API_URL`
+
+Example:
+
+```bash
+set VITE_API_URL=http://127.0.0.1:8000
+npm run dev
+```
+
+Make sure the backend is running before signing in or registering.
