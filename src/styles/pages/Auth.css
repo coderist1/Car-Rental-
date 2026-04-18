@@ -152,28 +152,6 @@
   text-decoration: underline;
 }
 
-.demo-accounts {
-  margin-top: 24px;
-  padding: 16px;
-  background: #f8fafc;
-  border-radius: 8px;
-  border: 1px dashed #cbd5e1;
-}
-
-.demo-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
-  margin-bottom: 8px;
-}
-
-.demo-account {
-  font-size: 11px;
-  color: #94a3b8;
-  margin: 4px 0;
-  font-family: monospace;
-}
-
 .role-section {
   border: none;
   padding: 0;

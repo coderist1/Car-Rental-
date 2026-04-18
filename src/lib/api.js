@@ -14,7 +14,7 @@ function toErrorMessage(payload, fallback) {
 }
 
 export async function apiRequest(path, options = {}) {
-  const { token, body, headers = {}, ...rest } = options;
+  const { body, headers = {}, ...rest } = options;
   const requestUrl = `${API_BASE}${path}`;
 
   let response;
@@ -23,7 +23,6 @@ export async function apiRequest(path, options = {}) {
       ...rest,
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...headers,
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -56,19 +55,17 @@ class RealtimeManager {
     this.maxReconnectAttempts = 5;
     this.reconnectDelay = 3000;
     this.isManualClose = false;
-    this.token = null;
   }
 
-  connect(token) {
+  connect() {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       return;
     }
 
-    this.token = token;
     this.isManualClose = false;
 
     try {
-      const wsUrl = `${WS_BASE}/ws/sync/?token=${encodeURIComponent(token)}`;
+      const wsUrl = `${WS_BASE}/ws/sync/`;
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
@@ -99,7 +96,7 @@ class RealtimeManager {
         if (!this.isManualClose && this.reconnectAttempts < this.maxReconnectAttempts) {
           this.reconnectAttempts++;
           console.log(`⟳ Reconnecting... (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-          setTimeout(() => this.connect(this.token), this.reconnectDelay);
+          setTimeout(() => this.connect(), this.reconnectDelay);
         }
       };
     } catch (e) {

@@ -71,12 +71,6 @@ function Login() {
           <h1 className="auth-title">Welcome Back</h1>
           <p className="auth-subtitle">Sign in to continue to CarRental</p>
 
-          <div className="demo-accounts" style={{ marginTop: '30px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', padding: '15px', borderRadius: '8px' }}>
-            <p className="demo-title" style={{ color: 'white', fontWeight: 'bold' }}>Quick Demo Access:</p>
-            <p className="demo-account" style={{ color: '#e2e8f0' }}>Owner: owner@test.com / password</p>
-            <p className="demo-account" style={{ color: '#e2e8f0' }}>Renter: renter@test.com / password</p>
-            <p className="demo-account" style={{ color: '#e2e8f0' }}>Admin: admin@test.com / admin123</p>
-          </div>
         </div>
 
         <div className="register-right-panel">

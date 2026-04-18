@@ -4,79 +4,48 @@ import { apiRequest, realtimeManager } from '../lib/api';
 const AuthContext = createContext(null);
 
 const PROFILE_KEY = 'userProfile';
-const ACCESS_TOKEN_KEY = 'authAccessToken';
 
 function readSessionAuth() {
   try {
     const rawUser = sessionStorage.getItem(PROFILE_KEY);
-    const accessToken = sessionStorage.getItem(ACCESS_TOKEN_KEY);
-    if (!rawUser || !accessToken) return { user: null, token: null };
-    return { user: JSON.parse(rawUser), token: accessToken };
+    if (!rawUser) return { user: null };
+    return { user: JSON.parse(rawUser) };
   } catch {
-    return { user: null, token: null };
+    return { user: null };
   }
 }
 
-function persistSession(user, token) {
+function persistSession(user) {
   sessionStorage.setItem(PROFILE_KEY, JSON.stringify(user));
-  sessionStorage.setItem(ACCESS_TOKEN_KEY, token);
 }
 
 function clearSession() {
   sessionStorage.removeItem(PROFILE_KEY);
-  sessionStorage.removeItem(ACCESS_TOKEN_KEY);
 }
 
 export function AuthProvider({ children }) {
   const initial = readSessionAuth();
   const [user, setUser] = useState(initial.user);
-  const [token, setToken] = useState(initial.token);
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  const isAuthenticated = Boolean(user && token);
+  const isAuthenticated = Boolean(user);
 
   useEffect(() => {
-    let active = true;
-
-    const hydrate = async () => {
-      if (!initial.token) {
-        if (active) setLoading(false);
-        return;
-      }
-
-      try {
-        const me = await apiRequest('/api/me/', { token: initial.token });
-        if (!active) return;
-        setUser(me);
-        persistSession(me, initial.token);
-      } catch {
-        if (!active) return;
-        clearSession();
-        setUser(null);
-        setToken(null);
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-
-    hydrate();
-    return () => {
-      active = false;
-    };
-  }, [initial.token]);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     let active = true;
 
     const fetchUsers = async () => {
-      if (!token || user?.role !== 'admin') {
+      if (user?.role !== 'admin') {
         setUsers([]);
         return;
       }
 
       try {
-        const data = await apiRequest('/api/users/', { token });
+        const data = await apiRequest('/api/users/');
         if (active) setUsers(Array.isArray(data) ? data : []);
       } catch {
         if (active) setUsers([]);
@@ -87,19 +56,19 @@ export function AuthProvider({ children }) {
     return () => {
       active = false;
     };
-  }, [token, user?.role]);
+  }, [user?.role]);
 
   // Subscribe to real-time user updates
   useEffect(() => {
-    if (!token) return;
+    if (!user) return;
 
-    realtimeManager.connect(token);
+    realtimeManager.connect();
 
     const unsubscribeUserUpdate = realtimeManager.on('user_updated', ({ id, payload }) => {
       // Update current logged-in user
       if (user && user.id === Number(id)) {
         setUser(payload);
-        persistSession(payload, token);
+        persistSession(payload);
       }
       // Update users in admin list
       setUsers((prev) => prev.map((u) => (u.id === Number(id) ? payload : u)));
@@ -119,7 +88,7 @@ export function AuthProvider({ children }) {
     const unsubscribeProfileUpdate = realtimeManager.on('profile_updated', ({ payload }) => {
       if (user && user.id === payload.id) {
         setUser(payload);
-        persistSession(payload, token);
+        persistSession(payload);
       }
     });
 
@@ -129,7 +98,7 @@ export function AuthProvider({ children }) {
       unsubscribeUserDeleted();
       unsubscribeProfileUpdate();
     };
-  }, [user, token]);
+  }, [user]);
 
   const login = async (email, password) => {
     try {
@@ -138,14 +107,11 @@ export function AuthProvider({ children }) {
         body: { username: email.trim().toLowerCase(), password },
       });
 
-      const access = loginData?.access;
-      if (!access) return { success: false, error: 'Login failed. Missing access token.' };
+      const me = loginData.user || loginData;
+      if (!me || !me.id) return { success: false, error: 'Login failed.' };
 
-      const me = await apiRequest('/api/me/', { token: access });
-
-      setToken(access);
       setUser(me);
-      persistSession(me, access);
+      persistSession(me);
 
       return { success: true, user: me };
     } catch (error) {
@@ -187,17 +153,15 @@ export function AuthProvider({ children }) {
   const logout = () => {
     clearSession();
     setUser(null);
-    setToken(null);
     setUsers([]);
   };
 
   const updateProfile = async (updates) => {
-    if (!token) return { success: false, error: 'Not authenticated' };
+    if (!user) return { success: false, error: 'Not authenticated' };
 
     try {
       const updated = await apiRequest('/api/me/', {
         method: 'PATCH',
-        token,
         body: {
           firstName: updates.firstName,
           lastName: updates.lastName,
@@ -208,7 +172,7 @@ export function AuthProvider({ children }) {
       });
 
       setUser(updated);
-      persistSession(updated, token);
+      persistSession(updated);
       return { success: true, user: updated };
     } catch (error) {
       return { success: false, error: error.message || 'Profile update failed' };
@@ -223,12 +187,11 @@ export function AuthProvider({ children }) {
   const getRegisteredUsers = () => users;
 
   const updateUser = async (userId, updates) => {
-    if (!token || user?.role !== 'admin') return false;
+    if (user?.role !== 'admin') return false;
 
     try {
       const updated = await apiRequest(`/api/users/${userId}/`, {
         method: 'PATCH',
-        token,
         body: {
           active: updates.active,
           firstName: updates.firstName,
@@ -246,12 +209,11 @@ export function AuthProvider({ children }) {
   };
 
   const deleteUser = async (userId) => {
-    if (!token || user?.role !== 'admin') return;
+    if (user?.role !== 'admin') return;
 
     try {
       await apiRequest(`/api/users/${userId}/`, {
         method: 'DELETE',
-        token,
       });
       setUsers((prev) => prev.filter((item) => item.id !== userId));
       if (user?.id === userId) logout();

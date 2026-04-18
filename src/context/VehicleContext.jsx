@@ -4,15 +4,26 @@ import { apiRequest, realtimeManager } from '../lib/api';
 
 const VehicleContext = createContext(null);
 
-const ACCESS_TOKEN_KEY = 'authAccessToken';
 const SAVED_CARS_KEY = 'renterSavedCars';
 const RENTAL_HISTORY_KEY = 'rentalHistory';
 
-const getToken = () => sessionStorage.getItem(ACCESS_TOKEN_KEY);
+const getImageSource = (imageField) => {
+  if (!imageField) return '';
+  if (typeof imageField === 'string') return imageField;
+  if (typeof imageField === 'object') {
+    return imageField.url || imageField.src || imageField.thumbnail || imageField.path || '';
+  }
+  return '';
+};
+
+const getVehicleImage = (vehicle) => {
+  return getImageSource(vehicle.image) || getImageSource(vehicle.imageUri) || getImageSource(vehicle.photoUrl) || getImageSource(vehicle.photo);
+};
 
 const fromApiVehicle = (vehicle) => {
   const price = Number(vehicle.pricePerDay ?? vehicle.daily_rate ?? 0);
   const status = vehicle.status || (vehicle.available ? 'available' : 'rented');
+  const image = getVehicleImage(vehicle);
 
   return {
     ...vehicle,
@@ -23,6 +34,8 @@ const fromApiVehicle = (vehicle) => {
     price: Number.isNaN(price) ? 0 : price,
     available: status === 'available',
     status,
+    image,
+    imageUri: image,
     owner: vehicle.owner || '',
     ownerId: vehicle.ownerId || null,
     ownerEmail: vehicle.ownerEmail || '',
@@ -40,6 +53,7 @@ const toApiVehicle = (vehicleData) => {
     year: Number(vehicleData.year || new Date().getFullYear()),
     daily_rate: Number.isNaN(rawPrice) ? 0 : rawPrice,
     available: (vehicleData.status || 'available') === 'available',
+    image: vehicleData.image || vehicleData.imageUri || '',
   };
 };
 
@@ -107,10 +121,7 @@ export function VehicleProvider({ children }) {
 
   // Subscribe to real-time vehicle updates
   useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-
-    realtimeManager.connect(token);
+    realtimeManager.connect();
 
     const unsubscribeVehicleCreate = realtimeManager.on('vehicle_created', ({ payload }) => {
       const normalized = fromApiVehicle(payload);
@@ -134,12 +145,8 @@ export function VehicleProvider({ children }) {
   }, []);
 
   const addVehicle = async (vehicleData) => {
-    const token = getToken();
-    if (!token) throw new Error('Not authenticated');
-
     const created = await apiRequest('/api/cars/', {
       method: 'POST',
-      token,
       body: toApiVehicle(vehicleData),
     });
 
@@ -149,12 +156,8 @@ export function VehicleProvider({ children }) {
   };
 
   const updateVehicle = async (vehicleId, updates) => {
-    const token = getToken();
-    if (!token) return;
-
     const updated = await apiRequest(`/api/cars/${vehicleId}/`, {
       method: 'PATCH',
-      token,
       body: toApiVehicle({ ...updates, model: updates.model || updates.name, brand: updates.brand }),
     });
 
@@ -163,12 +166,8 @@ export function VehicleProvider({ children }) {
   };
 
   const deleteVehicle = async (vehicleId) => {
-    const token = getToken();
-    if (!token) return;
-
     await apiRequest(`/api/cars/${vehicleId}/`, {
       method: 'DELETE',
-      token,
     });
 
     setVehicles((prev) => prev.filter((v) => v.id !== vehicleId));

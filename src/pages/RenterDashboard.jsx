@@ -57,6 +57,15 @@ const fmtDate      = iso => iso ? new Date(iso).toLocaleString() : '—';
 const fmtShortDate = iso => iso ? new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
 const tripDays     = (s, e) => { if (!s || !e) return null; return Math.max(1, Math.round((new Date(e) - new Date(s)) / 86400000)); };
 
+const getImageSource = (imageField) => {
+  if (!imageField) return '';
+  if (typeof imageField === 'string') return imageField;
+  if (typeof imageField === 'object') {
+    return imageField.url || imageField.src || imageField.thumbnail || imageField.path || '';
+  }
+  return '';
+};
+
 const Ico = ({ d, w = 14 }) => (
   <svg width={w} height={w} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     {typeof d === 'string' ? <path d={d} /> : d}
@@ -986,7 +995,10 @@ function RenterDashboard() {
         {selectedVehicle && (
           <div className="vehicle-detail">
             <div className="detail-image">
-              {selectedVehicle.image ? <img src={selectedVehicle.image} alt={selectedVehicle.name} /> : <div className="image-placeholder"><CarIcon /></div>}
+              {(() => {
+                const detailImage = getImageSource(selectedVehicle.image) || getImageSource(selectedVehicle.imageUri);
+                return detailImage ? <img src={detailImage} alt={selectedVehicle.name} /> : <div className="image-placeholder"><CarIcon /></div>;
+              })()}
             </div>
             <div className="detail-info">
               <div className="detail-price"><span className="price-amount">₱{selectedVehicle.pricePerDay?.toLocaleString()}</span><span className="price-period">/day</span></div>
