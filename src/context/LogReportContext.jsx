@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { realtimeManager } from '../lib/api';
 import {
   loadLogReports,
   saveLogReports,
@@ -17,6 +18,42 @@ export function LogReportProvider({ children }) {
   const [reports, setReports] = useState(() => loadLogReports());
 
   const refresh = useCallback(() => setReports(loadLogReports()), []);
+
+  // Subscribe to real-time log report updates
+  useEffect(() => {
+    const unsubscribeReportCreate = realtimeManager.on('logreport_created', ({ payload }) => {
+      const all = loadLogReports();
+      if (!all.find((r) => r.id === payload.id)) {
+        saveLogReports([...all, payload]);
+        refresh();
+      }
+    });
+
+    const unsubscribeReportUpdate = realtimeManager.on('logreport_updated', ({ id, payload }) => {
+      const all = loadLogReports();
+      const idx = all.findIndex((r) => r.id === Number(id));
+      if (idx !== -1) {
+        all[idx] = payload;
+        saveLogReports(all);
+        refresh();
+      }
+    });
+
+    const unsubscribeReportDelete = realtimeManager.on('logreport_deleted', ({ id }) => {
+      const all = loadLogReports();
+      const filtered = all.filter((r) => r.id !== Number(id));
+      if (filtered.length !== all.length) {
+        saveLogReports(filtered);
+        refresh();
+      }
+    });
+
+    return () => {
+      unsubscribeReportCreate();
+      unsubscribeReportUpdate();
+      unsubscribeReportDelete();
+    };
+  }, [refresh]);
 
   const createCheckin = useCallback((rental) => {
     const report = createLogReport({

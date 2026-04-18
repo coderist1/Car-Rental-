@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { apiRequest } from '../lib/api';
+import { apiRequest, realtimeManager } from '../lib/api';
 
 const AuthContext = createContext(null);
 
@@ -88,6 +88,48 @@ export function AuthProvider({ children }) {
       active = false;
     };
   }, [token, user?.role]);
+
+  // Subscribe to real-time user updates
+  useEffect(() => {
+    if (!token) return;
+
+    realtimeManager.connect(token);
+
+    const unsubscribeUserUpdate = realtimeManager.on('user_updated', ({ id, payload }) => {
+      // Update current logged-in user
+      if (user && user.id === Number(id)) {
+        setUser(payload);
+        persistSession(payload, token);
+      }
+      // Update users in admin list
+      setUsers((prev) => prev.map((u) => (u.id === Number(id) ? payload : u)));
+    });
+
+    const unsubscribeUserCreated = realtimeManager.on('user_created', ({ payload }) => {
+      if (user?.role === 'admin') {
+        setUsers((prev) => (prev.find((u) => u.id === payload.id) ? prev : [...prev, payload]));
+      }
+    });
+
+    const unsubscribeUserDeleted = realtimeManager.on('user_deleted', ({ id }) => {
+      setUsers((prev) => prev.filter((u) => u.id !== Number(id)));
+      if (user?.id === Number(id)) logout();
+    });
+
+    const unsubscribeProfileUpdate = realtimeManager.on('profile_updated', ({ payload }) => {
+      if (user && user.id === payload.id) {
+        setUser(payload);
+        persistSession(payload, token);
+      }
+    });
+
+    return () => {
+      unsubscribeUserUpdate();
+      unsubscribeUserCreated();
+      unsubscribeUserDeleted();
+      unsubscribeProfileUpdate();
+    };
+  }, [user, token]);
 
   const login = async (email, password) => {
     try {

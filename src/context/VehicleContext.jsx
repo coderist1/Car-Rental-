@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
-import { apiRequest } from '../lib/api';
+import { apiRequest, realtimeManager } from '../lib/api';
 
 const VehicleContext = createContext(null);
 
@@ -48,6 +48,7 @@ export function VehicleProvider({ children }) {
   const [vehicles, setVehicles] = useState([]);
   const [savedCars, setSavedCars] = useState([]);
   const [rentalHistory, setRentalHistory] = useState([]);
+  const didInitialize = useRef(false);
 
   const loadVehicles = useCallback(async () => {
     try {
@@ -88,6 +89,9 @@ export function VehicleProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    if (didInitialize.current) return;
+    didInitialize.current = true;
+
     loadVehicles();
     loadSavedCars();
     loadRentalHistory();
@@ -100,6 +104,34 @@ export function VehicleProvider({ children }) {
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [loadVehicles, loadSavedCars, loadRentalHistory]);
+
+  // Subscribe to real-time vehicle updates
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+
+    realtimeManager.connect(token);
+
+    const unsubscribeVehicleCreate = realtimeManager.on('vehicle_created', ({ payload }) => {
+      const normalized = fromApiVehicle(payload);
+      setVehicles((prev) => (prev.find((v) => v.id === normalized.id) ? prev : [normalized, ...prev]));
+    });
+
+    const unsubscribeVehicleUpdate = realtimeManager.on('vehicle_updated', ({ id, payload }) => {
+      const normalized = fromApiVehicle(payload);
+      setVehicles((prev) => prev.map((v) => (v.id === Number(id) ? normalized : v)));
+    });
+
+    const unsubscribeVehicleDelete = realtimeManager.on('vehicle_deleted', ({ id }) => {
+      setVehicles((prev) => prev.filter((v) => v.id !== Number(id)));
+    });
+
+    return () => {
+      unsubscribeVehicleCreate();
+      unsubscribeVehicleUpdate();
+      unsubscribeVehicleDelete();
+    };
+  }, []);
 
   const addVehicle = async (vehicleData) => {
     const token = getToken();

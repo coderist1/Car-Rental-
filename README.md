@@ -39,15 +39,17 @@ Then open: http://localhost:3000
 
 ## Backend Connection
 
-This app now calls the Django backend API.
+This app calls the backend API through Vite in development.
 
-- Default API base URL: `http://127.0.0.1:8000`
-- Override with env var: `VITE_API_URL`
+- Development default: frontend calls `/api/*` and Vite proxies it to `http://127.0.0.1:8000`
+- Optional env vars:
+  - `VITE_PROXY_TARGET` (used by Vite proxy in dev/preview)
+  - `VITE_API_URL` (used by frontend to call an absolute API URL directly)
 
 Example:
 
 ```bash
-set VITE_API_URL=http://127.0.0.1:8000
+set VITE_PROXY_TARGET=http://127.0.0.1:8000
 npm run dev
 ```
 
