@@ -13,16 +13,26 @@ function toErrorMessage(payload, fallback) {
   return fallback;
 }
 
+function getCsrfToken() {
+  const match = document.cookie.match(/csrftoken=([^;]+)/);
+  return match ? match[1] : '';
+}
+
 export async function apiRequest(path, options = {}) {
-  const { body, headers = {}, ...rest } = options;
+  const { body, headers = {}, method = 'GET', ...rest } = options;
   const requestUrl = `${API_BASE}${path}`;
+
+  const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase());
 
   let response;
   try {
     response = await fetch(requestUrl, {
       ...rest,
+      method,
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
+        ...(isMutating ? { 'X-CSRFToken': getCsrfToken() } : {}),
         ...headers,
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,

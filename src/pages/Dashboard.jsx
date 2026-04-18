@@ -189,22 +189,30 @@ function Dashboard() {
     e.preventDefault();
     setConfirmAdd(true);
   };
-  const doAddVehicle = () => {
-    addVehicle(formData);
-    resetForm();
-    setIsAddModalOpen(false);
+  const doAddVehicle = async () => {
+    try {
+      await addVehicle(formData);
+      resetForm();
+      setIsAddModalOpen(false);
+    } catch (err) {
+      alert(`Failed to add vehicle: ${err.message}`);
+    }
   };
 
   const handleEditVehicle = (e) => {
     e.preventDefault();
     setConfirmSaveEdit(true);
   };
-  const doEditVehicle = () => {
+  const doEditVehicle = async () => {
     if (editingVehicle) {
-      updateVehicle(editingVehicle.id, formData);
-      setIsEditModalOpen(false);
-      setEditingVehicle(null);
-      resetForm();
+      try {
+        await updateVehicle(editingVehicle.id, formData);
+        setIsEditModalOpen(false);
+        setEditingVehicle(null);
+        resetForm();
+      } catch (err) {
+        alert(`Failed to update vehicle: ${err.message}`);
+      }
     }
   };
 

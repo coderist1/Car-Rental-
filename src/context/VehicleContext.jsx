@@ -1,61 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { apiRequest, realtimeManager } from '../lib/api';
+import {
+  SAVED_CARS_KEY,
+  RENTAL_HISTORY_KEY,
+  fromApiVehicle,
+  toApiVehicle,
+  toApiVehiclePatch,
+} from './vehicleUtils';
 
 const VehicleContext = createContext(null);
-
-const SAVED_CARS_KEY = 'renterSavedCars';
-const RENTAL_HISTORY_KEY = 'rentalHistory';
-
-const getImageSource = (imageField) => {
-  if (!imageField) return '';
-  if (typeof imageField === 'string') return imageField;
-  if (typeof imageField === 'object') {
-    return imageField.url || imageField.src || imageField.thumbnail || imageField.path || '';
-  }
-  return '';
-};
-
-const getVehicleImage = (vehicle) => {
-  return getImageSource(vehicle.image) || getImageSource(vehicle.imageUri) || getImageSource(vehicle.photoUrl) || getImageSource(vehicle.photo);
-};
-
-const fromApiVehicle = (vehicle) => {
-  const price = Number(vehicle.pricePerDay ?? vehicle.daily_rate ?? 0);
-  const status = vehicle.status || (vehicle.available ? 'available' : 'rented');
-  const image = getVehicleImage(vehicle);
-
-  return {
-    ...vehicle,
-    id: Number(vehicle.id),
-    name: vehicle.name || vehicle.model || '',
-    model: vehicle.model || vehicle.name || '',
-    pricePerDay: Number.isNaN(price) ? 0 : price,
-    price: Number.isNaN(price) ? 0 : price,
-    available: status === 'available',
-    status,
-    image,
-    imageUri: image,
-    owner: vehicle.owner || '',
-    ownerId: vehicle.ownerId || null,
-    ownerEmail: vehicle.ownerEmail || '',
-    features: Array.isArray(vehicle.features) && vehicle.features.length > 0
-      ? vehicle.features
-      : ['Aircon', 'Bluetooth', 'ABS', 'Backup Camera'],
-  };
-};
-
-const toApiVehicle = (vehicleData) => {
-  const rawPrice = Number(vehicleData.pricePerDay ?? vehicleData.price ?? 0);
-  return {
-    brand: vehicleData.brand || '',
-    model: vehicleData.model || vehicleData.name || '',
-    year: Number(vehicleData.year || new Date().getFullYear()),
-    daily_rate: Number.isNaN(rawPrice) ? 0 : rawPrice,
-    available: (vehicleData.status || 'available') === 'available',
-    image: vehicleData.image || vehicleData.imageUri || '',
-  };
-};
 
 export function VehicleProvider({ children }) {
   const { user } = useAuth();
@@ -125,7 +79,9 @@ export function VehicleProvider({ children }) {
 
     const unsubscribeVehicleCreate = realtimeManager.on('vehicle_created', ({ payload }) => {
       const normalized = fromApiVehicle(payload);
-      setVehicles((prev) => (prev.find((v) => v.id === normalized.id) ? prev : [normalized, ...prev]));
+      setVehicles((prev) =>
+        prev.find((v) => v.id === normalized.id) ? prev : [normalized, ...prev]
+      );
     });
 
     const unsubscribeVehicleUpdate = realtimeManager.on('vehicle_updated', ({ id, payload }) => {
@@ -147,9 +103,8 @@ export function VehicleProvider({ children }) {
   const addVehicle = async (vehicleData) => {
     const created = await apiRequest('/api/cars/', {
       method: 'POST',
-      body: toApiVehicle(vehicleData),
+      body: toApiVehicle(vehicleData, user),
     });
-
     const normalized = fromApiVehicle(created);
     setVehicles((prev) => [normalized, ...prev]);
     return normalized;
@@ -158,9 +113,8 @@ export function VehicleProvider({ children }) {
   const updateVehicle = async (vehicleId, updates) => {
     const updated = await apiRequest(`/api/cars/${vehicleId}/`, {
       method: 'PATCH',
-      body: toApiVehicle({ ...updates, model: updates.model || updates.name, brand: updates.brand }),
+      body: toApiVehiclePatch(updates),
     });
-
     const normalized = fromApiVehicle(updated);
     setVehicles((prev) => prev.map((v) => (v.id === vehicleId ? normalized : v)));
   };
@@ -169,17 +123,13 @@ export function VehicleProvider({ children }) {
     await apiRequest(`/api/cars/${vehicleId}/`, {
       method: 'DELETE',
     });
-
     setVehicles((prev) => prev.filter((v) => v.id !== vehicleId));
   };
 
   const toggleSavedCar = (vehicleId) => {
-    let updated;
-    if (savedCars.includes(vehicleId)) {
-      updated = savedCars.filter((id) => id !== vehicleId);
-    } else {
-      updated = [...savedCars, vehicleId];
-    }
+    const updated = savedCars.includes(vehicleId)
+      ? savedCars.filter((id) => id !== vehicleId)
+      : [...savedCars, vehicleId];
     localStorage.setItem(SAVED_CARS_KEY, JSON.stringify(updated));
     setSavedCars(updated);
   };
@@ -196,12 +146,11 @@ export function VehicleProvider({ children }) {
   };
 
   const addRentalRecord = (vehicle, renterInfo = {}) => {
-    const ownerName = vehicle.owner || '';
     const record = {
       id: Date.now(),
       vehicleId: vehicle.id,
       vehicleName: `${vehicle.brand || ''} ${vehicle.name || ''}`.trim() || vehicle.name || 'Vehicle',
-      ownerName,
+      ownerName: vehicle.owner || '',
       ownerEmail: vehicle.ownerEmail || '',
       renterName: renterInfo.name || user?.fullName || 'Unknown',
       renterEmail: renterInfo.email || user?.email || '',
@@ -211,7 +160,6 @@ export function VehicleProvider({ children }) {
       amount: vehicle.pricePerDay || 0,
       status: 'pending',
     };
-
     const updatedHistory = [...rentalHistory, record];
     saveRentalHistoryToStorage(updatedHistory);
     return record;
@@ -228,14 +176,14 @@ export function VehicleProvider({ children }) {
     const record = rentalHistory.find((r) => r.id === recordId);
     if (!record) return;
     updateRentalStatus(recordId, 'active');
-    updateVehicle(record.vehicleId, { status: 'rented', available: false });
+    updateVehicle(record.vehicleId, { status: 'rented' });
   };
 
   const rejectBooking = (recordId) => {
     const record = rentalHistory.find((r) => r.id === recordId);
     if (!record) return;
     updateRentalStatus(recordId, 'rejected', { endDate: new Date().toISOString() });
-    updateVehicle(record.vehicleId, { status: 'available', available: true });
+    updateVehicle(record.vehicleId, { status: 'available' });
   };
 
   const requestReturn = (recordId) => {
@@ -248,14 +196,12 @@ export function VehicleProvider({ children }) {
   const acceptReturn = (recordId) => {
     const record = rentalHistory.find((r) => r.id === recordId);
     if (!record) return;
-
     updateRentalStatus(recordId, 'returned', {
       returnAccepted: true,
       returnAcceptedAt: new Date().toISOString(),
       endDate: new Date().toISOString(),
     });
-
-    updateVehicle(record.vehicleId, { status: 'available', available: true });
+    updateVehicle(record.vehicleId, { status: 'available' });
   };
 
   const clearRentalHistory = () => {
@@ -269,10 +215,10 @@ export function VehicleProvider({ children }) {
     const estimatedDailyEarnings = vehicles
       .filter((v) => v.status === 'rented')
       .reduce((sum, v) => sum + Number(v.pricePerDay || 0), 0);
-    const avgPrice = total > 0
-      ? Math.round(vehicles.reduce((sum, v) => sum + Number(v.pricePerDay || 0), 0) / total)
-      : 0;
-
+    const avgPrice =
+      total > 0
+        ? Math.round(vehicles.reduce((sum, v) => sum + Number(v.pricePerDay || 0), 0) / total)
+        : 0;
     return { total, available, rented, estimatedDailyEarnings, avgPrice, savedCount: savedCars.length };
   };
 
@@ -319,5 +265,3 @@ export function useVehicles() {
   }
   return context;
 }
-
-export default VehicleContext;
