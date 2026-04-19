@@ -6,8 +6,8 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useVehicles } from '../hooks';
 import { useAuth } from '../context/AuthContext';
+import { useLogReport } from '../context/LogReportContext';
 import { ProfileMenu, VehicleCard, Modal, ConfirmModal } from '../components';
-import { loadLogReports, addComment, saveLogReports } from '../hooks/useLogReport';
 import '../styles/pages/RenterDashboard.css';
 
 const C = {
@@ -278,7 +278,7 @@ function ColCard({ title, titleColor, headerBg, headerBorder, date, children }) 
   );
 }
 
-function SignatureSection({ localReport, onSigned }) {
+function SignatureSection({ localReport, onSigned, onSaveSignature }) {
   const [sigText,      setSigText]      = useState('');
   const [editing,      setEditing]      = useState(false);
   const [saving,       setSaving]       = useState(false);
@@ -288,16 +288,10 @@ function SignatureSection({ localReport, onSigned }) {
 
   const inp = { width: '100%', padding: '10px 13px', border: `1.5px solid ${C.g200}`, borderRadius: C.r2, fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', transition: 'border-color .15s' };
 
-  const doSave = () => {
+  const doSave = async () => {
     if (!sigText.trim()) return;
     setSaving(true);
-    const all = loadLogReports();
-    const idx = all.findIndex(r => r.id === localReport.id);
-    if (idx !== -1) {
-      all[idx].renterSignature   = sigText.trim();
-      all[idx].renterSignatureAt = new Date().toISOString();
-      saveLogReports(all);
-    }
+    await onSaveSignature(localReport.id, sigText.trim());
     setSaving(false);
     setEditing(false);
     setSigText('');
@@ -411,15 +405,15 @@ function SignatureSection({ localReport, onSigned }) {
   );
 }
 
-function CommentsSection({ localReport, user, onCommentAdded }) {
+function CommentsSection({ localReport, user, onCommentAdded, onSubmitComment }) {
   const [text,       setText]       = useState('');
   const [submitting, setSubmitting] = useState(false);
   const comments = localReport.comments || [];
 
-  const submit = () => {
+  const submit = async () => {
     if (!text.trim()) return;
     setSubmitting(true);
-    addComment(localReport.id, {
+    await onSubmitComment(localReport.id, {
       authorName: user?.fullName || user?.firstName || 'Renter',
       authorId:   user?.id,
       authorRole: 'renter',
@@ -528,6 +522,7 @@ function printReport(report) {
 function RenterDashboard() {
   const { user } = useAuth();
   const { vehicles, toggleSavedCar, isCarSaved, savedCars, addRentalRecord, getUserRentals, requestReturn } = useVehicles();
+  const { reports, refresh, postComment, editCheckin } = useLogReport();
 
   const [searchQuery,     setSearchQuery]     = useState('');
   const [isFilterOpen,    setIsFilterOpen]    = useState(false);
@@ -547,11 +542,10 @@ function RenterDashboard() {
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [activeNav,       setActiveNav]       = useState('browse');
 
-  const [logReports,      setLogReports]      = useState(() => loadLogReports());
   const [viewingReport,   setViewingReport]   = useState(null);
   const [logSearchQuery,  setLogSearchQuery]  = useState('');
 
-  const refreshLogs = useCallback(() => setLogReports(loadLogReports()), []);
+  const refreshLogs = useCallback(() => { refresh(); }, [refresh]);
 
   const [filters, setFilters] = useState({ types: [], transmissions: [], fuels: [], minPrice: '', maxPrice: '' });
 
@@ -560,11 +554,12 @@ function RenterDashboard() {
 
   const renterLogReports = useMemo(() => {
     const myRentalIds = new Set(userRentals.map(r => String(r.id)));
-    return logReports.filter(lr =>
+    return reports.filter(lr =>
       (lr.rentalId && myRentalIds.has(String(lr.rentalId))) ||
-      (lr.renterName && lr.renterName === (user?.fullName || user?.firstName))
+      (lr.renterName && lr.renterName === (user?.fullName || user?.firstName)) ||
+      String(lr.renterId || lr.renter) === String(user?.id)
     );
-  }, [logReports, userRentals, user]);
+  }, [reports, userRentals, user]);
 
   const filteredLogReports = useMemo(() => {
     if (!logSearchQuery.trim()) return renterLogReports;
@@ -645,6 +640,19 @@ function RenterDashboard() {
     }
   };
   const handleViewLog = report => { setViewingReport(report); };
+
+  const handleSaveSignature = useCallback(async (reportId, signature) => {
+    await editCheckin(reportId, {
+      renterSignature: signature,
+      renterSignatureAt: new Date().toISOString(),
+    });
+    refreshLogs();
+  }, [editCheckin, refreshLogs]);
+
+  const handlePostComment = useCallback(async (reportId, comment) => {
+    await postComment(reportId, comment);
+    refreshLogs();
+  }, [postComment, refreshLogs]);
 
   const currentTitle = {
     browse: 'Browse Vehicles',
@@ -942,9 +950,9 @@ function RenterDashboard() {
                     )}
 
                     <div style={{ height: 1, background: C.g100, margin: '24px 0' }} />
-                    <SignatureSection localReport={viewingReport} onSigned={refreshLogs} />
+                    <SignatureSection localReport={viewingReport} onSigned={refreshLogs} onSaveSignature={handleSaveSignature} />
                     <div style={{ height: 1, background: C.g100, margin: '24px 0' }} />
-                    <CommentsSection localReport={viewingReport} user={user} onCommentAdded={refreshLogs} />
+                    <CommentsSection localReport={viewingReport} user={user} onCommentAdded={refreshLogs} onSubmitComment={handlePostComment} />
                   </div>
                 </div>
               )}

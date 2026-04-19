@@ -84,6 +84,7 @@ function Dashboard() {
   const [confirmAdd, setConfirmAdd] = useState(false);
   const [confirmSaveEdit, setConfirmSaveEdit] = useState(false);
   const [confirmRemovePhoto, setConfirmRemovePhoto] = useState(false);
+  const [discardConfirm, setDiscardConfirm] = useState({ open: false, nextVehicle: null, closeMode: null });
 
   const fileInputRef = useRef(null);
 
@@ -185,6 +186,36 @@ function Dashboard() {
     description: '', image: '',
   });
 
+  const getEmptyForm = () => ({
+    name: '', brand: '', year: new Date().getFullYear(),
+    pricePerDay: '', status: 'available', location: '',
+    seats: 5, transmission: '', type: '', fuel: '',
+    description: '', image: '',
+  });
+
+  const isFormDirty = () => {
+    if (editingVehicle) {
+      const v = editingVehicle;
+      const compare = {
+        name: v.name || '',
+        brand: v.brand || '',
+        year: v.year || new Date().getFullYear(),
+        pricePerDay: v.pricePerDay || '',
+        status: v.available ? 'available' : 'rented',
+        location: v.location || '',
+        seats: v.seats || 5,
+        transmission: v.transmission || '',
+        type: v.type || '',
+        fuel: v.fuel || '',
+        description: v.description || '',
+        image: v.image || '',
+      };
+      return Object.keys(compare).some((k) => String(compare[k]) !== String(formData[k] ?? ''));
+    }
+    const empty = getEmptyForm();
+    return Object.keys(empty).some((k) => String(empty[k]) !== String(formData[k] ?? ''));
+  };
+
   const handleAddVehicle = (e) => {
     e.preventDefault();
     setConfirmAdd(true);
@@ -217,6 +248,18 @@ function Dashboard() {
   };
 
   const openEditModal = (vehicle) => {
+    // If already editing this same vehicle, just re-open modal without clearing form
+    if (editingVehicle && editingVehicle.id === vehicle.id) {
+      setIsEditModalOpen(true);
+      return;
+    }
+
+    // If form has unsaved changes, ask before switching to another vehicle
+    if (isFormDirty() && editingVehicle && editingVehicle.id !== vehicle.id) {
+      setDiscardConfirm({ open: true, nextVehicle: vehicle, closeMode: null });
+      return;
+    }
+
     setEditingVehicle(vehicle);
     setFormData({
       name: vehicle.name,
@@ -235,13 +278,61 @@ function Dashboard() {
     setIsEditModalOpen(true);
   };
 
-  
-
-  const handleApproveBooking = (rentalId) => {
-    approveBooking(rentalId);
+  const attemptCloseEditModal = () => {
+    if (isFormDirty()) {
+      setDiscardConfirm({ open: true, nextVehicle: null, closeMode: 'edit' });
+      return;
+    }
+    setIsEditModalOpen(false);
+    setEditingVehicle(null);
+    resetForm();
   };
 
-  const handleRecordToLogBook = (rental) => {
+  const attemptCloseAddModal = () => {
+    if (isFormDirty()) {
+      setDiscardConfirm({ open: true, nextVehicle: null, closeMode: 'add' });
+      return;
+    }
+    setIsAddModalOpen(false);
+    resetForm();
+  };
+
+  const proceedDiscard = () => {
+    const { nextVehicle, closeMode } = discardConfirm;
+    setDiscardConfirm({ open: false, nextVehicle: null, closeMode: null });
+    if (nextVehicle) {
+      setEditingVehicle(nextVehicle);
+      setFormData({
+        name: nextVehicle.name,
+        brand: nextVehicle.brand,
+        year: nextVehicle.year,
+        pricePerDay: nextVehicle.pricePerDay,
+        status: nextVehicle.available ? 'available' : 'rented',
+        location: nextVehicle.location,
+        seats: nextVehicle.seats,
+        transmission: nextVehicle.transmission,
+        type: nextVehicle.type,
+        fuel: nextVehicle.fuel,
+        description: nextVehicle.description,
+        image: nextVehicle.image,
+      });
+      setIsEditModalOpen(true);
+      return;
+    }
+    if (closeMode === 'edit') {
+      setIsEditModalOpen(false);
+      setEditingVehicle(null);
+      resetForm();
+      return;
+    }
+    if (closeMode === 'add') {
+      setIsAddModalOpen(false);
+      resetForm();
+      return;
+    }
+  };
+
+    const handleRecordToLogBook = (rental) => {
     createCheckin({
       rentalId: rental.id,
       vehicleId: rental.vehicleId,
@@ -251,6 +342,26 @@ function Dashboard() {
     const newLoggedIds = [...loggedRentalIds, String(rental.id)];
     setLoggedRentalIds(newLoggedIds);
     localStorage.setItem('loggedRentalIds', JSON.stringify(newLoggedIds));
+  };
+
+  const handleApproveBooking = async (rentalId) => {
+    try {
+      await approveBooking(rentalId);
+      alert('Booking approved');
+    } catch (err) {
+      console.error('Approve booking failed:', err);
+      alert('Failed to approve booking. See console for details.');
+    }
+  };
+
+  const handleRejectBooking = async (rentalId) => {
+    try {
+      await rejectBooking(rentalId);
+      alert('Booking rejected');
+    } catch (err) {
+      console.error('Reject booking failed:', err);
+      alert('Failed to reject booking. See console for details.');
+    }
   };
 
   const confirmDelete = () => {
@@ -525,14 +636,22 @@ function Dashboard() {
                               <button className="btn btn-primary btn-sm" onClick={() => handleApproveBooking(rental.id)}>
                                 Approve
                               </button>
-                              <button className="btn btn-danger btn-sm" onClick={() => rejectBooking(rental.id)}>
+                              <button className="btn btn-danger btn-sm" onClick={() => handleRejectBooking(rental.id)}>
                                 Reject
                               </button>
                             </>
                           )}
 
                           {rental.status === 'return_requested' && (
-                            <button className="btn btn-primary btn-sm" onClick={() => acceptReturn(rental.id)}>
+                            <button className="btn btn-primary btn-sm" onClick={async () => {
+                                try {
+                                  await acceptReturn(rental.id);
+                                  alert('Return accepted');
+                                } catch (err) {
+                                  console.error('Accept return failed:', err);
+                                  alert('Failed to accept return. See console for details.');
+                                }
+                              }}>
                               Accept Return
                             </button>
                           )}
@@ -635,13 +754,13 @@ function Dashboard() {
       </Modal>
 
       <Modal isOpen={isAddModalOpen}
-        onClose={() => { setIsAddModalOpen(false); resetForm(); }}
+        onClose={attemptCloseAddModal}
         title="Add New Vehicle" size="large">
         {renderVehicleForm(handleAddVehicle)}
       </Modal>
 
       <Modal isOpen={isEditModalOpen}
-        onClose={() => { setIsEditModalOpen(false); setEditingVehicle(null); resetForm(); }}
+        onClose={attemptCloseEditModal}
         title="Edit Vehicle" size="large">
         {renderVehicleForm(handleEditVehicle, true)}
       </Modal>
@@ -689,6 +808,17 @@ function Dashboard() {
         message="Are you sure you want to remove this vehicle photo?"
         confirmText="Yes, Remove"
         cancelText="No, Keep"
+        variant="warning"
+      />
+
+      <ConfirmModal
+        isOpen={discardConfirm.open}
+        onClose={() => setDiscardConfirm({ open: false, nextVehicle: null, closeMode: null })}
+        onConfirm={proceedDiscard}
+        title="Unsaved Changes"
+        message="Are you sure? Unsaved changes will be lost."
+        confirmText="Yes, Discard"
+        cancelText="No, Keep Editing"
         variant="warning"
       />
 

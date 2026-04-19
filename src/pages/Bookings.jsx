@@ -5,15 +5,16 @@ import '../styles/pages/Bookings.css';
 
 function Bookings() {
   const { user } = useAuth();
-  const { rentalHistory } = useVehicles();
+  const { rentalHistory, getUserRentals } = useVehicles();
   const navigate = useNavigate();
   
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   const userRentals = useMemo(() => {
-    return rentalHistory.filter(rental => rental.renterId === user?.email);
-  }, [rentalHistory, user]);
+    const rentals = getUserRentals();
+    return rentals;
+  }, [rentalHistory, getUserRentals, user]);
 
   const filteredRentals = useMemo(() => {
     let rentals = userRentals;
