@@ -458,6 +458,21 @@ body {
   background: var(--primary-lt);
 }
 
+/* Add Vehicle matches filter-button sizing but with primary styling */
+.add-button {
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, #3F9B84 0%, #2d7a67 100%);
+  color: #fff;
+  border: 1.5px solid transparent;
+  box-shadow: 0 4px 12px rgba(63,155,132,0.25);
+  font-weight: 600;
+}
+.add-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(63,155,132,0.35);
+}
+
 .filter-icon svg {
   width: 16px;
   height: 16px;

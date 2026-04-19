@@ -463,7 +463,7 @@ function Dashboard() {
                   Filter
                   {activeFiltersCount > 0 && <span className="filter-badge">{activeFiltersCount}</span>}
                 </button>
-                <button className="btn btn-primary" onClick={() => setIsAddModalOpen(true)}>
+                <button className="filter-button add-button" onClick={() => setIsAddModalOpen(true)}>
                   + Add Vehicle
                 </button>
               </div>
