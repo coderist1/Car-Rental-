@@ -1,5 +1,26 @@
 const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
-const WS_BASE = (import.meta.env.VITE_WS_URL || API_BASE.replace(/^http/, 'ws')).replace(/\/$/, '');
+
+function resolveWebSocketBase() {
+  const explicitWsBase = (import.meta.env.VITE_WS_URL || '').replace(/\/$/, '');
+  if (explicitWsBase) {
+    return explicitWsBase;
+  }
+
+  if (!API_BASE) {
+    return '';
+  }
+
+  try {
+    const url = new URL(API_BASE);
+    url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+    url.pathname = url.pathname.replace(/\/api\/?$/, '');
+    return url.toString().replace(/\/$/, '');
+  } catch {
+    return API_BASE.replace(/^http/, 'ws').replace(/\/api\/?$/, '').replace(/\/$/, '');
+  }
+}
+
+const WS_BASE = resolveWebSocketBase();
 
 function toErrorMessage(payload, fallback) {
   if (!payload) return fallback;
@@ -23,6 +44,17 @@ export async function apiRequest(path, options = {}) {
   const requestUrl = `${API_BASE}${path}`;
 
   const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase());
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+
+  const finalHeaders = {
+    ...(isMutating ? { 'X-CSRFToken': getCsrfToken() } : {}),
+    ...headers,
+  };
+
+  // Browser automatically sets Content-Type to multipart/form-data for FormData.
+  if (!isFormData && !finalHeaders['Content-Type']) {
+    finalHeaders['Content-Type'] = 'application/json';
+  }
 
   let response;
   try {
@@ -30,12 +62,8 @@ export async function apiRequest(path, options = {}) {
       ...rest,
       method,
       credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(isMutating ? { 'X-CSRFToken': getCsrfToken() } : {}),
-        ...headers,
-      },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      headers: finalHeaders,
+      body: body !== undefined ? (isFormData ? body : JSON.stringify(body)) : undefined,
     });
   } catch {
     throw new Error(`Unable to connect to API at ${requestUrl}`);

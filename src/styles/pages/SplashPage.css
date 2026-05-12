@@ -16,11 +16,10 @@
   inset: 0;
   z-index: 0;
 
-  background-image: url('/car-hero.jpg');
-  background-size: cover;
-  background-position: center 40%;
-  background-repeat: no-repeat;
-
+  background:
+    radial-gradient(circle at 20% 18%, rgba(63, 155, 132, 0.28), transparent 28%),
+    radial-gradient(circle at 78% 24%, rgba(17, 24, 39, 0.18), transparent 30%),
+    linear-gradient(135deg, #0a1711 0%, #14261d 42%, #1b3326 72%, #0d1511 100%);
   background-color: #1a3020;
 
   transform: scale(1.04);

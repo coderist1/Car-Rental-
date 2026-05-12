@@ -1,7 +1,62 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { realtimeManager, apiRequest } from '../lib/api'; // Import apiRequest
+import {
+  loadLogReports as localLoad,
+  createLogReport as localCreate,
+  updateLogReport as localUpdate,
+  deleteLogReport as localDelete,
+  addCheckout as localAddCheckout,
+  addComment as localAddComment
+} from '../hooks/useLogReport';
 
 const LogReportContext = createContext(null);
+
+// Keep ONLY the correct URL path that matches your Django urls.py
+const LOG_REPORT_BASE_PATHS = ['/api/log_reports/', '/api/reports/']; 
+
+function normalizeReportsResponse(data) {
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  if (data && Array.isArray(data.results)) {
+    return data.results;
+  }
+
+  return [];
+}
+
+function upsertReport(list, report) {
+  if (!report) {
+    return list;
+  }
+
+  const reportId = String(report.id);
+  const next = list.filter((item) => String(item.id) !== reportId);
+  return [...next, report];
+}
+
+function isNotFoundError(error) {
+  const message = String(error?.message || error || '');
+  return message.includes('Not Found') || message.includes('404');
+}
+
+async function requestLogReport(resourcePath = '', options = {}) {
+  let lastError = null;
+
+  for (const basePath of LOG_REPORT_BASE_PATHS) {
+    try {
+      return await apiRequest(`${basePath}${resourcePath}`, options);
+    } catch (error) {
+      lastError = error;
+      if (!isNotFoundError(error)) {
+        throw error;
+      }
+    }
+  }
+
+  throw lastError || new Error('Log report request failed');
+}
 
 export function LogReportProvider({ children }) {
   const [reports, setReports] = useState([]); // Initialize as empty array
@@ -9,11 +64,16 @@ export function LogReportProvider({ children }) {
   // New function to load log reports from API
   const loadReports = useCallback(async () => {
     try {
-      const data = await apiRequest('/api/logreports/'); // Assuming this endpoint exists
-      setReports(Array.isArray(data) ? data : []);
+      const data = await requestLogReport();
+      setReports(normalizeReportsResponse(data));
     } catch (e) {
-      console.error('Error loading log reports:', e);
-      setReports([]);
+      if (isNotFoundError(e)) {
+        console.warn('Log reports API not found. Falling back to local storage.');
+        setReports(localLoad());
+      } else {
+        console.error('Error loading log reports:', e);
+        setReports([]);
+      }
     }
   }, []);
 
@@ -27,15 +87,15 @@ export function LogReportProvider({ children }) {
     realtimeManager.connect(); // Ensure connection is established
 
     const unsubscribeReportCreate = realtimeManager.on('logreport_created', ({ payload }) => {
-      setReports((prev) => (prev.find((r) => r.id === payload.id) ? prev : [...prev, payload]));
+      setReports((prev) => upsertReport(prev, payload));
     });
 
     const unsubscribeReportUpdate = realtimeManager.on('logreport_updated', ({ id, payload }) => {
-      setReports((prev) => prev.map((r) => (r.id === Number(id) ? payload : r)));
+      setReports((prev) => upsertReport(prev.filter((r) => String(r.id) !== String(id)), payload));
     });
 
     const unsubscribeReportDelete = realtimeManager.on('logreport_deleted', ({ id }) => {
-      setReports((prev) => prev.filter((r) => r.id !== Number(id)));
+      setReports((prev) => prev.filter((r) => String(r.id) !== String(id)));
     });
 
     return () => {
@@ -64,14 +124,19 @@ export function LogReportProvider({ children }) {
       customLabels: {},
         // Add ownerId if needed by backend
       };
-      const createdReport = await apiRequest('/api/logreports/', {
+      const createdReport = await requestLogReport('', {
         method: 'POST',
         body: newReportData,
       });
       // The real-time event will update the state, but we can add it directly for immediate feedback
-      setReports((prev) => [...prev, createdReport]);
+      setReports((prev) => upsertReport(prev, createdReport));
       return createdReport;
     } catch (error) {
+      if (isNotFoundError(error)) {
+        const localReport = localCreate(newReportData);
+        setReports((prev) => upsertReport(prev, localReport));
+        return localReport;
+      }
       console.error('Error creating checkin report:', error);
       return null;
     }
@@ -79,13 +144,18 @@ export function LogReportProvider({ children }) {
 
   const editCheckin = useCallback(async (id, updates) => {
     try {
-      const updatedReport = await apiRequest(`/api/logreports/${id}/`, {
+      const updatedReport = await requestLogReport(`${id}/`, {
         method: 'PATCH',
         body: updates,
       });
-      setReports((prev) => prev.map((r) => (r.id === id ? updatedReport : r)));
+      setReports((prev) => upsertReport(prev.filter((r) => String(r.id) !== String(id)), updatedReport));
       return updatedReport;
     } catch (error) {
+      if (isNotFoundError(error)) {
+        localUpdate(id, updates);
+        setReports(localLoad());
+        return updates;
+      }
       console.error(`Error editing checkin report ${id}:`, error);
       return null;
     }
@@ -95,19 +165,24 @@ export function LogReportProvider({ children }) {
     try {
       let updatedReport;
       try {
-        updatedReport = await apiRequest(`/api/logreports/${checkinId}/checkout/`, {
+        updatedReport = await requestLogReport(`${checkinId}/checkout/`, {
           method: 'POST',
           body: data,
         });
       } catch {
-        updatedReport = await apiRequest(`/api/logreports/${checkinId}/`, {
+        updatedReport = await requestLogReport(`${checkinId}/`, {
           method: 'PATCH',
           body: { checkout: data },
         });
       }
-      setReports((prev) => prev.map((r) => (r.id === checkinId ? updatedReport : r)));
+      setReports((prev) => upsertReport(prev.filter((r) => String(r.id) !== String(checkinId)), updatedReport));
       return updatedReport;
     } catch (error) {
+      if (isNotFoundError(error)) {
+        localAddCheckout(checkinId, data);
+        setReports(localLoad());
+        return data;
+      }
       console.error(`Error adding checkout report for checkin ${checkinId}:`, error);
       return null;
     }
@@ -115,13 +190,22 @@ export function LogReportProvider({ children }) {
 
   const editCheckout = useCallback(async (checkinId, updates) => {
     try {
-      const updatedReport = await apiRequest(`/api/logreports/${checkinId}/`, {
+      const updatedReport = await requestLogReport(`${checkinId}/`, {
         method: 'PATCH',
         body: { checkout: updates },
       });
-      setReports((prev) => prev.map((r) => (r.id === checkinId ? updatedReport : r)));
+      setReports((prev) => upsertReport(prev.filter((r) => String(r.id) !== String(checkinId)), updatedReport));
       return updatedReport;
     } catch (error) {
+      if (isNotFoundError(error)) {
+        const all = localLoad();
+        const rep = all.find(r => String(r.id) === String(checkinId));
+        if (rep) {
+          localUpdate(checkinId, { checkout: { ...rep.checkout, ...updates } });
+        }
+        setReports(localLoad());
+        return updates;
+      }
       console.error(`Error editing checkout for checkin ${checkinId}:`, error);
       return null;
     }
@@ -129,11 +213,16 @@ export function LogReportProvider({ children }) {
 
   const removeReport = useCallback(async (id) => {
     try {
-      await apiRequest(`/api/logreports/${id}/`, {
+      await requestLogReport(`${id}/`, {
         method: 'DELETE',
       });
-      setReports((prev) => prev.filter((r) => r.id !== id));
+      setReports((prev) => prev.filter((r) => String(r.id) !== String(id)));
     } catch (error) {
+      if (isNotFoundError(error)) {
+        localDelete(id);
+        setReports(localLoad());
+        return;
+      }
       console.error(`Error removing report ${id}:`, error);
     }
   }, []);
@@ -142,12 +231,12 @@ export function LogReportProvider({ children }) {
     try {
       let updatedReport;
       try {
-        updatedReport = await apiRequest(`/api/logreports/${reportId}/comments/`, {
+        updatedReport = await requestLogReport(`${reportId}/comments/`, {
           method: 'POST',
           body: comment,
         });
       } catch {
-        updatedReport = await apiRequest(`/api/logreports/${reportId}/`, {
+        updatedReport = await requestLogReport(`${reportId}/`, {
           method: 'PATCH',
           body: {
             commentsAppend: {
@@ -157,9 +246,14 @@ export function LogReportProvider({ children }) {
           },
         });
       }
-      setReports((prev) => prev.map((r) => (r.id === reportId ? updatedReport : r)));
+      setReports((prev) => upsertReport(prev.filter((r) => String(r.id) !== String(reportId)), updatedReport));
       return updatedReport;
     } catch (error) {
+      if (isNotFoundError(error)) {
+        localAddComment(reportId, comment);
+        setReports(localLoad());
+        return comment;
+      }
       console.error(`Error posting comment for report ${reportId}:`, error);
       return null;
     }
