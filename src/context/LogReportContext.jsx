@@ -12,7 +12,7 @@ import {
 const LogReportContext = createContext(null);
 
 // Keep ONLY the correct URL path that matches your Django urls.py
-const LOG_REPORT_BASE_PATHS = ['/api/log_reports/', '/api/reports/']; 
+const LOG_REPORT_BASE_PATHS = ['/api/logreports/', '/api/reports/']; 
 
 function normalizeReportsResponse(data) {
   if (Array.isArray(data)) {
