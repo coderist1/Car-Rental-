@@ -1,5 +1,6 @@
 import React from 'react';
 import '../../styles/components/VehicleCard.css';
+import { API_BASE } from '../../lib/api';
 
 // ── SVG Icons ────────────────────────────────────────────────────
 const CarIcon = () => (
@@ -97,7 +98,10 @@ function VehicleCard({
   } = vehicle;
 
   const displayPrice = pricePerDay || price || 0;
-  const displayImage = getImageSource(image) || getImageSource(imageUri) || '';
+  const rawDisplayImage = getImageSource(image) || getImageSource(imageUri) || '';
+  const displayImage = rawDisplayImage
+    ? (rawDisplayImage.startsWith('http') ? rawDisplayImage : `${API_BASE}${rawDisplayImage}`)
+    : '';
   const isAvailable = status === 'available' || available;
 
   const handleCardClick = () => {
