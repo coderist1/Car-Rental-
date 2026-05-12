@@ -24,6 +24,18 @@ export const fromApiVehicle = (vehicle) => {
   const status = vehicle.status || (vehicle.available ? 'available' : 'rented');
   const image = getVehicleImage(vehicle);
 
+  // Safely extract ownerId from various possible backend formats
+  let extractedOwnerId = vehicle.ownerId ?? vehicle.owner_id ?? null;
+  if (extractedOwnerId === null && vehicle.owner) {
+    extractedOwnerId = typeof vehicle.owner === 'object' ? vehicle.owner.id : vehicle.owner;
+  }
+
+  // Safely extract owner name
+  let extractedOwnerName = '';
+  if (typeof vehicle.owner === 'string') extractedOwnerName = vehicle.owner;
+  else if (typeof vehicle.owner === 'object') extractedOwnerName = vehicle.owner.name || vehicle.owner.fullName || vehicle.owner.username || '';
+  else if (vehicle.ownerName) extractedOwnerName = vehicle.ownerName;
+
   return {
     ...vehicle,
     id: Number(vehicle.id),
@@ -35,9 +47,9 @@ export const fromApiVehicle = (vehicle) => {
     status,
     image,
     imageUri: image,
-    owner: vehicle.owner || '',
-    ownerId: vehicle.ownerId || null,
-    ownerEmail: vehicle.ownerEmail || '',
+    owner: extractedOwnerName || vehicle.owner || '',
+    ownerId: extractedOwnerId !== null && extractedOwnerId !== undefined && !Number.isNaN(Number(extractedOwnerId)) ? Number(extractedOwnerId) : null,
+    ownerEmail: vehicle.ownerEmail || vehicle.owner_email || (typeof vehicle.owner === 'object' ? vehicle.owner.email : ''),
     type: vehicle.type || '',
     transmission: vehicle.transmission || '',
     fuel: vehicle.fuel || '',
@@ -70,7 +82,10 @@ export const toApiVehicle = (vehicleData, user) => {
   };
   const ownerId = vehicleData.ownerId ?? user?.id;
   const ownerEmail = vehicleData.ownerEmail ?? user?.email;
-  if (ownerId != null) payload.ownerId = ownerId;
+  if (ownerId != null) {
+    payload.ownerId = ownerId;
+    payload.owner_id = ownerId; // Provide snake_case for backend compatibility
+  }
   if (ownerEmail) payload.ownerEmail = ownerEmail;
   return payload;
 };

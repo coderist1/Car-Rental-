@@ -160,6 +160,12 @@ export function VehicleProvider({ children }) {
       body: toApiVehicle(vehicleData, user),
     });
     const normalized = fromApiVehicle(created);
+
+    // Ensure ownerId is set so the vehicle appears on the owner's dashboard immediately
+    if (!normalized.ownerId && user) {
+      normalized.ownerId = user.id;
+    }
+
     setVehicles((prev) => [normalized, ...prev]);
     return normalized;
   };
@@ -340,7 +346,7 @@ export function VehicleProvider({ children }) {
 
   const getOwnerRentals = () => {
     if (!user) return [];
-    const ownerVehicleIds = vehicles.filter((v) => v.ownerId === user.id).map((v) => v.id);
+    const ownerVehicleIds = vehicles.filter((v) => String(v.ownerId) === String(user.id)).map((v) => v.id);
     return rentalHistory.filter((b) => ownerVehicleIds.includes(Number(b.vehicleId ?? (b.vehicle && (b.vehicle.id ?? b.vehicle))))); // Handle both shapes
   };
   const value = {
