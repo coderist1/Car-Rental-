@@ -162,7 +162,7 @@ function Dashboard() {
   const logReportCount = useMemo(() => {
     const vehicleIds = new Set(ownerVehicles.map((v) => String(v.id)));
     return reports.filter(
-      (r) => vehicleIds.has(String(r.vehicleId))
+      (r) => vehicleIds.has(String(r.vehicleId || r.vehicle))
     ).length;
   }, [reports, ownerVehicles]);
 
@@ -171,7 +171,7 @@ function Dashboard() {
   }, [ownerRentals]);
 
   const isAlreadyLogged = (rentalId) => {
-    return reports.some(r => String(r.rentalId) === String(rentalId)) || loggedRentalIds.includes(String(rentalId));
+    return reports.some(r => String(r.rentalId || r.rental) === String(rentalId)) || loggedRentalIds.includes(String(rentalId));
   };
 
   const handleFormChange = (e) => {

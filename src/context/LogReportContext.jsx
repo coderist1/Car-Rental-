@@ -14,13 +14,29 @@ const LogReportContext = createContext(null);
 // Keep ONLY the correct URL path that matches your Django urls.py
 const LOG_REPORT_BASE_PATHS = ['/api/logreports/', '/api/reports/']; 
 
+function normalizeReport(r) {
+  if (!r) return r;
+  return {
+    ...r,
+    id: r.id ?? r._id ?? r.pk,
+    vehicleId: r.vehicleId ?? r.vehicle_id ?? r.vehicle,
+    rentalId: r.rentalId ?? r.rental_id ?? r.rental,
+    renterId: r.renterId ?? r.renter_id ?? r.renter,
+    vehicleName: r.vehicleName ?? r.vehicle_name ?? 'Vehicle',
+    ownerName: r.ownerName ?? r.owner_name ?? '',
+    renterName: r.renterName ?? r.renter_name ?? '',
+    startDate: r.startDate ?? r.start_date,
+    endDate: r.endDate ?? r.end_date,
+  };
+}
+
 function normalizeReportsResponse(data) {
   if (Array.isArray(data)) {
-    return data;
+    return data.map(normalizeReport);
   }
 
   if (data && Array.isArray(data.results)) {
-    return data.results;
+    return data.results.map(normalizeReport);
   }
 
   return [];
@@ -31,9 +47,10 @@ function upsertReport(list, report) {
     return list;
   }
 
-  const reportId = String(report.id);
+  const normalized = normalizeReport(report);
+  const reportId = String(normalized.id);
   const next = list.filter((item) => String(item.id) !== reportId);
-  return [...next, report];
+  return [...next, normalized];
 }
 
 function isNotFoundError(error) {
@@ -110,16 +127,23 @@ export function LogReportProvider({ children }) {
       const newReportData = {
       type: 'checkin',
       vehicleId:   rental.vehicleId,
+      vehicle:     rental.vehicleId,
       vehicleName: rental.vehicleName,
+      vehicle_name: rental.vehicleName,
       rentalId:    rental.id,
+      rental:      rental.id,
       renterName:  rental.renterName,
+      renter_name: rental.renterName,
       startDate:   rental.startDate,
+      start_date:  rental.startDate,
       endDate:     rental.endDate,
+      end_date:    rental.endDate,
       amount:      rental.amount,
       issues:       [],
       notes:        '',
       odometer:     '',
       fuelLevel:    '',
+      fuel_level:   '',
       photos:       [],
       customLabels: {},
         // Add ownerId if needed by backend
