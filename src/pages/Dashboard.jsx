@@ -605,45 +605,80 @@ function Dashboard() {
           )}
 
           {activeTab === 'rentals' && (
-            <div className="panel">
+            <div className="panel" style={{ background: 'transparent', boxShadow: 'none', padding: 0 }}>
               {ownerRentals.length === 0 ? (
-                <div className="empty-state">
-                  <h3>No rental history</h3>
-                  <p>Your vehicle rental history will appear here.</p>
+                <div className="empty-state" style={{ background: '#fff', borderRadius: 16, border: '1px dashed #cbd5e1', padding: '60px 20px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)' }}>
+                  <div style={{ fontSize: 48, marginBottom: 16 }}>📜</div>
+                  <h3 style={{ fontSize: 18, color: '#334155', margin: '0 0 8px', fontWeight: 700 }}>No rental history</h3>
+                  <p style={{ color: '#64748b', margin: 0, fontSize: 14 }}>Your vehicle rental history will appear here once bookings are made.</p>
                 </div>
               ) : (
-                <div className="rental-history-list">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   {ownerRentals.slice().reverse().map((rental) => {
                     const logged = isAlreadyLogged(rental.id);
                     return (
-                      <div key={rental.id} className="rental-item">
-                        <div className="rental-header">
-                          <span className="rental-vehicle">{rental.vehicleName}</span>
-                          <span className={`rental-status ${rental.status}`}>{rental.status}</span>
-                        </div>
-                        <div className="rental-details">
-                          <span>Renter: {rental.renterName}</span>
-                          <span>₱{rental.amount}/day</span>
-                        </div>
-                        <div className="rental-dates">
-                          {new Date(rental.startDate).toLocaleDateString()} → {' '}
-                          {rental.endDate ? new Date(rental.endDate).toLocaleDateString() : 'Ongoing'}
+                      <div key={rental.id} style={{
+                        background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16,
+                        padding: '24px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+                        display: 'flex', flexDirection: 'column', gap: 16, transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)'; e.currentTarget.style.borderColor = '#0d9488'; }}
+                      onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)'; e.currentTarget.style.borderColor = '#e2e8f0'; }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                          <div>
+                            <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 700, color: '#0f172a' }}>{rental.vehicleName}</h3>
+                            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px 12px', fontSize: 13, color: '#64748b', fontWeight: 500 }}>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z" /></svg>
+                                {rental.renterName}
+                              </span>
+                              <span style={{ color: '#cbd5e1' }}>•</span>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                {new Date(rental.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} → {rental.endDate ? new Date(rental.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Ongoing'}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+                            <span style={{ 
+                              fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
+                              padding: '4px 12px', borderRadius: 999,
+                              ...(rental.status === 'pending' ? { background: '#fef3c7', color: '#d97706', border: '1px solid #fde68a' } : 
+                                  rental.status === 'active' || rental.status === 'approved' ? { background: '#d1fae5', color: '#059669', border: '1px solid #a7f3d0' } :
+                                  rental.status === 'returned' ? { background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0' } :
+                                  rental.status === 'rejected' ? { background: '#fee2e2', color: '#dc2626', border: '1px solid #fecaca' } :
+                                  rental.status === 'return_requested' ? { background: '#dbeafe', color: '#2563eb', border: '1px solid #bfdbfe' } :
+                                  { background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0' })
+                            }}>
+                              {rental.status.replace('_', ' ')}
+                            </span>
+                            <span style={{ fontSize: 16, fontWeight: 800, color: '#0d9488' }}>
+                              ₱{rental.amount?.toLocaleString()}/day
+                            </span>
+                          </div>
                         </div>
 
-                        <div className="rental-actions">
+                        <div style={{ height: 1, background: '#f1f5f9', margin: '4px 0' }} />
+
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 10 }}>
                           {rental.status === 'pending' && (
                             <>
-                              <button className="btn btn-primary btn-sm" onClick={() => handleApproveBooking(rental.id)}>
-                                Approve
-                              </button>
-                              <button className="btn btn-danger btn-sm" onClick={() => handleRejectBooking(rental.id)}>
+                              <button onClick={() => handleRejectBooking(rental.id)} style={{ padding: '8px 16px', background: '#fff', border: '1px solid #e2e8f0', color: '#64748b', fontSize: 13, fontWeight: 600, borderRadius: 8, cursor: 'pointer', transition: 'all 0.2s' }}
+                                onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = '#fca5a5'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#64748b'; e.currentTarget.style.borderColor = '#e2e8f0'; }}>
                                 Reject
+                              </button>
+                              <button onClick={() => handleApproveBooking(rental.id)} style={{ padding: '8px 20px', background: '#0d9488', border: 'none', color: '#fff', fontSize: 13, fontWeight: 600, borderRadius: 8, cursor: 'pointer', boxShadow: '0 2px 4px rgb(13 148 136 / 0.2)', transition: 'all 0.2s' }}
+                                onMouseEnter={e => e.currentTarget.style.background = '#0f766e'}
+                                onMouseLeave={e => e.currentTarget.style.background = '#0d9488'}>
+                                Approve
                               </button>
                             </>
                           )}
 
                           {rental.status === 'return_requested' && (
-                            <button className="btn btn-primary btn-sm" onClick={async () => {
+                            <button onClick={async () => {
                                 try {
                                   await acceptReturn(rental.id);
                                   alert('Return accepted');
@@ -651,24 +686,28 @@ function Dashboard() {
                                   console.error('Accept return failed:', err);
                                   alert('Failed to accept return. See console for details.');
                                 }
-                              }}>
+                              }} style={{ padding: '8px 20px', background: '#2563eb', border: 'none', color: '#fff', fontSize: 13, fontWeight: 600, borderRadius: 8, cursor: 'pointer', boxShadow: '0 2px 4px rgb(37 99 235 / 0.2)', transition: 'all 0.2s' }}
+                              onMouseEnter={e => e.currentTarget.style.background = '#1d4ed8'}
+                              onMouseLeave={e => e.currentTarget.style.background = '#2563eb'}>
                               Accept Return
                             </button>
                           )}
 
                           {(rental.status === 'active' || rental.status === 'approved') && (
                             <button
-                              className="btn btn-sm"
                               onClick={() => handleRecordToLogBook(rental)}
                               disabled={logged}
                               style={{
                                 display: 'inline-flex', alignItems: 'center', gap: 6,
-                                background: logged ? '#f0fdf4' : '#3F9B84',
-                                color: logged ? '#059669' : '#fff',
-                                border: logged ? '1px solid #bbf7d0' : 'none',
+                                background: logged ? '#f0fdf4' : '#fff',
+                                color: logged ? '#059669' : '#0d9488',
+                                border: logged ? '1px solid #bbf7d0' : '1px solid #0d9488',
                                 cursor: logged ? 'default' : 'pointer',
-                                fontWeight: 600, borderRadius: 8, padding: '6px 12px',
+                                fontSize: 13, fontWeight: 600, borderRadius: 8, padding: '8px 16px',
+                                transition: 'all 0.2s', boxShadow: logged ? 'none' : '0 1px 2px rgb(13 148 136 / 0.05)'
                               }}
+                              onMouseEnter={e => { if (!logged) { e.currentTarget.style.background = '#f0fdfa'; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
+                              onMouseLeave={e => { if (!logged) { e.currentTarget.style.background = '#fff'; e.currentTarget.style.transform = 'none'; } }}
                             >
                               <BookIcon />
                               {logged ? 'Recorded in Log Book' : 'Record to Log Book'}
@@ -845,7 +884,7 @@ function Dashboard() {
               <img
                 src={viewingVehicle.image}
                 alt={viewingVehicle.name}
-                style={{ width: '100%', maxHeight: 260, objectFit: 'cover', borderRadius: 10, marginBottom: 20 }}
+                style={{ width: '100%', maxHeight: 200, objectFit: 'contain', background: '#f8fafc', borderRadius: 10, marginBottom: 20 }}
               />
             ) : (
               <div style={{ width: '100%', height: 180, background: '#f1f5f9', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48, marginBottom: 20 }}>

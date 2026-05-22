@@ -221,7 +221,7 @@ function PhotoGallery({ photos = [], label }) {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         {photos.map((src, i) => (
           <img key={i} src={src} alt="" onClick={() => setLb(src)} style={{
-            width: 74, height: 74, objectFit: 'cover', borderRadius: C.r2,
+            width: 74, height: 74, objectFit: 'contain', background: '#f8fafc', borderRadius: C.r2,
             border: `1px solid ${C.g200}`, cursor: 'pointer', transition: 'transform .15s',
           }}
             onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'}
@@ -1005,7 +1005,7 @@ function RenterDashboard() {
             <div className="detail-image">
               {(() => {
                 const detailImage = getImageSource(selectedVehicle.image) || getImageSource(selectedVehicle.imageUri);
-                return detailImage ? <img src={detailImage} alt={selectedVehicle.name} /> : <div className="image-placeholder"><CarIcon /></div>;
+                return detailImage ? <img src={detailImage} alt={selectedVehicle.name} style={{ width: '100%', maxHeight: 200, objectFit: 'contain', background: '#f8fafc', borderRadius: 10 }} /> : <div className="image-placeholder"><CarIcon /></div>;
               })()}
             </div>
             <div className="detail-info">

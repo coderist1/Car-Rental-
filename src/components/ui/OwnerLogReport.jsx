@@ -33,24 +33,24 @@ const tripDays     = (s, e) => { if (!s || !e) return null; return Math.max(1, M
 
 /* ─── Design tokens ─── */
 const C = {
-  primary:   '#3F9B84',
-  primaryDk: '#2e7d67',
-  primaryLt: '#ecfdf5',
-  navy:      '#1a2c5e',
-  danger:    '#ef4444',
-  warning:   '#f59e0b',
-  success:   '#22c55e',
-  g50:  '#f9fafb',
-  g100: '#f3f4f6',
-  g200: '#e5e7eb',
-  g300: '#d1d5db',
-  g400: '#9ca3af',
-  g500: '#6b7280',
-  g700: '#374151',
-  g900: '#111827',
-  shadow: '0 1px 3px rgba(0,0,0,.07), 0 4px 12px rgba(0,0,0,.05)',
-  shadowHover: '0 4px 16px rgba(63,155,132,.15)',
-  r: 12, r2: 8,
+  primary:   '#0d9488', // Modern Teal 600
+  primaryDk: '#0f766e', // Teal 700
+  primaryLt: '#f0fdfa', // Teal 50
+  navy:      '#0f172a', // Slate 900
+  danger:    '#ef4444', // Red 500
+  warning:   '#f59e0b', // Amber 500
+  success:   '#10b981', // Emerald 500
+  g50:  '#f8fafc', // Slate 50
+  g100: '#f1f5f9', // Slate 100
+  g200: '#e2e8f0', // Slate 200
+  g300: '#cbd5e1', // Slate 300
+  g400: '#94a3b8', // Slate 400
+  g500: '#64748b', // Slate 500
+  g700: '#334155', // Slate 700
+  g900: '#0f172a', // Slate 900
+  shadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+  shadowHover: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+  r: 16, r2: 10,
 };
 
 /* ═══════════════ ICONS ═══════════════ */
@@ -159,11 +159,13 @@ function StatsBar({ reports }) {
     { label: 'New Damage',         value: newDamage,       color: C.danger  },
   ];
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12, marginBottom: 22 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16, marginBottom: 28 }}>
       {stats.map(s => (
-        <div key={s.label} style={{ background: '#fff', borderRadius: C.r, padding: '14px 16px', borderLeft: `4px solid ${s.color}`, border: `1px solid ${s.color}18`, borderLeftWidth: 4, boxShadow: C.shadow }}>
-          <div style={{ fontSize: 26, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</div>
-          <div style={{ fontSize: 11, color: C.g500, fontWeight: 500, marginTop: 3 }}>{s.label}</div>
+        <div key={s.label} style={{ background: '#fff', borderRadius: C.r, padding: '18px 20px', border: `1px solid ${C.g200}`, boxShadow: C.shadow, display: 'flex', flexDirection: 'column', gap: 8, transition: 'transform 0.2s' }}
+             onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+             onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+          <div style={{ fontSize: 13, color: C.g500, fontWeight: 600 }}>{s.label}</div>
+          <div style={{ fontSize: 32, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</div>
         </div>
       ))}
     </div>
@@ -192,14 +194,14 @@ function TripSummaryCard({ report }) {
   ].filter(Boolean);
 
   return (
-    <div style={{ background: `linear-gradient(135deg, ${C.primaryLt}, #f0fdfa)`, border: `1px solid ${C.primary}28`, borderRadius: C.r, padding: '16px 20px', marginBottom: 20 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-        <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: C.g500 }}>Trip Summary</span>
+    <div style={{ background: '#fff', border: `1px solid ${C.g200}`, borderRadius: C.r, padding: '20px 24px', marginBottom: 24, boxShadow: C.shadow }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: C.g500 }}>Trip Summary</span>
         <span style={{ fontSize: 11, fontWeight: 700, padding: '4px 12px', borderRadius: 999, background: `${sColor}14`, color: sColor, border: `1px solid ${sColor}35` }}>
           {status === 'Damage Reported' && '⚠ '}{status}
         </span>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 16 }}>
         {metrics.map((m, i) => (
           <div key={i}>
             <div style={{ fontSize: 20, fontWeight: 800, color: m.color, lineHeight: 1 }}>{m.val}</div>
@@ -221,8 +223,8 @@ function RentalBanner({ report }) {
     report.amount    && { icon: null,        label: 'Rate',  val: `₱${report.amount}/day` },
   ].filter(Boolean);
   return (
-    <div style={{ background: `linear-gradient(135deg, ${C.primaryLt}, #f0fdfa)`, border: `1px solid ${C.primary}28`, borderRadius: C.r, padding: '14px 18px', marginBottom: 20 }}>
-      <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: C.g400, marginBottom: 10 }}>Rental Information</div>
+    <div style={{ background: '#fff', border: `1px solid ${C.g200}`, borderRadius: C.r, padding: '20px 24px', marginBottom: 24, boxShadow: C.shadow }}>
+      <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: C.g500, marginBottom: 12 }}>Rental Information</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
         {items.map((it, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -251,7 +253,7 @@ function PhotoUploader({ photos = [], onChange }) {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
         {photos.map((src, i) => (
           <div key={i} style={{ position: 'relative', width: 86, height: 86 }}>
-            <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: C.r2, border: `1px solid ${C.g200}` }} />
+            <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f8fafc', borderRadius: C.r2, border: `1px solid ${C.g200}` }} />
             <button onClick={() => onChange(photos.filter((_, j) => j !== i))} style={{
               position: 'absolute', top: -6, right: -6, background: C.danger, border: '2px solid #fff',
               borderRadius: '50%', width: 22, height: 22, color: '#fff', cursor: 'pointer',
@@ -283,7 +285,7 @@ function PhotoGallery({ photos = [], label }) {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         {photos.map((src, i) => (
           <img key={i} src={src} alt="" onClick={() => setLb(src)} style={{
-            width: 74, height: 74, objectFit: 'cover', borderRadius: C.r2,
+            width: 74, height: 74, objectFit: 'contain', background: '#f8fafc', borderRadius: C.r2,
             border: `1px solid ${C.g200}`, cursor: 'pointer', transition: 'transform .15s',
           }}
             onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'}
@@ -334,15 +336,15 @@ function ChecklistEditor({ issues, customLabels, onChange, onLabelChange }) {
   return (
     <Sec label="Condition Checklist">
       {/* Checkbox grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: 8, marginBottom: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10, marginBottom: 16 }}>
         {allItems.map(item => {
           const isCustom = !DEFAULT_CHECKLIST.find(d => d.id === item.id);
           const checked  = issues.includes(item.id);
           return (
             <label key={item.id} style={{
               display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
-              border: `1.5px solid ${checked ? C.primary + '55' : C.g200}`,
-              background: checked ? `${C.primary}08` : C.g50,
+              border: `1px solid ${checked ? C.primary : C.g200}`,
+              background: checked ? `${C.primary}08` : '#fff',
               borderRadius: C.r2, cursor: 'pointer', userSelect: 'none', transition: 'all .13s',
             }}>
               <input type="checkbox" checked={checked} onChange={() => toggle(item.id)}
@@ -411,12 +413,12 @@ function ReportForm({ initial, subtitle, onSave, onCancel, isCheckout = false, c
   const newIssues = isCheckout ? issues.filter(i => !checkinIssues.includes(i)) : [];
 
   const inp = {
-    width: '100%', padding: '10px 13px', border: `1.5px solid ${C.g200}`,
+    width: '100%', padding: '12px 16px', border: `1px solid ${C.g300}`,
     borderRadius: C.r2, fontSize: 14, color: C.g900, background: '#fff',
-    outline: 'none', boxSizing: 'border-box', transition: 'border-color .15s',
-    fontFamily: 'inherit',
+    outline: 'none', boxSizing: 'border-box', transition: 'all .2s ease',
+    fontFamily: 'inherit', boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
   };
-  const lbl = { display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: C.g400, marginBottom: 6 };
+  const lbl = { display: 'block', fontSize: 12, fontWeight: 600, color: C.g700, marginBottom: 8 };
 
   return (
     <div>
@@ -435,12 +437,12 @@ function ReportForm({ initial, subtitle, onSave, onCancel, isCheckout = false, c
           <div>
             <label style={lbl}>Odometer (km)</label>
             <input style={inp} type="number" placeholder="e.g. 45230" value={odometer} onChange={e => setOdometer(e.target.value)}
-              onFocus={e => e.target.style.borderColor = C.primary} onBlur={e => e.target.style.borderColor = C.g200} />
+              onFocus={e => { e.target.style.borderColor = C.primary; e.target.style.boxShadow = `0 0 0 3px ${C.primary}33`; }} onBlur={e => { e.target.style.borderColor = C.g300; e.target.style.boxShadow = '0 1px 2px 0 rgb(0 0 0 / 0.05)'; }} />
           </div>
           <div>
             <label style={lbl}>Fuel Level</label>
             <select style={{ ...inp, cursor: 'pointer' }} value={fuelLevel} onChange={e => setFuelLevel(e.target.value)}
-              onFocus={e => e.target.style.borderColor = C.primary} onBlur={e => e.target.style.borderColor = C.g200}>
+              onFocus={e => { e.target.style.borderColor = C.primary; e.target.style.boxShadow = `0 0 0 3px ${C.primary}33`; }} onBlur={e => { e.target.style.borderColor = C.g300; e.target.style.boxShadow = '0 1px 2px 0 rgb(0 0 0 / 0.05)'; }}>
               <option value="">Select…</option>
               {FUEL_OPTS.map(f => <option key={f}>{f}</option>)}
             </select>
@@ -479,7 +481,7 @@ function ReportForm({ initial, subtitle, onSave, onCancel, isCheckout = false, c
             Estimated Damage Cost (₱) <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: C.g400 }}>— optional</span>
           </label>
           <input style={{ ...inp, borderColor: '#fca5a5' }} type="number" placeholder="e.g. 5000" value={damageCost} onChange={e => setDamageCost(e.target.value)}
-            onFocus={e => e.target.style.borderColor = C.danger} onBlur={e => e.target.style.borderColor = '#fca5a5'} />
+            onFocus={e => { e.target.style.borderColor = C.danger; e.target.style.boxShadow = `0 0 0 3px ${C.danger}33`; }} onBlur={e => { e.target.style.borderColor = '#fca5a5'; e.target.style.boxShadow = '0 1px 2px 0 rgb(0 0 0 / 0.05)'; }} />
         </div>
       )}
 
@@ -488,16 +490,20 @@ function ReportForm({ initial, subtitle, onSave, onCancel, isCheckout = false, c
         <textarea style={{ ...inp, resize: 'vertical', minHeight: 88 }} rows={4}
           placeholder="Describe the vehicle condition, any observations…"
           value={notes} onChange={e => setNotes(e.target.value)}
-          onFocus={e => e.target.style.borderColor = C.primary} onBlur={e => e.target.style.borderColor = C.g200} />
+          onFocus={e => { e.target.style.borderColor = C.primary; e.target.style.boxShadow = `0 0 0 3px ${C.primary}33`; }} onBlur={e => { e.target.style.borderColor = C.g300; e.target.style.boxShadow = '0 1px 2px 0 rgb(0 0 0 / 0.05)'; }} />
       </Sec>
 
       <PhotoUploader photos={photos} onChange={setPhotos} />
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 24, paddingTop: 18, borderTop: `1px solid ${C.g100}` }}>
-        <button onClick={() => setCfCancel(true)} style={{ padding: '10px 22px', border: `1.5px solid ${C.g200}`, borderRadius: C.r2, background: '#fff', color: C.g700, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+        <button onClick={() => setCfCancel(true)} style={{ padding: '12px 24px', border: `1px solid ${C.g300}`, borderRadius: C.r2, background: '#fff', color: C.g700, fontSize: 14, fontWeight: 600, cursor: 'pointer', boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)', transition: 'all 0.2s ease' }}
+          onMouseEnter={e => e.currentTarget.style.background = C.g50}
+          onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
           Cancel
         </button>
-        <button onClick={() => setCfSave(true)} style={{ padding: '10px 28px', border: 'none', borderRadius: C.r2, background: `linear-gradient(135deg, ${C.primary}, ${C.primaryDk})`, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: `0 4px 14px ${C.primary}50` }}>
+        <button onClick={() => setCfSave(true)} style={{ padding: '12px 32px', border: 'none', borderRadius: C.r2, background: C.primary, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 6px -1px rgb(13 148 136 / 0.3), 0 2px 4px -2px rgb(13 148 136 / 0.3)', transition: 'background .2s' }}
+          onMouseEnter={e => e.currentTarget.style.background = C.primaryDk}
+          onMouseLeave={e => e.currentTarget.style.background = C.primary}>
           Save Report
         </button>
       </div>
@@ -717,17 +723,19 @@ function CommentsSection({ report, ownerName, onReply }) {
 /* ═══════════════ COLUMN CARD (detail view) ═══════════════ */
 function ColCard({ title, titleColor, headerBg, headerBorder, date, onEdit, children }) {
   return (
-    <div style={{ border: `1px solid ${C.g200}`, borderRadius: C.r, overflow: 'hidden', background: '#fff', boxShadow: C.shadow }}>
-      <div style={{ background: headerBg, borderBottom: `1px solid ${headerBorder}`, padding: '11px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: titleColor }}>{title}</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 11, color: C.g400 }}>{fmtDate(date)}</span>
-          <button onClick={onEdit} style={{ background: 'none', border: `1px solid ${titleColor}55`, cursor: 'pointer', color: titleColor, display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 6 }}>
+    <div style={{ border: `1px solid ${headerBorder}`, borderRadius: C.r, overflow: 'hidden', background: '#fff', boxShadow: C.shadow }}>
+      <div style={{ background: headerBg, borderBottom: `1px solid ${headerBorder}`, padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: 14, fontWeight: 700, color: titleColor }}>{title}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 12, color: titleColor, opacity: 0.8 }}>{fmtDate(date)}</span>
+          <button onClick={onEdit} style={{ background: '#fff', border: `1px solid ${headerBorder}`, cursor: 'pointer', color: titleColor, display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 700, padding: '6px 12px', borderRadius: C.r2, boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)', transition: 'all 0.15s' }}
+            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
+            onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
             <EditIcon /> Edit
           </button>
         </div>
       </div>
-      <div style={{ padding: 16 }}>{children}</div>
+      <div style={{ padding: 20 }}>{children}</div>
     </div>
   );
 }
@@ -899,11 +907,11 @@ export default function OwnerLogReport({ isOpen, onClose, ownerRentals, ownerNam
           <div style={{ position: 'relative', marginBottom: 18 }}>
             <span style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: C.g400, display: 'flex', pointerEvents: 'none' }}><SearchIcon /></span>
             <input
-              style={{ width: '100%', padding: '11px 14px 11px 40px', border: `1.5px solid ${C.g200}`, borderRadius: C.r2, fontSize: 14, color: C.g900, background: '#fff', outline: 'none', boxSizing: 'border-box', transition: 'border-color .15s' }}
+              style={{ width: '100%', padding: '14px 16px 14px 44px', border: `1px solid ${C.g300}`, borderRadius: C.r, fontSize: 15, color: C.g900, background: '#fff', outline: 'none', boxSizing: 'border-box', transition: 'all .2s ease', boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)' }}
               placeholder="Search by vehicle or renter…"
               value={search} onChange={e => setSearch(e.target.value)}
-              onFocus={e => e.target.style.borderColor = C.primary}
-              onBlur={e => e.target.style.borderColor = C.g200}
+              onFocus={e => { e.target.style.borderColor = C.primary; e.target.style.boxShadow = `0 0 0 3px ${C.primary}33`; }}
+              onBlur={e => { e.target.style.borderColor = C.g300; e.target.style.boxShadow = '0 1px 2px 0 rgb(0 0 0 / 0.05)'; }}
             />
           </div>
 
@@ -920,12 +928,12 @@ export default function OwnerLogReport({ isOpen, onClose, ownerRentals, ownerNam
                 const coIssues  = r.checkout?.issues || [];
                 const newDamage = r.checkout ? coIssues.filter(i => !ciIssues.includes(i)) : [];
                 return (
-                  <div key={r.id} onClick={() => open(r)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', border: `1.5px solid ${C.g200}`, borderRadius: C.r, cursor: 'pointer', background: '#fff', boxShadow: C.shadow, transition: 'all .14s' }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = C.primary; e.currentTarget.style.boxShadow = C.shadowHover; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                  <div key={r.id} onClick={() => open(r)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', border: `1px solid ${C.g200}`, borderRadius: C.r, cursor: 'pointer', background: '#fff', boxShadow: C.shadow, transition: 'all .2s ease' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = C.primary; e.currentTarget.style.boxShadow = C.shadowHover; e.currentTarget.style.transform = 'translateY(-2px)'; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = C.g200;    e.currentTarget.style.boxShadow = C.shadow;       e.currentTarget.style.transform = 'none'; }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       {/* Tag row */}
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
                         <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 9px', borderRadius: 999, background: 'rgba(16,185,129,.1)', color: '#059669', border: '1px solid rgba(16,185,129,.25)', textTransform: 'uppercase', letterSpacing: '.04em' }}>Check-in</span>
                         {r.checkout
                           ? <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 9px', borderRadius: 999, background: `${C.primary}14`, color: C.primary, border: `1px solid ${C.primary}35` }}>✓ Trip Complete</span>
@@ -942,7 +950,7 @@ export default function OwnerLogReport({ isOpen, onClose, ownerRentals, ownerNam
                           </span>
                         )}
                       </div>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: C.navy, marginBottom: 5 }}>{r.vehicleName}</div>
+                      <div style={{ fontSize: 17, fontWeight: 700, color: C.navy, marginBottom: 8 }}>{r.vehicleName}</div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 12, color: C.g500 }}>
                         <span>{fmtDate(r.createdAt)}</span>
                         {(r.issues||[]).length > 0
