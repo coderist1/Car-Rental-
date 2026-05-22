@@ -88,7 +88,7 @@ export function VehicleProvider({ children }) {
     // Connect to realtime manager only once when the component mounts
     // and ensure it's connected for all contexts.
     // It's safe to call connect multiple times, it will only establish if not already open.
-    realtimeManager.connect();
+    // realtimeManager.connect();
 
     // If user changes, we need to reload bookings, but the dependency array of this useEffect
     // should not include `user` as it's for initial setup. `loadBookings` already depends on `user`.

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useAuth, useVehicles } from '../hooks';
 import { ProfileMenu, VehicleCard, Modal, ConfirmModal } from '../components';
 import { useLogReport } from '../context/LogReportContext';
@@ -12,7 +12,7 @@ const VehicleIcon = () => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M5 17H3a2 2 0 01-2-2V9a2 2 0 012-2h3.5l2-3h7l2 3H21a2 2 0 012 2v6a2 2 0 01-2 2h-2M8 17a2 2 0 104 0 2 2 0 00-4 0zm8 0a2 2 0 104 0 2 2 0 00-4 0z" />
   </svg>
 );
-
+  
 const HistoryIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path strokeLinecap="round" strokeLinejoin="round" d="M13 2H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V9z" />
@@ -86,6 +86,18 @@ function Dashboard() {
   const [confirmRemovePhoto, setConfirmRemovePhoto] = useState(false);
   const [discardConfirm, setDiscardConfirm] = useState({ open: false, nextVehicle: null, closeMode: null });
 
+  const [feedbacks, setFeedbacks] = useState(() => JSON.parse(localStorage.getItem('car_rental_feedbacks') || '[]'));
+
+  // Listen for new feedback in real-time
+  useEffect(() => {
+    const handleFeedbackSync = () => {
+      setFeedbacks(JSON.parse(localStorage.getItem('car_rental_feedbacks') || '[]'));
+    };
+    window.addEventListener('storage', handleFeedbackSync);
+    window.addEventListener('feedback_updated', handleFeedbackSync);
+    return () => { window.removeEventListener('storage', handleFeedbackSync); window.removeEventListener('feedback_updated', handleFeedbackSync); };
+  }, []);
+
   const fileInputRef = useRef(null);
 
   const handlePhotoUpload = (e) => {
@@ -111,6 +123,11 @@ function Dashboard() {
     () => vehicles.filter((v) => v.ownerId === user?.id),
     [vehicles, user?.id]
   );
+
+  const ownerFeedbacks = useMemo(() => {
+    const vehicleIds = ownerVehicles.map(v => v.id);
+    return feedbacks.filter(f => vehicleIds.includes(f.vehicleId) || f.ownerName === userName);
+  }, [feedbacks, ownerVehicles, userName]);
 
   const filteredVehicles = useMemo(() => {
     let result = ownerVehicles;
@@ -488,23 +505,27 @@ function Dashboard() {
             className={`nav-item ${activeTab === 'vehicles' ? 'active' : ''}`}
             onClick={() => setActiveTab('vehicles')}
           >
-            <VehicleIcon />
             My Vehicles
           </button>
           <button 
             className={`nav-item ${activeTab === 'rentals' ? 'active' : ''}`}
             onClick={() => setActiveTab('rentals')}
           >
-            <HistoryIcon />
             Rental History
           </button>
           <button 
             className={`nav-item ${activeTab === 'logs' ? 'active' : ''}`}
             onClick={() => setActiveTab('logs')}
           >
-            <LogIcon />
             Log Book
             {logReportCount > 0 && <span className="nav-badge">{logReportCount}</span>}
+          </button>
+          <button 
+            className={`nav-item ${activeTab === 'feedback' ? 'active' : ''}`}
+            onClick={() => setActiveTab('feedback')}
+          >
+            Feedback
+            {ownerFeedbacks.length > 0 && <span className="nav-badge" style={{ background: '#3b82f6', boxShadow: '0 2px 6px rgba(59,130,246,.4)' }}>{ownerFeedbacks.length}</span>}
           </button>
         </nav>
       </aside>
@@ -519,11 +540,13 @@ function Dashboard() {
                 {activeTab === 'vehicles' && 'My Vehicles'}
                 {activeTab === 'rentals' && 'Rental History'}
                 {activeTab === 'logs' && 'Log Book'}
+                {activeTab === 'feedback' && 'Renter Feedback'}
               </h1>
               <p className="header-subtitle">
                 {activeTab === 'vehicles' && 'Manage your rental vehicles'}
                 {activeTab === 'rentals' && 'Track all rental transactions'}
                 {activeTab === 'logs' && 'Vehicle condition check-in logs'}
+                {activeTab === 'feedback' && 'See what renters are saying about your vehicles'}
               </p>
             </div>
             <div className="user-info">
@@ -732,6 +755,37 @@ function Dashboard() {
                 ownerName={userName}
                 displayInPanel={true}
               />
+            </div>
+          )}
+
+          {activeTab === 'feedback' && (
+            <div className="panel" style={{ background: 'transparent', boxShadow: 'none', padding: 0 }}>
+              {ownerFeedbacks.length === 0 ? (
+                <div className="empty-state" style={{ background: '#fff', borderRadius: 16, border: '1px dashed #cbd5e1', padding: '60px 20px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)' }}>
+                  <div style={{ fontSize: 48, marginBottom: 16 }}>⭐</div>
+                  <h3 style={{ fontSize: 18, color: '#334155', margin: '0 0 8px', fontWeight: 700 }}>No feedback yet</h3>
+                  <p style={{ color: '#64748b', margin: 0, fontSize: 14 }}>Feedback submitted by your renters will appear here.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {ownerFeedbacks.slice().reverse().map(f => (
+                    <div key={f.id} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16, padding: '24px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, alignItems: 'flex-start' }}>
+                        <div>
+                          <h4 style={{ margin: '0 0 6px 0', fontSize: 17, color: '#0f172a' }}>{f.vehicleName}</h4>
+                          <div style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>From: {f.renterName} • {new Date(f.date).toLocaleDateString()}</div>
+                        </div>
+                        <div style={{ background: '#fef3c7', color: '#d97706', padding: '4px 12px', borderRadius: 999, fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 4 }}>
+                          {f.rating}
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        </div>
+                      </div>
+                      <div style={{ height: 1, background: '#f1f5f9', margin: '12px 0' }} />
+                      <p style={{ margin: 0, color: '#334155', lineHeight: 1.6, fontSize: 14 }}>"{f.text}"</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

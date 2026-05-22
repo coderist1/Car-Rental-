@@ -392,22 +392,6 @@ function Profile() {
               onClick={() => navigate('/change-password')}
               aria-label="Navigate to change password page"
             >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                aria-hidden="true"
-              >
-                <rect x="3" y="11" width="18" height="11" rx="2" />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M7 11V7a5 5 0 0110 0v4"
-                />
-              </svg>
               Change Password
             </button>
             {userRole !== 'admin' && (
@@ -417,21 +401,6 @@ function Profile() {
                 onClick={() => navigate('/bookings')}
                 aria-label="Navigate to my bookings page"
               >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                  />
-                </svg>
                 My Bookings
               </button>
             )}

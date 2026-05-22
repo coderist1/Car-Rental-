@@ -101,7 +101,7 @@ export function LogReportProvider({ children }) {
 
   // Subscribe to real-time log report updates
   useEffect(() => {
-    realtimeManager.connect(); // Ensure connection is established
+    // realtimeManager.connect(); // Ensure connection is established
 
     const unsubscribeReportCreate = realtimeManager.on('logreport_created', ({ payload }) => {
       setReports((prev) => upsertReport(prev, payload));

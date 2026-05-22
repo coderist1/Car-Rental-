@@ -545,6 +545,9 @@ function RenterDashboard() {
   const [viewingReport,   setViewingReport]   = useState(null);
   const [logSearchQuery,  setLogSearchQuery]  = useState('');
 
+  const [feedbacks, setFeedbacks] = useState(() => JSON.parse(localStorage.getItem('car_rental_feedbacks') || '[]'));
+  const [feedbackForm, setFeedbackForm] = useState({ rentalId: '', text: '', rating: 5 });
+
   const refreshLogs = useCallback(() => { refresh(); }, [refresh]);
 
   const [filters, setFilters] = useState({ types: [], transmissions: [], fuels: [], minPrice: '', maxPrice: '' });
@@ -641,6 +644,31 @@ function RenterDashboard() {
   };
   const handleViewLog = report => { setViewingReport(report); };
 
+  const submitFeedback = () => {
+    const rental = userRentals.find(r => String(r.id) === String(feedbackForm.rentalId));
+    if (!rental || !feedbackForm.text) {
+      setInfoMessage('Please select a rental and write some feedback.');
+      return;
+    }
+    const newFeedback = {
+      id: Date.now(),
+      rentalId: rental.id,
+      vehicleId: rental.vehicleId,
+      vehicleName: rental.vehicleName,
+      ownerName: rental.ownerName || rental.owner || 'Unknown',
+      renterName: userName,
+      rating: feedbackForm.rating,
+      text: feedbackForm.text,
+      date: new Date().toISOString()
+    };
+    const updated = [...feedbacks, newFeedback];
+    setFeedbacks(updated);
+    localStorage.setItem('car_rental_feedbacks', JSON.stringify(updated));
+    window.dispatchEvent(new Event('feedback_updated')); // Broadcast sync event
+    setFeedbackForm({ rentalId: '', text: '', rating: 5 });
+    setInfoMessage('Feedback submitted successfully to the owner!');
+  };
+
   const handleSaveSignature = useCallback(async (reportId, signature) => {
     await editCheckin(reportId, {
       renterSignature: signature,
@@ -659,6 +687,7 @@ function RenterDashboard() {
     favorites: 'Saved Vehicles',
     rentals: 'My Rentals',
     logs: 'Log Reports',
+    feedback: 'Feedback',
   }[activeNav];
 
   const currentSubtitle = {
@@ -666,6 +695,7 @@ function RenterDashboard() {
     favorites: `${favoriteVehicles.length} saved`,
     rentals: `${userRentals.length} rental${userRentals.length !== 1 ? 's' : ''}`,
     logs: `${logCount} report${logCount !== 1 ? 's' : ''}`,
+    feedback: 'Share your experience with the vehicle owner',
   }[activeNav];
 
   return (
@@ -682,16 +712,19 @@ function RenterDashboard() {
         </div>
         <nav className="sidebar-nav">
           <button className={`nav-item ${activeNav === 'browse' ? 'active' : ''}`} onClick={() => setActiveNav('browse')}>
-            <HomeIcon /> Browse
+            Browse
           </button>
           <button className={`nav-item ${activeNav === 'favorites' ? 'active' : ''}`} onClick={() => setActiveNav('favorites')}>
-            <HeartIcon /> Favorites {savedCars.length > 0 && `(${savedCars.length})`}
+            Favorites {savedCars.length > 0 && `(${savedCars.length})`}
           </button>
           <button className={`nav-item ${activeNav === 'rentals' ? 'active' : ''}`} onClick={() => setActiveNav('rentals')}>
-            <HistoryIcon /> My Rentals
+            My Rentals
           </button>
           <button className={`nav-item ${activeNav === 'logs' ? 'active' : ''}`} onClick={() => { setActiveNav('logs'); refreshLogs(); }}>
-            <ClipboardIcon /> Log Reports {logCount > 0 && <span className="nav-badge">{logCount}</span>}
+            Log Reports {logCount > 0 && <span className="nav-badge">{logCount}</span>}
+          </button>
+          <button className={`nav-item ${activeNav === 'feedback' ? 'active' : ''}`} onClick={() => setActiveNav('feedback')}>
+            Feedback
           </button>
         </nav>
       </aside>
@@ -957,6 +990,61 @@ function RenterDashboard() {
                 </div>
               )}
             </>
+          )}
+
+          {/* Feedback View */}
+          {activeNav === 'feedback' && (
+            <div className="panel" style={{ background: 'transparent', boxShadow: 'none', padding: 0 }}>
+              <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16, padding: 24, boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)', marginBottom: 24 }}>
+                <h3 style={{ marginTop: 0, marginBottom: 20, color: '#0f172a', fontSize: 18 }}>Provide Feedback</h3>
+                <div style={{ display: 'grid', gap: 16, maxWidth: 600 }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 8, fontSize: 13, fontWeight: 600, color: '#334155' }}>Select Rental</label>
+                    <select
+                      style={{ width: '100%', padding: '12px 16px', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: 14, outline: 'none' }}
+                      value={feedbackForm.rentalId}
+                      onChange={e => setFeedbackForm({...feedbackForm, rentalId: e.target.value})}
+                    >
+                      <option value="">-- Select a past or active rental --</option>
+                      {userRentals.filter(r => ['returned', 'completed', 'active', 'return_requested'].includes(r.status)).map(r => (
+                        <option key={r.id} value={r.id}>{r.vehicleName} ({new Date(r.startDate).toLocaleDateString()})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 8, fontSize: 13, fontWeight: 600, color: '#334155' }}>Rating (1-5)</label>
+                    <input type="number" min="1" max="5" value={feedbackForm.rating} onChange={e => setFeedbackForm({...feedbackForm, rating: Number(e.target.value)})} style={{ width: '100%', padding: '12px 16px', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: 14, outline: 'none' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 8, fontSize: 13, fontWeight: 600, color: '#334155' }}>Your Experience</label>
+                    <textarea rows="4" value={feedbackForm.text} onChange={e => setFeedbackForm({...feedbackForm, text: e.target.value})} placeholder="Tell the owner what you liked or how they can improve..." style={{ width: '100%', padding: '12px 16px', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: 14, outline: 'none', resize: 'vertical' }}></textarea>
+                  </div>
+                  <button onClick={submitFeedback} style={{ padding: '12px 24px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-start', transition: 'background .2s' }} onMouseEnter={e => e.currentTarget.style.background = '#2563eb'} onMouseLeave={e => e.currentTarget.style.background = '#3b82f6'}>
+                    Submit Feedback
+                  </button>
+                </div>
+              </div>
+
+              <h3 style={{ margin: '0 0 16px', color: '#0f172a', fontSize: 18 }}>Your Past Feedback</h3>
+              {feedbacks.filter(f => f.renterName === userName).length === 0 ? (
+                <div className="empty-state" style={{ background: '#fff', borderRadius: 16, border: '1px dashed #cbd5e1', padding: '40px 20px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)' }}>
+                  <p style={{ color: '#64748b', margin: 0 }}>You haven't submitted any feedback yet.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {feedbacks.filter(f => f.renterName === userName).slice().reverse().map(f => (
+                    <div key={f.id} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16, padding: 20, boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                        <strong style={{ fontSize: 16, color: '#0f172a' }}>{f.vehicleName}</strong>
+                        <span style={{ background: '#fef3c7', color: '#d97706', padding: '2px 10px', borderRadius: 999, fontWeight: 700, fontSize: 12 }}>{f.rating} ★</span>
+                      </div>
+                      <p style={{ color: '#475569', margin: '0 0 12px', lineHeight: 1.5 }}>"{f.text}"</p>
+                      <small style={{ color: '#94a3b8', fontSize: 12 }}>To: {f.ownerName} • {new Date(f.date).toLocaleDateString()}</small>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
