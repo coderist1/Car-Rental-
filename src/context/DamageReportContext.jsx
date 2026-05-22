@@ -83,7 +83,7 @@ export function DamageReportProvider({ children }) {
       console.error('Error loading damage reports:', e);
       setError(e.message);
       // Local fallback
-      const localData = localStorage.getItem('car_rental_damage_reports');
+      const localData = localStorage.getItem('car_rental_damage_reports_v2');
       if (localData) {
         try { setReports(JSON.parse(localData)); } catch(err) { setReports([]); }
       } else {
@@ -133,7 +133,7 @@ export function DamageReportProvider({ children }) {
       });
       setReports((prev) => {
         const next = upsertReport(prev, createdReport);
-        localStorage.setItem('car_rental_damage_reports', JSON.stringify(next));
+        localStorage.setItem('car_rental_damage_reports_v2', JSON.stringify(next));
         return next;
       });
       return createdReport;
@@ -166,7 +166,7 @@ export function DamageReportProvider({ children }) {
       }
       setReports((prev) => {
         const next = [newReport, ...prev];
-        localStorage.setItem('car_rental_damage_reports', JSON.stringify(next));
+        localStorage.setItem('car_rental_damage_reports_v2', JSON.stringify(next));
         return next;
       });
       return newReport;
@@ -182,7 +182,7 @@ export function DamageReportProvider({ children }) {
       });
       setReports((prev) => {
         const next = upsertReport(prev.filter((r) => String(r.id) !== String(id)), updatedReport);
-        localStorage.setItem('car_rental_damage_reports', JSON.stringify(next));
+        localStorage.setItem('car_rental_damage_reports_v2', JSON.stringify(next));
         return next;
       });
       return updatedReport;
@@ -190,7 +190,7 @@ export function DamageReportProvider({ children }) {
       console.error(`Error updating damage report ${id}:`, error);
       setReports(prev => {
         const next = prev.map(r => String(r.id) === String(id) ? { ...r, ...updates } : r);
-        localStorage.setItem('car_rental_damage_reports', JSON.stringify(next));
+        localStorage.setItem('car_rental_damage_reports_v2', JSON.stringify(next));
         return next;
       });
       return { id, ...updates };
@@ -203,14 +203,14 @@ export function DamageReportProvider({ children }) {
       await requestDamageReport(`${id}/`, { method: 'DELETE' });
       setReports((prev) => {
         const next = prev.filter((r) => String(r.id) !== String(id));
-        localStorage.setItem('car_rental_damage_reports', JSON.stringify(next));
+        localStorage.setItem('car_rental_damage_reports_v2', JSON.stringify(next));
         return next;
       });
     } catch (error) {
       console.error(`Error deleting damage report ${id}:`, error);
       setReports((prev) => {
         const next = prev.filter((r) => String(r.id) !== String(id));
-        localStorage.setItem('car_rental_damage_reports', JSON.stringify(next));
+        localStorage.setItem('car_rental_damage_reports_v2', JSON.stringify(next));
         return next;
       });
     }
@@ -231,7 +231,7 @@ export function DamageReportProvider({ children }) {
       if (url) {
         setReports(prev => {
           const next = prev.map(r => String(r.id) === String(reportId) ? { ...r, photos: [...(r.photos || []), url] } : r);
-          localStorage.setItem('car_rental_damage_reports', JSON.stringify(next));
+          localStorage.setItem('car_rental_damage_reports_v2', JSON.stringify(next));
           return next;
         });
       }
@@ -247,7 +247,7 @@ export function DamageReportProvider({ children }) {
       });
       setReports((prev) => {
         const next = upsertReport(prev.filter((r) => String(r.id) !== String(reportId)), updatedReport);
-        localStorage.setItem('car_rental_damage_reports', JSON.stringify(next));
+        localStorage.setItem('car_rental_damage_reports_v2', JSON.stringify(next));
         return next;
       });
       return updatedReport;
@@ -255,7 +255,7 @@ export function DamageReportProvider({ children }) {
       console.error(`Error acknowledging report ${reportId}:`, error);
       setReports(prev => {
         const next = prev.map(r => String(r.id) === String(reportId) ? { ...r, status: 'acknowledged', acknowledgedDate: new Date().toISOString() } : r);
-        localStorage.setItem('car_rental_damage_reports', JSON.stringify(next));
+        localStorage.setItem('car_rental_damage_reports_v2', JSON.stringify(next));
         return next;
       });
       return { id: reportId, status: 'acknowledged' };
@@ -271,7 +271,7 @@ export function DamageReportProvider({ children }) {
       });
       setReports((prev) => {
         const next = upsertReport(prev.filter((r) => String(r.id) !== String(reportId)), updatedReport);
-        localStorage.setItem('car_rental_damage_reports', JSON.stringify(next));
+        localStorage.setItem('car_rental_damage_reports_v2', JSON.stringify(next));
         return next;
       });
       return updatedReport;
@@ -279,7 +279,7 @@ export function DamageReportProvider({ children }) {
       console.error(`Error resolving report ${reportId}:`, error);
       setReports(prev => {
         const next = prev.map(r => String(r.id) === String(reportId) ? { ...r, status: 'resolved', resolvedDate: new Date().toISOString(), resolutionNotes } : r);
-        localStorage.setItem('car_rental_damage_reports', JSON.stringify(next));
+        localStorage.setItem('car_rental_damage_reports_v2', JSON.stringify(next));
         return next;
       });
       return { id: reportId, status: 'resolved' };

@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 
-const DAMAGE_REPORTS_STORAGE_KEY = 'damageReports';
+const DAMAGE_REPORTS_STORAGE_KEY = 'damageReports_v2';
 
 // Local storage fallback for damage reports
 export function loadDamageReports() {
