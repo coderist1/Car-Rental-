@@ -384,14 +384,10 @@ function Register() {
             </button>
           </form>
 
-          <p className="auth-footer" style={{ marginTop: '24px' }}>
-            Already have an account?{' '}
-            <Link to="/login" className="link-bold">Sign In</Link>
-          </p>
-
-          <p className="auth-footer">
-            <Link to="/admin-register" className="link-admin">Register as Admin</Link>
-          </p>
+           <p className="auth-footer" style={{ marginTop: '24px' }}>
+             Already have an account?{' '}
+             <Link to="/login" className="link-bold">Sign In</Link>
+           </p>
         </div>
       </main>
     </div>

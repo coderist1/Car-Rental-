@@ -102,14 +102,10 @@ function Login() {
               </button>
             </form>
 
-            <p className="auth-footer" style={{ textAlign: 'center', marginTop: '30px' }}>
-              Don't have an account?{' '}
-              <Link to="/register" className="link-bold" style={{ color: '#3F9B84' }}>Create Account</Link>
-            </p>
-
-            <p className="auth-footer" style={{ textAlign: 'center' }}>
-              <Link to="/admin-register" className="link-admin">Admin Registration</Link>
-            </p>
+             <p className="auth-footer" style={{ textAlign: 'center', marginTop: '30px' }}>
+               Don't have an account?{' '}
+               <Link to="/register" className="link-bold" style={{ color: '#3F9B84' }}>Create Account</Link>
+             </p>
           </div>
         </div>
         
