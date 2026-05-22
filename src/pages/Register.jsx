@@ -97,66 +97,49 @@ function Register() {
     <div className="auth-container">
       <main className="register-split-container">
         
-        <div className="register-left-panel">
-          <div className="auth-logo-box">
-            <svg 
-              width="55" 
-              height="55" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2.5" 
-              className="auth-logo-svg"
-              aria-hidden="true"
-            >
-              <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
-              <circle cx="7" cy="17" r="2" />
-              <path d="M9 17h6" />
-              <circle cx="17" cy="17" r="2" />
-            </svg>
-          </div>
-
+        <div className="register-left-panel login-theme-panel">
           <h1 className="auth-title">Create Account</h1>
           <p className="auth-subtitle">Join CarRental today</p>
-
-          <fieldset className="role-section" style={{ marginTop: '20px' }}>
-            <legend className="role-label">I want to:</legend>
-            <div className="role-container register-role-stack">
-              <button 
-                type="button"
-                className={`role-button ${formData.role === 'owner' ? 'active' : ''}`}
-                onClick={() => handleRoleSelect('owner')}
-                aria-pressed={formData.role === 'owner'}
-                aria-label="Select vehicle owner role"
-              >
-                <div className="role-icon" aria-hidden="true">
-                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2" /><path d="M9 17l6 0" /></svg>
-                </div>
-                <div className="role-text">List My Car</div>
-                <div className="role-description">Rent out your vehicle and earn</div>
-              </button>
-              <button 
-                type="button"
-                className={`role-button ${formData.role === 'renter' ? 'active' : ''}`}
-                onClick={() => handleRoleSelect('renter')}
-                aria-pressed={formData.role === 'renter'}
-                aria-label="Select renter role"
-              >
-                <div className="role-icon" aria-hidden="true">
-                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-                </div>
-                <div className="role-text">Rent a Car</div>
-                <div className="role-description">Browse and rent available vehicles</div>
-              </button>
-            </div>
-          </fieldset>
-        </div>
-
-        <div className="register-right-panel">
+         </div>
+         <div className="register-right-panel">
           {error && <div className="error-message" role="alert" aria-live="polite">{error}</div>}
 
           <form onSubmit={handleSubmit} className="auth-form" noValidate>
             <h2 className="section-label">Personal Information</h2>
+
+            <fieldset className="role-section" style={{ marginTop: '20px' }}>
+              <legend className="role-label">I want to:</legend>
+              <div className="role-container register-role-stack">
+                <button 
+                  type="button"
+                  className={`role-button ${formData.role === 'owner' ? 'active' : ''}`}
+                  onClick={() => handleRoleSelect('owner')}
+                  aria-pressed={formData.role === 'owner'}
+                  aria-label="Select vehicle owner role"
+                >
+                  <div className="role-icon" aria-hidden="true">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2" /><path d="M9 17l6 0" /></svg>
+                  </div>
+                  <div className="role-text">List My Car</div>
+                  <div className="role-description">Rent out your vehicle and earn</div>
+                </button>
+                <button 
+                  type="button"
+                  className={`role-button ${formData.role === 'renter' ? 'active' : ''}`}
+                  onClick={() => handleRoleSelect('renter')}
+                  aria-pressed={formData.role === 'renter'}
+                  aria-label="Select renter role"
+                >
+                  <div className="role-icon" aria-hidden="true">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                  </div>
+                  <div className="role-text">Rent a Car</div>
+                  <div className="role-description">Browse and rent available vehicles</div>
+                </button>
+              </div>
+            </fieldset>
+
+            <h2 className="section-label">Account Information</h2>
 
             <div className="register-form-grid">
               <div className="input-group">
