@@ -1,15 +1,18 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, useVehicles } from '../hooks';
+import { DamageReportForm } from '../components';
 import '../styles/pages/Bookings.css';
 
 function Bookings() {
   const { user } = useAuth();
-  const { rentalHistory, getUserRentals } = useVehicles();
+  const { rentalHistory, getUserRentals, vehicles } = useVehicles();
   const navigate = useNavigate();
   
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showDamageReportModal, setShowDamageReportModal] = useState(false);
+  const [selectedBookingForReport, setSelectedBookingForReport] = useState(null);
 
   const userRentals = useMemo(() => {
     const rentals = getUserRentals();
@@ -73,6 +76,20 @@ function Bookings() {
 
   const formatPrice = (price) => {
     return `₱${parseFloat(price || 0).toLocaleString()}`;
+  };
+
+  const handleReportDamage = (rental) => {
+    // Ensure ownerId is attached so the owner's inbox can filter it correctly
+    const vehicle = vehicles.find(v => String(v.id) === String(rental.vehicleId));
+    const enrichedRental = {
+      ...rental,
+      ownerId: rental.ownerId || vehicle?.ownerId,
+      vehicleId: rental.vehicleId || vehicle?.id,
+      vehicleName: rental.vehicleName || vehicle?.name || vehicle?.brand,
+      ownerName: rental.ownerName || vehicle?.owner || 'Unknown'
+    };
+    setSelectedBookingForReport(enrichedRental);
+    setShowDamageReportModal(true);
   };
 
   return (
@@ -222,10 +239,31 @@ function Bookings() {
                   <strong>Reason:</strong> {rental.rejectionReason}
                 </div>
               )}
+
+              {/* Add actions section for Damage Reporting */}
+              <div style={{ marginTop: '16px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {['active', 'approved', 'completed', 'return_requested', 'returned'].includes(rental.status) && (
+                  <button 
+                    className="btn btn-secondary btn-sm" 
+                    onClick={() => handleReportDamage(rental)}
+                  >
+                    📸 Report Damage
+                  </button>
+                )}
+              </div>
             </div>
           ))
         )}
       </div>
+
+      {/* Damage Report Modal */}
+      {showDamageReportModal && (
+        <DamageReportForm
+          booking={selectedBookingForReport}
+          onSubmitSuccess={() => setShowDamageReportModal(false)}
+          onClose={() => setShowDamageReportModal(false)}
+        />
+      )}
     </div>
   );
 }

@@ -3,3 +3,5 @@
 export * from './useAuth';
 export * from './useVehicles';
 export * from './useLogReport';
+export * from './useDamageReportForm';
+export * from './useDamageReports';

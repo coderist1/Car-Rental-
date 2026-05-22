@@ -279,11 +279,21 @@ function PhotoUploader({ photos = [], onChange }) {
 /* ═══════════════ PHOTO GALLERY ═══════════════ */
 function PhotoGallery({ photos = [], label }) {
   const [lb, setLb] = useState(null);
-  if (!photos.length) return null;
+  
+  let parsedPhotos = [];
+  if (Array.isArray(photos)) parsedPhotos = photos;
+  else if (typeof photos === 'string') { 
+    try { parsedPhotos = JSON.parse(photos); } catch(e) { parsedPhotos = [photos]; } 
+  }
+  else if (photos) parsedPhotos = [photos];
+  
+  const validSrcs = parsedPhotos.map(p => typeof p === 'string' ? p : (p.src || p.url || p.preview || '')).filter(Boolean);
+
+  if (!validSrcs.length) return null;
   return (
     <Sec label={label}>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-        {photos.map((src, i) => (
+        {validSrcs.map((src, i) => (
           <img key={i} src={src} alt="" onClick={() => setLb(src)} style={{
             width: 74, height: 74, objectFit: 'contain', background: '#f8fafc', borderRadius: C.r2,
             border: `1px solid ${C.g200}`, cursor: 'pointer', transition: 'transform .15s',
@@ -295,7 +305,7 @@ function PhotoGallery({ photos = [], label }) {
       </div>
       {lb && (
         <div onClick={() => setLb(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.85)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <img src={lb} alt="" style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: C.r, boxShadow: '0 24px 60px rgba(0,0,0,.5)' }} />
+          <img src={lb} alt="" style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: C.r, boxShadow: '0 24px 60px rgba(0,0,0,.5)' }} onClick={e => e.stopPropagation()} />
         </div>
       )}
     </Sec>

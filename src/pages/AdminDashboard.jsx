@@ -1,14 +1,26 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, useVehicles } from '../hooks';
 import { useLogReport } from '../context/LogReportContext';
+import * as DamageReportExports from '../context/DamageReportContext';
 import { Modal, ConfirmModal } from '../components';
 import '../styles/pages/AdminDashboard.css';
+import { normalizePhotos } from '../utils/photoUtils';
+
+const useDamageContextHook = DamageReportExports.useDamageReport 
+  || DamageReportExports.useDamageReports 
+  || DamageReportExports.useDamageReportContext 
+  || (() => ({ reports: [], deleteDamageReport: () => {} }));
 
 function AdminDashboard() {
   const { user, getRegisteredUsers, updateUser, deleteUser, logout } = useAuth();
   const { vehicles, rentalHistory, deleteVehicle } = useVehicles();
   const { reports, removeReport } = useLogReport();
+  
+  const damageContext = useDamageContextHook();
+  const damageReports = damageContext?.reports || [];
+  const removeDamageReport = damageContext?.deleteDamageReport || (() => {});
+
   const navigate = useNavigate();
 
   const [activePanel, setActivePanel] = useState('users');
@@ -16,6 +28,7 @@ function AdminDashboard() {
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [selectedDispute, setSelectedDispute] = useState(null);
+  const [selectedDamageReport, setSelectedDamageReport] = useState(null);
   const profileMenuRef = useRef(null);
 
   useEffect(() => {
@@ -301,6 +314,70 @@ const renderVehiclesPanel = () => (
     </div>
   );
 
+  const renderDamageReportsPanel = () => (
+    <div className="admin-panel">
+      <h2 className="panel-title">Damage Reports</h2>
+      {damageReports.length === 0 ? (
+        <div className="admin-empty">No damage reports submitted</div>
+      ) : (
+        <div className="admin-table">
+          <div className="table-header">
+            <div className="th">Vehicle</div>
+            <div className="th">Renter</div>
+            <div className="th">Severity</div>
+            <div className="th">Status</div>
+            <div className="th">Actions</div>
+          </div>
+          {damageReports.slice().reverse().map(r => (
+            <div key={r.id} className="table-row">
+              <div className="td">{r.vehicleName || `Vehicle #${r.vehicleId}`}</div>
+              <div className="td">{r.renterName || `Renter #${r.renterId}`}</div>
+              <div className="td">
+                <span className="vehicle-status-badge" style={{
+                  background: r.severity === 'severe' ? '#fee2e2' : r.severity === 'moderate' ? '#fef3c7' : '#f1f5f9',
+                  color: r.severity === 'severe' ? '#dc2626' : r.severity === 'moderate' ? '#d97706' : '#64748b',
+                  textTransform: 'capitalize'
+                }}>
+                  {r.severity}
+                </span>
+              </div>
+              <div className="td">
+                <span className="vehicle-status-badge" style={{
+                  background: r.status === 'resolved' ? '#dcfce7' : r.status === 'acknowledged' ? '#dbeafe' : '#f1f5f9',
+                  color: r.status === 'resolved' ? '#16a34a' : r.status === 'acknowledged' ? '#2563eb' : '#64748b',
+                  textTransform: 'capitalize'
+                }}>
+                  {r.status.replace('_', ' ')}
+                </span>
+              </div>
+              <div className="td action-buttons">
+                <button
+                  className="btn btn-sm btn-view"
+                  onClick={() => setSelectedDamageReport(r)}
+                >
+                  View
+                </button>
+                <button
+                  className="btn btn-sm btn-danger"
+                  onClick={() => {
+                    setConfirmState({
+                      open: true,
+                      variant: 'danger',
+                      message: 'Are you sure you want to delete this damage report?',
+                      onConfirm: () => removeDamageReport(r.id)
+                    });
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   const renderLogsPanel = () => (
     <div className="admin-panel">
       <h2 className="panel-title">Audit Log</h2>
@@ -342,6 +419,7 @@ const renderVehiclesPanel = () => (
     rentals: renderRentalsPanel,
     approvals: renderApprovalsPanel,
     disputes: renderDisputesPanel,
+    'damage-reports': renderDamageReportsPanel,
     logs: renderLogsPanel,
     analytics: renderAnalyticsPanel
   };
@@ -352,6 +430,7 @@ const renderVehiclesPanel = () => (
     { id: 'approvals', label: 'Approvals' },
     { id: 'rentals', label: 'Rentals' },
     { id: 'disputes', label: 'Disputes' },
+    { id: 'damage-reports', label: 'Damage Reports' },
     { id: 'logs', label: 'Audit Log' },
     { id: 'analytics', label: 'Analytics' }
   ];
@@ -523,6 +602,99 @@ const renderVehiclesPanel = () => (
             </div>
           </div>
         )}
+      </Modal>
+
+      <Modal
+        isOpen={!!selectedDamageReport}
+        onClose={() => setSelectedDamageReport(null)}
+        title="Damage Report Details"
+        size="medium"
+      >
+        {selectedDamageReport && (() => {
+          const parsedPhotos = normalizePhotos(selectedDamageReport.photos);
+
+          return (
+          <div className="dispute-detail">
+            <div className="dispute-detail-header">
+              <span className="dispute-type-badge dispute-type-badge--lg" style={{
+                  background: selectedDamageReport.severity === 'severe' ? '#fee2e2' : selectedDamageReport.severity === 'moderate' ? '#fef3c7' : '#f1f5f9',
+                  color: selectedDamageReport.severity === 'severe' ? '#dc2626' : selectedDamageReport.severity === 'moderate' ? '#d97706' : '#64748b',
+                  textTransform: 'capitalize'
+              }}>
+                Severity: {selectedDamageReport.severity || 'Minor'}
+              </span>
+              <span className="dispute-type-badge dispute-type-badge--lg" style={{
+                  background: selectedDamageReport.status === 'resolved' ? '#dcfce7' : selectedDamageReport.status === 'acknowledged' ? '#dbeafe' : '#f1f5f9',
+                  color: selectedDamageReport.status === 'resolved' ? '#16a34a' : selectedDamageReport.status === 'acknowledged' ? '#2563eb' : '#64748b',
+                  textTransform: 'capitalize',
+                  marginLeft: 8
+              }}>
+                Status: {selectedDamageReport.status?.replace('_', ' ') || 'Submitted'}
+              </span>
+              <span className="dispute-detail-date" style={{ marginLeft: 'auto' }}>
+                {new Date(selectedDamageReport.createdAt || selectedDamageReport.reportedDate || Date.now()).toLocaleDateString('en-US', {
+                  year: 'numeric', month: 'long', day: 'numeric'
+                })}
+              </span>
+            </div>
+
+            <div className="dispute-detail-grid">
+              <div className="dispute-detail-item">
+                <span className="dispute-detail-label">Vehicle</span>
+                <span className="dispute-detail-value">{selectedDamageReport.vehicleName || '—'}</span>
+              </div>
+              <div className="dispute-detail-item">
+                <span className="dispute-detail-label">Reported By</span>
+                <span className="dispute-detail-value">{selectedDamageReport.renterName || '—'}</span>
+              </div>
+            </div>
+
+            <div className="dispute-message-box">
+              <div className="dispute-message-box-header">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                </svg>
+                <span>{selectedDamageReport.title || 'Damage Details'}</span>
+              </div>
+              <p className="dispute-message-text">
+                {selectedDamageReport.description || <em style={{ color: '#94a3b8' }}>No description provided.</em>}
+              </p>
+            </div>
+
+            {parsedPhotos.length > 0 && (
+              <div style={{ marginTop: 16 }}>
+                <span className="dispute-detail-label" style={{ display: 'block', marginBottom: 8 }}>Evidence Photos ({parsedPhotos.length})</span>
+                <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8 }}>
+                  {parsedPhotos.map((p, idx) => {
+                    const srcUrl = p?.url || p?.image || p?.src || p?.photo || (typeof p === 'string' ? p : '');
+                    return srcUrl ? <img key={idx} src={srcUrl} alt="Damage" style={{ height: '100px', borderRadius: '8px', border: '1px solid #e2e8f0', objectFit: 'cover' }} /> : null;
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="dispute-detail-actions">
+              <button
+                className="btn btn-danger"
+                onClick={() => {
+                  setSelectedDamageReport(null);
+                  setConfirmState({
+                    open: true,
+                    variant: 'danger',
+                    message: 'Are you sure you want to delete this damage report?',
+                    onConfirm: () => removeDamageReport(selectedDamageReport.id)
+                  });
+                }}
+              >
+                Delete Report
+              </button>
+              <button className="btn btn-secondary" onClick={() => setSelectedDamageReport(null)}>
+                Close
+              </button>
+            </div>
+          </div>
+          );
+        })()}
       </Modal>
 
       <Modal

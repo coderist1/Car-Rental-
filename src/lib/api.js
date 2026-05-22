@@ -43,6 +43,8 @@ export async function apiRequest(path, options = {}) {
   const { body, headers = {}, method = 'GET', ...rest } = options;
   const requestUrl = `${API_BASE}${path}`;
 
+  console.log('API Request:', requestUrl, options);
+
   const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase());
   const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
 
@@ -78,6 +80,7 @@ export async function apiRequest(path, options = {}) {
   }
 
   if (!response.ok) {
+    console.error('API Error:', requestUrl, response.status, payload);
     throw new Error(toErrorMessage(payload, `Request failed: ${response.status}`));
   }
 

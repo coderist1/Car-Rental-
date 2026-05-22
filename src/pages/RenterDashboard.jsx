@@ -3,12 +3,14 @@
  * The RenterLogViewModal has been replaced with inline log viewing
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useContext } from 'react';
 import { useVehicles } from '../hooks';
 import { useAuth } from '../context/AuthContext';
 import { useLogReport } from '../context/LogReportContext';
-import { ProfileMenu, VehicleCard, Modal, ConfirmModal } from '../components';
+import * as DamageReportExports from '../context/DamageReportContext';
+import { ProfileMenu, VehicleCard, Modal, ConfirmModal, DamageReportForm } from '../components';
 import '../styles/pages/RenterDashboard.css';
+import { normalizePhotos } from '../utils/photoUtils';
 
 const C = {
   primary:   '#3F9B84',
@@ -215,11 +217,21 @@ function TripSummaryCard({ report }) {
 
 function PhotoGallery({ photos = [], label }) {
   const [lb, setLb] = useState(null);
-  if (!photos.length) return null;
+  
+  let parsedPhotos = [];
+  if (Array.isArray(photos)) parsedPhotos = photos;
+  else if (typeof photos === 'string') { 
+    try { parsedPhotos = JSON.parse(photos); } catch(e) { parsedPhotos = [photos]; } 
+  }
+  else if (photos) parsedPhotos = [photos];
+  
+  const validSrcs = parsedPhotos.map(p => typeof p === 'string' ? p : (p.src || p.url || p.preview || '')).filter(Boolean);
+
+  if (!validSrcs.length) return null;
   return (
     <Sec label={label}>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-        {photos.map((src, i) => (
+        {validSrcs.map((src, i) => (
           <img key={i} src={src} alt="" onClick={() => setLb(src)} style={{
             width: 74, height: 74, objectFit: 'contain', background: '#f8fafc', borderRadius: C.r2,
             border: `1px solid ${C.g200}`, cursor: 'pointer', transition: 'transform .15s',
@@ -517,6 +529,10 @@ function printReport(report) {
   win.document.close(); win.focus(); setTimeout(() => win.print(), 500);
 }
 
+const useDamageContextHook = DamageReportExports.useDamageReport 
+  || DamageReportExports.useDamageReports 
+  || DamageReportExports.useDamageReportContext 
+  || (() => ({ reports: [] }));
 
 
 function RenterDashboard() {
@@ -548,6 +564,10 @@ function RenterDashboard() {
   const [feedbacks, setFeedbacks] = useState(() => JSON.parse(localStorage.getItem('car_rental_feedbacks') || '[]'));
   const [feedbackForm, setFeedbackForm] = useState({ rentalId: '', text: '', rating: 5 });
 
+  const [showDamageReportModal, setShowDamageReportModal] = useState(false);
+  const [viewingPhoto, setViewingPhoto] = useState(null);
+  const [selectedBookingForReport, setSelectedBookingForReport] = useState(null);
+
   const refreshLogs = useCallback(() => { refresh(); }, [refresh]);
 
   const [filters, setFilters] = useState({ types: [], transmissions: [], fuels: [], minPrice: '', maxPrice: '' });
@@ -572,6 +592,15 @@ function RenterDashboard() {
       (r.ownerName || '').toLowerCase().includes(q)
     );
   }, [renterLogReports, logSearchQuery]);
+
+  const damageContext = useDamageContextHook();
+  const renterDamageReports = useMemo(() => {
+    if (!damageContext || !damageContext.reports) return [];
+    return damageContext.reports.filter(r => 
+      String(r.renterId || r.renter) === String(user?.id) || 
+      r.renterName === (user?.fullName || user?.firstName)
+    );
+  }, [damageContext, user]);
 
   const logCount          = renterLogReports.length;
   const availableVehicles = useMemo(() => vehicles.filter(v => v.available), [vehicles]);
@@ -644,6 +673,25 @@ function RenterDashboard() {
   };
   const handleViewLog = report => { setViewingReport(report); };
 
+  const handleReportDamage = (rental) => {
+    // Ensure ownerId is explicitly included so the owner receives the report
+    const vehicle = vehicles.find(v => String(v.id) === String(rental.vehicleId));
+    const enrichedRental = {
+      ...rental,
+      ownerId: rental.ownerId || vehicle?.ownerId,
+      vehicleId: rental.vehicleId || vehicle?.id,
+      vehicleName: rental.vehicleName || vehicle?.name || vehicle?.brand,
+      ownerName: rental.ownerName || vehicle?.owner || 'Unknown'
+    };
+    setSelectedBookingForReport(enrichedRental);
+    setShowDamageReportModal(true);
+  };
+
+  const handleReportSubmitSuccess = (report) => {
+    setShowDamageReportModal(false);
+    setInfoMessage('Damage report submitted successfully! The owner will be notified.');
+  };
+
   const submitFeedback = () => {
     const rental = userRentals.find(r => String(r.id) === String(feedbackForm.rentalId));
     if (!rental || !feedbackForm.text) {
@@ -686,7 +734,8 @@ function RenterDashboard() {
     browse: 'Browse Vehicles',
     favorites: 'Saved Vehicles',
     rentals: 'My Rentals',
-    logs: 'Log Reports',
+    logs: 'Log Book',
+    'damage-reports': 'Damage Reports',
     feedback: 'Feedback',
   }[activeNav];
 
@@ -694,7 +743,8 @@ function RenterDashboard() {
     browse: `${filteredVehicles.length} available`,
     favorites: `${favoriteVehicles.length} saved`,
     rentals: `${userRentals.length} rental${userRentals.length !== 1 ? 's' : ''}`,
-    logs: `${logCount} report${logCount !== 1 ? 's' : ''}`,
+    logs: `${logCount} log${logCount !== 1 ? 's' : ''}`,
+    'damage-reports': `${renterDamageReports.length} report${renterDamageReports.length !== 1 ? 's' : ''}`,
     feedback: 'Share your experience with the vehicle owner',
   }[activeNav];
 
@@ -721,7 +771,10 @@ function RenterDashboard() {
             My Rentals
           </button>
           <button className={`nav-item ${activeNav === 'logs' ? 'active' : ''}`} onClick={() => { setActiveNav('logs'); refreshLogs(); }}>
-            Log Reports {logCount > 0 && <span className="nav-badge">{logCount}</span>}
+            Log Book {logCount > 0 && <span className="nav-badge">{logCount}</span>}
+          </button>
+          <button className={`nav-item ${activeNav === 'damage-reports' ? 'active' : ''}`} onClick={() => setActiveNav('damage-reports')}>
+            Damage Reports {renterDamageReports.length > 0 && <span className="nav-badge" style={{background: '#f59e0b'}}>{renterDamageReports.length}</span>}
           </button>
           <button className={`nav-item ${activeNav === 'feedback' ? 'active' : ''}`} onClick={() => setActiveNav('feedback')}>
             Feedback
@@ -825,11 +878,70 @@ function RenterDashboard() {
                         <span className="rental-price">₱{rental.amount}/day</span>
                         <span className="rental-dates">{new Date(rental.startDate).toLocaleDateString()} → {rental.endDate ? new Date(rental.endDate).toLocaleDateString() : 'Ongoing'}</span>
                       </div>
-                      {rental.status === 'active' && (
-                        <button className="btn btn-outline btn-sm" onClick={() => handleRequestReturn(rental)}>Request Return</button>
-                      )}
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
+                        {rental.status === 'active' && (
+                          <button className="btn btn-outline btn-sm" onClick={() => handleRequestReturn(rental)}>Request Return</button>
+                        )}
+                        {['active', 'return_requested', 'returned', 'completed'].includes(rental.status) && (
+                          <button className="btn btn-secondary btn-sm" onClick={() => handleReportDamage(rental)}>📸 Report Damage</button>
+                        )}
+                      </div>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Damage Reports View */}
+          {activeNav === 'damage-reports' && (
+            <div className="panel" style={{ background: 'transparent', boxShadow: 'none', padding: 0 }}>
+              {renterDamageReports.length === 0 ? (
+                <div className="empty-state" style={{ background: '#fff', borderRadius: 16, border: '1px dashed #cbd5e1', padding: '60px 20px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)' }}>
+                  <div style={{ fontSize: 48, marginBottom: 16 }}>📸</div>
+                  <h3 style={{ fontSize: 18, color: '#334155', margin: '0 0 8px', fontWeight: 700 }}>No damage reports</h3>
+                  <p style={{ color: '#64748b', margin: 0, fontSize: 14 }}>You haven't submitted any damage reports.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {renterDamageReports.slice().reverse().map(r => {
+                    const parsedPhotos = normalizePhotos(r.photos);
+
+                    return (
+                    <div key={r.id} className="damage-report-card">
+                      <div className="damage-report-header">
+                        <div>
+                          <h4 className="damage-report-title">{r.vehicleName || 'Vehicle'}</h4>
+                          <div className="damage-report-meta">Reported on: {new Date(r.reportedDate || r.createdAt || Date.now()).toLocaleDateString()}</div>
+                        </div>
+                        <div className="damage-report-badges">
+                          <span className={`damage-report-badge severity-${r.severity || 'minor'}`}>
+                            {r.severity}
+                          </span>
+                          <span className={`damage-report-badge status-${r.status?.replace('_', '-') || 'submitted'}`}>
+                            {r.status?.replace('_', ' ')}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="damage-report-divider" />
+                      <div className="damage-report-body">
+                        <strong>{r.title}</strong>
+                        <p>{r.description}</p>
+                      </div>
+                      {parsedPhotos.length > 0 && (
+                        <div className="damage-report-photos">
+                          {parsedPhotos.map((p) => (
+                            p.src ? <img key={p.id} src={p.src} alt={p.caption || 'Damage'} onClick={() => setViewingPhoto(p.src)} /> : null
+                          ))}
+                        </div>
+                      )}
+                      {['draft'].includes(r.status) && (
+                        <div className="damage-report-actions">
+                          <span style={{ fontSize: 13, color: '#64748b' }}>Draft report. Submit it from the Bookings tab.</span>
+                        </div>
+                      )}
+                    </div>
+                  )})}
                 </div>
               )}
             </div>
@@ -1164,6 +1276,24 @@ function RenterDashboard() {
         <p>{infoMessage}</p>
       </Modal>
 
+      {/* damage report modal */}
+      {showDamageReportModal && (
+        <DamageReportForm
+          booking={selectedBookingForReport}
+          onSubmitSuccess={handleReportSubmitSuccess}
+          onClose={() => setShowDamageReportModal(false)}
+        />
+      )}
+
+      {/* Photo Viewer Modal */}
+      <Modal
+        isOpen={!!viewingPhoto}
+        onClose={() => setViewingPhoto(null)}
+        title="Damage Photo"
+        size="large"
+      >
+        {viewingPhoto && <img src={viewingPhoto} alt="Damage" style={{ width: '100%', maxHeight: '80vh', objectFit: 'contain', borderRadius: 8 }} />}
+      </Modal>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { VehicleProvider } from './context/VehicleContext';
 import { LogReportProvider } from './context/LogReportContext';
 import { useAuth } from './hooks';
+import { DamageReportProvider } from './context/DamageReportContext';
 import {
   SplashPage,
   LandingPage,
@@ -60,9 +61,10 @@ function App() {
     >
       <AuthProvider>
         <VehicleProvider>
-          <LogReportProvider>
-            {/* Lab Requirement: Semantic Routing & SPA Fallback Support */}
-            <Routes>
+       <LogReportProvider>
+         <DamageReportProvider>
+           {/* Lab Requirement: Semantic Routing & SPA Fallback Support */}
+           <Routes>
               {/* Landing Page */}
               <Route path="/LandingPage" element={<LandingPage />} />
 
@@ -141,10 +143,11 @@ function App() {
             <Route path="/" element={<SplashPage />} />
             <Route path="/LandingPage" element={<LandingPage />} />
              <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-          </LogReportProvider>
-        </VehicleProvider>
-      </AuthProvider>
+           </Routes>
+         </DamageReportProvider>
+       </LogReportProvider>
+     </VehicleProvider>
+   </AuthProvider>
     </BrowserRouter>
   );
 }

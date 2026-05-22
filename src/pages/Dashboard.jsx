@@ -1,10 +1,12 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useAuth, useVehicles } from '../hooks';
-import { ProfileMenu, VehicleCard, Modal, ConfirmModal } from '../components';
+import { ProfileMenu, VehicleCard, Modal, ConfirmModal, DamageReportInbox } from '../components';
 import { useLogReport } from '../context/LogReportContext';
 import OwnerLogReport from '../components/ui/OwnerLogReport';
+import * as DamageReportExports from '../context/DamageReportContext';
 import '../styles/pages/Dashboard.css';
 import '../styles/pages/LogReport.css';
+import { normalizePhotos } from '../utils/photoUtils';
 
 // Icons
 const VehicleIcon = () => (
@@ -51,6 +53,11 @@ const VEHICLE_TYPES  = ['Sedan','SUV','Hatchback','Pickup','Van','MPV','Crossove
 const TRANSMISSIONS  = ['Automatic','Manual','CVT'];
 const FUEL_TYPES     = ['Gasoline','Diesel','Hybrid','Electric'];
 
+const useDamageContextHook = DamageReportExports.useDamageReport 
+  || DamageReportExports.useDamageReports 
+  || DamageReportExports.useDamageReportContext 
+  || (() => ({ reports: [], acknowledgeReport: () => {}, resolveReport: () => {} }));
+
 function Dashboard() {
   const { user } = useAuth();
   const {
@@ -59,6 +66,8 @@ function Dashboard() {
   } = useVehicles();
 
   const { createCheckin, reports } = useLogReport();
+  
+  const damageContext = useDamageContextHook();
 
   const [activeTab, setActiveTab] = useState('vehicles');
   const [searchQuery, setSearchQuery] = useState('');
@@ -84,6 +93,7 @@ function Dashboard() {
   const [confirmAdd, setConfirmAdd] = useState(false);
   const [confirmSaveEdit, setConfirmSaveEdit] = useState(false);
   const [confirmRemovePhoto, setConfirmRemovePhoto] = useState(false);
+  const [viewingPhoto, setViewingPhoto] = useState(null);
   const [discardConfirm, setDiscardConfirm] = useState({ open: false, nextVehicle: null, closeMode: null });
 
   const [feedbacks, setFeedbacks] = useState(() => JSON.parse(localStorage.getItem('car_rental_feedbacks') || '[]'));
@@ -128,6 +138,16 @@ function Dashboard() {
     const vehicleIds = ownerVehicles.map(v => v.id);
     return feedbacks.filter(f => vehicleIds.includes(f.vehicleId) || f.ownerName === userName);
   }, [feedbacks, ownerVehicles, userName]);
+
+  const ownerDamageReports = useMemo(() => {
+    if (!damageContext || !damageContext.reports) return [];
+    const ownerVehicleIds = ownerVehicles.map(v => String(v.id));
+    return damageContext.reports.filter(r => 
+      String(r.ownerId) === String(user?.id) || 
+      r.ownerName === userName ||
+      ownerVehicleIds.includes(String(r.vehicleId || r.vehicle))
+    );
+  }, [damageContext, user, userName, ownerVehicles]);
 
   const filteredVehicles = useMemo(() => {
     let result = ownerVehicles;
@@ -527,6 +547,17 @@ function Dashboard() {
             Feedback
             {ownerFeedbacks.length > 0 && <span className="nav-badge" style={{ background: '#3b82f6', boxShadow: '0 2px 6px rgba(59,130,246,.4)' }}>{ownerFeedbacks.length}</span>}
           </button>
+          <button 
+            className={`nav-item ${activeTab === 'damage-reports' ? 'active' : ''}`}
+            onClick={() => setActiveTab('damage-reports')}
+          >
+            Damage Reports
+            {ownerDamageReports.filter(r => ['submitted', 'under_review', 'new'].includes(r.status)).length > 0 && (
+              <span className="nav-badge" style={{ background: '#f59e0b', boxShadow: '0 2px 6px rgba(245,158,11,.4)' }}>
+                {ownerDamageReports.filter(r => ['submitted', 'under_review', 'new'].includes(r.status)).length}
+              </span>
+            )}
+          </button>
         </nav>
       </aside>
 
@@ -541,12 +572,14 @@ function Dashboard() {
                 {activeTab === 'rentals' && 'Rental History'}
                 {activeTab === 'logs' && 'Log Book'}
                 {activeTab === 'feedback' && 'Renter Feedback'}
+                {activeTab === 'damage-reports' && 'Damage Reports'}
               </h1>
               <p className="header-subtitle">
                 {activeTab === 'vehicles' && 'Manage your rental vehicles'}
                 {activeTab === 'rentals' && 'Track all rental transactions'}
                 {activeTab === 'logs' && 'Vehicle condition check-in logs'}
                 {activeTab === 'feedback' && 'See what renters are saying about your vehicles'}
+                {activeTab === 'damage-reports' && 'Review and manage damage reports submitted by renters'}
               </p>
             </div>
             <div className="user-info">
@@ -788,6 +821,83 @@ function Dashboard() {
               )}
             </div>
           )}
+
+          {activeTab === 'damage-reports' && (
+            <div className="panel" style={{ background: 'transparent', boxShadow: 'none', padding: 0 }}>
+              {ownerDamageReports.length === 0 ? (
+                <div className="empty-state" style={{ background: '#fff', borderRadius: 16, border: '1px dashed #cbd5e1', padding: '60px 20px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)' }}>
+                  <div style={{ fontSize: 48, marginBottom: 16 }}>📸</div>
+                  <h3 style={{ fontSize: 18, color: '#334155', margin: '0 0 8px', fontWeight: 700 }}>No damage reports</h3>
+                  <p style={{ color: '#64748b', margin: 0, fontSize: 14 }}>There are no damage reports for your vehicles.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {ownerDamageReports.slice().reverse().map(r => {
+                    const parsedPhotos = normalizePhotos(r.photos);
+
+                    return (
+                    <div key={r.id} className="damage-report-card">
+                      <div className="damage-report-header">
+                        <div>
+                          <h4 className="damage-report-title">{r.vehicleName || 'Vehicle'}</h4>
+                          <div className="damage-report-meta">Reported by: {r.renterName || 'Renter'} • {new Date(r.reportedDate || r.createdAt || Date.now()).toLocaleDateString()}</div>
+                        </div>
+                        <div className="damage-report-badges">
+                          <span className={`damage-report-badge severity-${r.severity || 'minor'}`}>
+                            {r.severity}
+                          </span>
+                          <span className={`damage-report-badge status-${r.status?.replace('_', '-') || 'submitted'}`}>
+                            {r.status?.replace('_', ' ')}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="damage-report-divider" />
+                      {/** New grid: hero photo + content */}
+                      {(() => {
+                        const photos = parsedPhotos;
+                        const hero = photos[0];
+                        const thumbs = photos.slice(1);
+                        return (
+                          <div className="damage-report-grid">
+                            <div className="damage-hero" onClick={() => hero && setViewingPhoto(hero.src)}>
+                              {hero ? (
+                                <img src={hero.src} alt={hero.caption || 'Damage'} />
+                              ) : (
+                                <div className="hero-placeholder">No photo</div>
+                              )}
+                              {thumbs.length > 0 && (
+                                <div className="hero-thumbs">
+                                  {thumbs.map(t => t.src ? (
+                                    <img key={t.id} src={t.src} alt={t.caption || 'thumb'} onClick={(e) => { e.stopPropagation(); setViewingPhoto(t.src); }} />
+                                  ) : null)}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="damage-content">
+                              <div className="damage-report-body">
+                                <strong>{r.title}</strong>
+                                <p>{r.description}</p>
+                                <div style={{ marginTop: 8, color: '#64748b', fontSize: 13 }}>{r.renterName || 'Renter'} • {new Date(r.reportedDate || r.createdAt || Date.now()).toLocaleDateString()}</div>
+                              </div>
+                              <div className="damage-report-actions">
+                                {['submitted', 'under_review', 'draft', 'new'].includes(r.status) && (
+                                  <button className="btn btn-primary btn-sm" onClick={async () => { try { if (damageContext.acknowledgeReport) { await damageContext.acknowledgeReport(r.id); } else if (damageContext.updateDamageReport) { await damageContext.updateDamageReport(r.id, { status: 'acknowledged' }); } } catch (err) { console.error(err); } }}>Acknowledge Report</button>
+                                )}
+                                {r.status === 'acknowledged' && (
+                                  <button className="btn btn-success btn-sm" onClick={async () => { try { if (damageContext.resolveReport) { await damageContext.resolveReport(r.id); } else if (damageContext.updateDamageReport) { await damageContext.updateDamageReport(r.id, { status: 'resolved' }); } } catch (err) { console.error(err); } }}>Mark as Resolved</button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )})}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </main>
 
@@ -973,6 +1083,17 @@ function Dashboard() {
           </div>
         )}
       </Modal>
+
+      {/* Photo Viewer Modal */}
+      <Modal
+        isOpen={!!viewingPhoto}
+        onClose={() => setViewingPhoto(null)}
+        title="Damage Photo"
+        size="large"
+      >
+        {viewingPhoto && <img src={viewingPhoto} alt="Damage" style={{ width: '100%', maxHeight: '80vh', objectFit: 'contain', borderRadius: 8 }} />}
+      </Modal>
+
     </div>
   );
 }
