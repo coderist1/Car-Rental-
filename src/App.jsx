@@ -61,10 +61,10 @@ function App() {
     >
       <AuthProvider>
         <VehicleProvider>
-       <LogReportProvider>
-         <DamageReportProvider>
-           {/* Lab Requirement: Semantic Routing & SPA Fallback Support */}
-           <Routes>
+          <LogReportProvider>
+            <DamageReportProvider>
+            {/* Lab Requirement: Semantic Routing & SPA Fallback Support */}
+            <Routes>
               {/* Landing Page */}
               <Route path="/LandingPage" element={<LandingPage />} />
 
@@ -143,11 +143,11 @@ function App() {
             <Route path="/" element={<SplashPage />} />
             <Route path="/LandingPage" element={<LandingPage />} />
              <Route path="*" element={<Navigate to="/" replace />} />
-           </Routes>
-         </DamageReportProvider>
-       </LogReportProvider>
-     </VehicleProvider>
-   </AuthProvider>
+          </Routes>
+            </DamageReportProvider>
+          </LogReportProvider>
+        </VehicleProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

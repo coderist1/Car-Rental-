@@ -17,6 +17,8 @@ function normalizeDamageReport(r) {
     vehicleName: r.vehicleName ?? r.vehicle_name ?? 'Vehicle',
     renterName: r.renterName ?? r.renter_name ?? '',
     ownerName: r.ownerName ?? r.owner_name ?? '',
+    status: r.status || 'submitted',
+    severity: r.severity || 'minor',
     discoveredDate: r.discoveredDate ?? r.discovered_date,
     reportedDate: r.reportedDate ?? r.reported_date,
     acknowledgedDate: r.acknowledgedDate ?? r.acknowledged_date,

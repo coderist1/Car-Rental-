@@ -270,7 +270,7 @@
 }
 
 .register-left-panel.login-theme-panel {
-  background: url('/Car-Rental-/tesla-car.jpg') center / cover no-repeat !important;
+  background: url('/tesla-car.jpg') center / cover no-repeat !important;
   justify-content: flex-start;
 }
 
