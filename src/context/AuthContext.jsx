@@ -45,7 +45,6 @@ export function AuthProvider({ children }) {
 
     const fetchUsers = async () => {
       if (user?.role !== 'admin') {
-        setUsers([]);
         return;
       }
 
@@ -183,7 +182,6 @@ export function AuthProvider({ children }) {
   const logout = () => {
     clearSession();
     setUser(null);
-    setUsers([]);
   };
 
   const updateProfile = async (updates) => {

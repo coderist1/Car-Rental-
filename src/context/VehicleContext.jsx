@@ -64,7 +64,6 @@ export function VehicleProvider({ children }) {
   // New function to load bookings from API
   const loadBookings = useCallback(async () => {
     if (!user) { // Only load bookings if a user is logged in
-      setRentalHistory([]);
       return;
     }
     try {
