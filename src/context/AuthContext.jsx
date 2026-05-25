@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { apiRequest, realtimeManager } from '../lib/api';
+import { apiRequest, realtimeManager, setAuthToken, clearAuthToken } from '../lib/api';
 
 const AuthContext = createContext(null);
 
@@ -21,6 +21,14 @@ function persistSession(user) {
 
 function clearSession() {
   sessionStorage.removeItem(PROFILE_KEY);
+  clearAuthToken();
+}
+
+function persistAuthSession(loginData, user) {
+  persistSession(user);
+  if (loginData?.token) {
+    setAuthToken(loginData.token);
+  }
 }
 
 function isAuthRequiredError(error) {
@@ -122,7 +130,7 @@ export function AuthProvider({ children }) {
       if (!me || !me.id) return { success: false, error: 'Login failed.' };
 
       setUser(me);
-      persistSession(me);
+      persistAuthSession(loginData, me);
 
       return { success: true, user: me };
     } catch (error) {
@@ -182,6 +190,7 @@ export function AuthProvider({ children }) {
   const logout = () => {
     clearSession();
     setUser(null);
+    realtimeManager.disconnect();
   };
 
   const updateProfile = async (updates) => {

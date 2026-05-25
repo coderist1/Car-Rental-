@@ -100,3 +100,5 @@ android/
 # React Native Web
 web-build/
 .vercel
+
+.env.vercel*

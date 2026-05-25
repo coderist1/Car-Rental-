@@ -1,4 +1,5 @@
 const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+const TOKEN_KEY = 'authToken';
 
 function resolveWebSocketBase() {
   const explicitWsBase = (import.meta.env.VITE_WS_URL || '').replace(/\/$/, '');
@@ -23,6 +24,30 @@ function resolveWebSocketBase() {
 const WS_BASE = resolveWebSocketBase();
 
 const NO_AUTH = (import.meta.env.VITE_NO_AUTH || '').toLowerCase() === 'true';
+
+export function getAuthToken() {
+  try {
+    return sessionStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setAuthToken(token) {
+  try {
+    if (token) sessionStorage.setItem(TOKEN_KEY, String(token));
+  } catch {
+    // ignore storage errors
+  }
+}
+
+export function clearAuthToken() {
+  try {
+    sessionStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // ignore storage errors
+  }
+}
 
 // Simple localStorage-backed mock for anonymous/no-auth mode
 function loadMockStore() {
@@ -85,6 +110,11 @@ export async function apiRequest(path, options = {}) {
     ...(isMutating ? { 'X-CSRFToken': getCsrfToken() } : {}),
     ...headers,
   };
+
+  const token = getAuthToken();
+  if (token && !finalHeaders.Authorization) {
+    finalHeaders.Authorization = `Bearer ${token}`;
+  }
 
   // Browser automatically sets Content-Type to multipart/form-data for FormData.
   if (!isFormData && !finalHeaders['Content-Type']) {
