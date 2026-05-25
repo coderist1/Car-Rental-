@@ -54,3 +54,7 @@ npm run dev
 ```
 
 Make sure the backend is running before signing in or registering.
+
+## Documentation
+
+Comprehensive developer and user-facing documentation is available in the `docs/` folder. Start with [docs/README.md](docs/README.md).
