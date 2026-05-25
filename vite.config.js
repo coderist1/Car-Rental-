@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
-    base: '/Car-Rental-/',
+    base: env.VITE_BASE || '/',
     root: '.',
     publicDir: 'public',
     build: {
