@@ -4,6 +4,7 @@ import { realtimeManager, apiRequest } from '../lib/api';
 const DamageReportContext = createContext(null);
 
 const DAMAGE_REPORT_BASE_PATHS = ['/api/damage-reports/', '/api/damage_reports/'];
+let damageReportsApiAvailable = null;
 
 function normalizeDamageReport(r) {
   if (!r) return r;
@@ -52,20 +53,43 @@ function isNotFoundError(error) {
 }
 
 async function requestDamageReport(resourcePath = '', options = {}) {
+  if (damageReportsApiAvailable === false) {
+    throw new Error('Damage reports API unavailable');
+  }
+
   let lastError = null;
 
   for (const basePath of DAMAGE_REPORT_BASE_PATHS) {
     try {
-      return await apiRequest(`${basePath}${resourcePath}`, options);
+      const response = await apiRequest(`${basePath}${resourcePath}`, options);
+      damageReportsApiAvailable = true;
+      return response;
     } catch (error) {
       lastError = error;
       if (!isNotFoundError(error)) {
+        damageReportsApiAvailable = true;
         throw error;
       }
     }
   }
 
+  damageReportsApiAvailable = false;
   throw lastError || new Error('Damage report request failed');
+}
+
+function readLocalDamageReports() {
+  const localData = localStorage.getItem('car_rental_damage_reports_v2');
+  if (!localData) return [];
+
+  try {
+    return JSON.parse(localData);
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalDamageReports(nextReports) {
+  localStorage.setItem('car_rental_damage_reports_v2', JSON.stringify(nextReports));
 }
 
 export function DamageReportProvider({ children }) {
@@ -82,14 +106,12 @@ export function DamageReportProvider({ children }) {
       const data = await requestDamageReport();
       setReports(normalizeReportsResponse(data));
     } catch (e) {
-      console.error('Error loading damage reports:', e);
-      setError(e.message);
-      // Local fallback
-      const localData = localStorage.getItem('car_rental_damage_reports_v2');
-      if (localData) {
-        try { setReports(JSON.parse(localData)); } catch(err) { setReports([]); }
+      if (isNotFoundError(e) || damageReportsApiAvailable === false) {
+        setReports(readLocalDamageReports());
       } else {
-        setReports([]);
+        console.error('Error loading damage reports:', e);
+        setError(e.message);
+        setReports(readLocalDamageReports());
       }
     } finally {
       setLoading(false);
@@ -135,12 +157,14 @@ export function DamageReportProvider({ children }) {
       });
       setReports((prev) => {
         const next = upsertReport(prev, createdReport);
-        localStorage.setItem('car_rental_damage_reports_v2', JSON.stringify(next));
+        writeLocalDamageReports(next);
         return next;
       });
       return createdReport;
     } catch (error) {
-      console.error('Error creating damage report:', error);
+      if (!isNotFoundError(error) && damageReportsApiAvailable !== false) {
+        console.error('Error creating damage report:', error);
+      }
       // Local fallback
       const newReport = {
         id: 'DR-' + Date.now(),
@@ -168,7 +192,7 @@ export function DamageReportProvider({ children }) {
       }
       setReports((prev) => {
         const next = [newReport, ...prev];
-        localStorage.setItem('car_rental_damage_reports_v2', JSON.stringify(next));
+        writeLocalDamageReports(next);
         return next;
       });
       return newReport;
@@ -184,15 +208,17 @@ export function DamageReportProvider({ children }) {
       });
       setReports((prev) => {
         const next = upsertReport(prev.filter((r) => String(r.id) !== String(id)), updatedReport);
-        localStorage.setItem('car_rental_damage_reports_v2', JSON.stringify(next));
+        writeLocalDamageReports(next);
         return next;
       });
       return updatedReport;
     } catch (error) {
-      console.error(`Error updating damage report ${id}:`, error);
+      if (!isNotFoundError(error) && damageReportsApiAvailable !== false) {
+        console.error(`Error updating damage report ${id}:`, error);
+      }
       setReports(prev => {
         const next = prev.map(r => String(r.id) === String(id) ? { ...r, ...updates } : r);
-        localStorage.setItem('car_rental_damage_reports_v2', JSON.stringify(next));
+        writeLocalDamageReports(next);
         return next;
       });
       return { id, ...updates };
@@ -205,14 +231,16 @@ export function DamageReportProvider({ children }) {
       await requestDamageReport(`${id}/`, { method: 'DELETE' });
       setReports((prev) => {
         const next = prev.filter((r) => String(r.id) !== String(id));
-        localStorage.setItem('car_rental_damage_reports_v2', JSON.stringify(next));
+        writeLocalDamageReports(next);
         return next;
       });
     } catch (error) {
-      console.error(`Error deleting damage report ${id}:`, error);
+      if (!isNotFoundError(error) && damageReportsApiAvailable !== false) {
+        console.error(`Error deleting damage report ${id}:`, error);
+      }
       setReports((prev) => {
         const next = prev.filter((r) => String(r.id) !== String(id));
-        localStorage.setItem('car_rental_damage_reports_v2', JSON.stringify(next));
+        writeLocalDamageReports(next);
         return next;
       });
     }
@@ -233,7 +261,7 @@ export function DamageReportProvider({ children }) {
       if (url) {
         setReports(prev => {
           const next = prev.map(r => String(r.id) === String(reportId) ? { ...r, photos: [...(r.photos || []), url] } : r);
-          localStorage.setItem('car_rental_damage_reports_v2', JSON.stringify(next));
+          writeLocalDamageReports(next);
           return next;
         });
       }
@@ -249,15 +277,17 @@ export function DamageReportProvider({ children }) {
       });
       setReports((prev) => {
         const next = upsertReport(prev.filter((r) => String(r.id) !== String(reportId)), updatedReport);
-        localStorage.setItem('car_rental_damage_reports_v2', JSON.stringify(next));
+        writeLocalDamageReports(next);
         return next;
       });
       return updatedReport;
     } catch (error) {
-      console.error(`Error acknowledging report ${reportId}:`, error);
+      if (!isNotFoundError(error) && damageReportsApiAvailable !== false) {
+        console.error(`Error acknowledging report ${reportId}:`, error);
+      }
       setReports(prev => {
         const next = prev.map(r => String(r.id) === String(reportId) ? { ...r, status: 'acknowledged', acknowledgedDate: new Date().toISOString() } : r);
-        localStorage.setItem('car_rental_damage_reports_v2', JSON.stringify(next));
+        writeLocalDamageReports(next);
         return next;
       });
       return { id: reportId, status: 'acknowledged' };
@@ -273,15 +303,17 @@ export function DamageReportProvider({ children }) {
       });
       setReports((prev) => {
         const next = upsertReport(prev.filter((r) => String(r.id) !== String(reportId)), updatedReport);
-        localStorage.setItem('car_rental_damage_reports_v2', JSON.stringify(next));
+        writeLocalDamageReports(next);
         return next;
       });
       return updatedReport;
     } catch (error) {
-      console.error(`Error resolving report ${reportId}:`, error);
+      if (!isNotFoundError(error) && damageReportsApiAvailable !== false) {
+        console.error(`Error resolving report ${reportId}:`, error);
+      }
       setReports(prev => {
         const next = prev.map(r => String(r.id) === String(reportId) ? { ...r, status: 'resolved', resolvedDate: new Date().toISOString(), resolutionNotes } : r);
-        localStorage.setItem('car_rental_damage_reports_v2', JSON.stringify(next));
+        writeLocalDamageReports(next);
         return next;
       });
       return { id: reportId, status: 'resolved' };

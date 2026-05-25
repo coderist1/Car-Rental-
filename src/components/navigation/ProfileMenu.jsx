@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks';
 import { ConfirmModal } from '../';
 
-import '../../styles/components/ProfileMenu.css';
+import '../../styles/pages/Profilemenu.css';
 
 
 

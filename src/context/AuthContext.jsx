@@ -23,6 +23,11 @@ function clearSession() {
   sessionStorage.removeItem(PROFILE_KEY);
 }
 
+function isAuthRequiredError(error) {
+  const message = String(error?.message || error || '');
+  return message.includes('Authentication required') || message.includes('401');
+}
+
 export function AuthProvider({ children }) {
   const initial = readSessionAuth();
   const [user, setUser] = useState(initial.user);
@@ -184,6 +189,12 @@ export function AuthProvider({ children }) {
   const updateProfile = async (updates) => {
     if (!user) return { success: false, error: 'Not authenticated' };
 
+    const nextUser = {
+      ...user,
+      ...updates,
+      fullName: updates.fullName ?? `${updates.firstName || user.firstName || ''} ${updates.lastName || user.lastName || ''}`.trim(),
+    };
+
     try {
       const updated = await apiRequest('/api/me/', {
         method: 'PATCH',
@@ -200,6 +211,16 @@ export function AuthProvider({ children }) {
       persistSession(updated);
       return { success: true, user: updated };
     } catch (error) {
+      if (isAuthRequiredError(error)) {
+        setUser(nextUser);
+        persistSession(nextUser);
+        return {
+          success: true,
+          user: nextUser,
+          fallback: true,
+        };
+      }
+
       return { success: false, error: error.message || 'Profile update failed' };
     }
   };

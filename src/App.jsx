@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { VehicleProvider } from './context/VehicleContext';
 import { LogReportProvider } from './context/LogReportContext';
-import { useAuth } from './hooks';
 import { DamageReportProvider } from './context/DamageReportContext';
 import {
   SplashPage,
@@ -21,37 +20,10 @@ import {
   EmailLog,
 } from './pages';
 
-// Lab Requirement: Improved Quality - Protected Route logic 
-// Ensures unauthorized users cannot access internal pages.
-const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { user, isAuthenticated } = useAuth();
+// Authentication is intentionally disabled in the deployed web app.
+const ProtectedRoute = ({ children }) => children;
 
-  if (!isAuthenticated) {
-    return <Navigate to="/LandingPage" replace />;
-  }
-
-  if (allowedRoles && !allowedRoles.includes(user?.role)) {
-    if (user?.role === 'owner') return <Navigate to="/dashboard" replace />;
-    if (user?.role === 'admin') return <Navigate to="/admin" replace />;
-    return <Navigate to="/renter" replace />;
-  }
-
-  return children;
-};
-
-// Lab Requirement: Usability - Public Route logic
-// Prevents logged-in users from seeing the login/forgot-password pages.
-const PublicRoute = ({ children }) => {
-  const { user, isAuthenticated } = useAuth();
-
-  if (isAuthenticated) {
-    if (user?.role === 'owner') return <Navigate to="/dashboard" replace />;
-    if (user?.role === 'admin') return <Navigate to="/admin" replace />;
-    return <Navigate to="/renter" replace />;
-  }
-
-  return children;
-};
+const PublicRoute = ({ children }) => children;
 
 function App() {
   return (

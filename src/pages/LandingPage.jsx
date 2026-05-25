@@ -1,23 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks';
 import '../styles/pages/LandingPage.css';
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
-
-  React.useEffect(() => {
-    if (isAuthenticated) {
-      if (user?.role === 'owner') {
-        navigate('/dashboard', { replace: true });
-      } else if (user?.role === 'admin') {
-        navigate('/admin', { replace: true });
-      } else if (user?.role === 'renter') {
-        navigate('/renter', { replace: true });
-      }
-    }
-  }, [isAuthenticated, user, navigate]);
 
   const handleNavigation = (path) => {
     navigate(path);
