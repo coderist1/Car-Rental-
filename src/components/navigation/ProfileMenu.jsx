@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks';
 import { ConfirmModal } from '../';
 
-import '../../styles/pages/ProfileMenu.css';
+import '../../styles/components/ProfileMenu.css';
 
 
 
@@ -442,4 +442,3 @@ function ProfileMenu() {
 
 
 export default ProfileMenu;
-
