@@ -22,6 +22,39 @@ function resolveWebSocketBase() {
 
 const WS_BASE = resolveWebSocketBase();
 
+const NO_AUTH = (import.meta.env.VITE_NO_AUTH || '').toLowerCase() === 'true';
+
+// Simple localStorage-backed mock for anonymous/no-auth mode
+function loadMockStore() {
+  try {
+    const raw = localStorage.getItem('mockApiData');
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  const initial = {
+    nextId: { users: 1000, cars: 2000, bookings: 3000, damageReports: 4000, logReports: 5000 },
+    users: [],
+    cars: [],
+    bookings: [],
+    damageReports: [],
+    logReports: [],
+    currentUser: null,
+  };
+  localStorage.setItem('mockApiData', JSON.stringify(initial));
+  return initial;
+}
+
+function saveMockStore(store) {
+  try {
+    localStorage.setItem('mockApiData', JSON.stringify(store));
+  } catch {}
+}
+
+function genId(store, key) {
+  store.nextId[key] = (store.nextId[key] || 1) + 1;
+  return store.nextId[key];
+}
+
+
 function toErrorMessage(payload, fallback) {
   if (!payload) return fallback;
   if (typeof payload === 'string') return payload;
@@ -58,6 +91,97 @@ export async function apiRequest(path, options = {}) {
     finalHeaders['Content-Type'] = 'application/json';
   }
 
+  // Mock/no-auth mode: handle common endpoints locally to avoid backend 401/404
+  if (NO_AUTH) {
+    try {
+      const store = loadMockStore();
+      const cleaned = path.replace(/^\/api\//, '').replace(/\/$/, '');
+      const parts = cleaned.split('/').filter(Boolean);
+      const resource = parts[0] || '';
+      const resourceId = parts[1] ? Number(parts[1]) : null;
+
+      function ensureUser() {
+        if (!store.currentUser) {
+          const demo = { id: genId(store, 'users'), email: 'local@local', username: 'local', role: 'owner', firstName: 'Local', lastName: 'User' };
+          store.users.push(demo);
+          store.currentUser = demo;
+        }
+        return store.currentUser;
+      }
+
+      // Authentication endpoints
+      if (resource === 'login') {
+        const user = { id: genId(store, 'users'), email: (body?.username || body?.email) || 'local@local', username: body?.username || 'local', role: 'owner' };
+        store.users.push(user);
+        store.currentUser = user;
+        saveMockStore(store);
+        return { user };
+      }
+
+      if (resource === 'register') {
+        const user = { id: genId(store, 'users'), email: (body?.email) || 'local@local', username: (body?.username) || (body?.email) || 'local', role: body?.role || 'renter', firstName: body?.firstName || '', lastName: body?.lastName || '' };
+        store.users.push(user);
+        store.currentUser = user;
+        saveMockStore(store);
+        return { user };
+      }
+
+      if (resource === 'me') {
+        if (method.toUpperCase() === 'PATCH') {
+          const user = ensureUser();
+          const updated = { ...user, ...(body || {}) };
+          store.users = store.users.map((u) => (u.id === user.id ? updated : u));
+          store.currentUser = updated;
+          saveMockStore(store);
+          return updated;
+        }
+        return store.currentUser || null;
+      }
+
+      // Map resource aliases
+      const aliasMap = { 'damage-reports': 'damageReports', 'damage_reports': 'damageReports', logreports: 'logReports', cars: 'cars', bookings: 'bookings' };
+      const key = aliasMap[resource] || resource;
+
+      // Generic collection handlers
+      if (['cars', 'bookings', 'damageReports', 'logReports'].includes(key)) {
+        if (method.toUpperCase() === 'GET') {
+          return store[key] || [];
+        }
+
+        if (method.toUpperCase() === 'POST') {
+          const item = { id: genId(store, key === 'cars' ? 'cars' : key === 'bookings' ? 'bookings' : key === 'damageReports' ? 'damageReports' : 'logReports'), ...(body || {}) };
+          // attach owner if adding a car
+          if (key === 'cars') {
+            const u = ensureUser();
+            item.owner = u.id;
+          }
+          store[key].push(item);
+          saveMockStore(store);
+          return item;
+        }
+
+        if (resourceId && method.toUpperCase() === 'PATCH') {
+          store[key] = store[key].map((it) => (it.id === resourceId ? { ...it, ...(body || {}) } : it));
+          const found = store[key].find((it) => it.id === resourceId);
+          saveMockStore(store);
+          return found;
+        }
+
+        if (resourceId && method.toUpperCase() === 'DELETE') {
+          store[key] = store[key].filter((it) => it.id !== resourceId);
+          saveMockStore(store);
+          return { success: true };
+        }
+      }
+
+      // Fallback: return empty list for unknown GETs, null for others
+      if (method.toUpperCase() === 'GET') return null;
+      return { success: true };
+    } catch (e) {
+      console.error('Mock API error', e);
+      return null;
+    }
+  }
   let response;
   try {
     response = await fetch(requestUrl, {
