@@ -14,7 +14,7 @@ const getBaseUrl = () => {
   } catch (error) {
     // Handle safely if environment variables are not accessible
   }
-  return 'http://127.0.0.1:8000';
+  return 'https://fastapi-n7sg.onrender.com';
 };
 
 export const getImageSource = (imageField) => {

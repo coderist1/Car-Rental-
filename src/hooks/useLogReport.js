@@ -1,7 +1,6 @@
-const LOG_KEY = 'logReports';
+import { API_BASE } from '../lib/api';
 
-// ✅ Simple approach: Just use the backend URL directly
-const API_BASE = 'http://127.0.0.1:8000';
+const LOG_KEY = 'logReports';
 
 // ============================================
 // LocalStorage Fallback Functions

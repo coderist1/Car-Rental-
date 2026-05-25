@@ -2,28 +2,38 @@
 
 This guide describes how to set up and run the Car Rental web frontend locally.
 
-Prerequisites
-- Node.js (v18+ recommended)
-- npm (bundled with Node.js)
-- Optional: a running backend API (Django) for full features
+> **Unified system:** Web and mobile share one FastAPI backend. See [FastAPI README](../../fastapi/README.md).
 
-Install dependencies
+## Prerequisites
+
+- Node.js 18+
+- npm
+- Running FastAPI backend (`c:\Users\Acer\fastapi`) — start with `.\run.ps1`
+
+## Install dependencies
 
 ```bash
 npm install
 ```
 
-Environment variables
-Create a `.env` file in the project root (same folder as `package.json`) with these values for local development:
+## Environment variables
+
+Create a `.env` file in the project root:
 
 ```env
-VITE_API_URL=http://127.0.0.1:8000/api
-VITE_WS_URL=ws://127.0.0.1:8000/ws
-# Optional: proxy target for Vite dev server
+VITE_API_URL=http://127.0.0.1:8000
+VITE_WS_URL=ws://127.0.0.1:8000
 VITE_PROXY_TARGET=http://127.0.0.1:8000
 ```
 
-Run the frontend
+For production (Vercel), use the same URL as mobile:
+
+```env
+VITE_API_URL=https://fastapi-n7sg.onrender.com
+VITE_WS_URL=wss://fastapi-n7sg.onrender.com
+```
+
+## Run the frontend
 
 ```bash
 npm run dev
