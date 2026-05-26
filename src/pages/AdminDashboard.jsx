@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth, useVehicles } from '../hooks';
+import { useAuth, useVehicles, useMobileSidebar } from '../hooks';
 import { useLogReport } from '../context/LogReportContext';
 import * as DamageReportExports from '../context/DamageReportContext';
 import { Modal, ConfirmModal } from '../components';
+import MobileNavToggle from '../components/MobileNavToggle';
 import PredictionsPanel from '../components/PredictionsPanel';
 import '../styles/pages/AdminDashboard.css';
 import { normalizePhotos } from '../utils/photoUtils';
@@ -15,6 +16,7 @@ const useDamageContextHook = DamageReportExports.useDamageReport
 
 function AdminDashboard() {
   const { user, getRegisteredUsers, updateUser, deleteUser, logout } = useAuth();
+  const { open: sidebarOpen, toggle: toggleSidebar, close: closeSidebar } = useMobileSidebar();
   const { vehicles, rentalHistory, deleteVehicle, approveBooking, rejectBooking, deleteBooking, updateRentalStatus } = useVehicles();
   const { reports, removeReport } = useLogReport();
   
@@ -494,10 +496,19 @@ const renderVehiclesPanel = () => (
     { id: 'predictions', label: 'Predictions' },
   ];
 
+  const selectPanel = (panelId) => {
+    setActivePanel(panelId);
+    closeSidebar();
+  };
+
   return (
     <div className="admin-dashboard">
       <div className="admin-layout">
-        <aside className="sidebar">
+        {sidebarOpen && (
+          <button type="button" className="sidebar-overlay" onClick={closeSidebar} aria-label="Close menu" />
+        )}
+
+        <aside className={`sidebar${sidebarOpen ? ' open' : ''}`}>
           <div className="sidebar-brand"><svg width="30" height="30" viewBox="0 0 24 23" fill="none" stroke="currentColor" strokeWidth="2.5" className="auth-logo-svg">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               <path d="M12 8v4" />
@@ -508,7 +519,7 @@ const renderVehiclesPanel = () => (
               <button
                 key={item.id}
                 className={`nav-item ${activePanel === item.id ? 'active' : ''}`}
-                onClick={() => setActivePanel(item.id)}
+                onClick={() => selectPanel(item.id)}
               >
                 {item.label}
               </button>
@@ -519,8 +530,11 @@ const renderVehiclesPanel = () => (
         <main className="admin-main">
           <header className="admin-header">
             <div className="admin-heading">
-              <h1>Admin Dashboard</h1>
-              <p className="admin-subtitle">Monitor users, vehicles, and rentals in one place.</p>
+              <MobileNavToggle open={sidebarOpen} onToggle={toggleSidebar} />
+              <div>
+                <h1>Admin Dashboard</h1>
+                <p className="admin-subtitle">Monitor users, vehicles, and rentals in one place.</p>
+              </div>
             </div>
             <div className="user-info">
               <span className="welcome-text">Welcome, {userName}</span>

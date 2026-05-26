@@ -40,13 +40,16 @@ export function AuthProvider({ children }) {
   const initial = readSessionAuth();
   const [user, setUser] = useState(initial.user);
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(Boolean(initial.user));
 
   const isAuthenticated = Boolean(user);
 
   useEffect(() => {
-    setLoading(false);
-    if (!initial.user) return;
+    if (!initial.user) {
+      setLoading(false);
+      return;
+    }
+
     const token = getAuthToken();
     if (!token && initial.user?.id) {
       setAuthToken(String(initial.user.id));
@@ -60,8 +63,13 @@ export function AuthProvider({ children }) {
           setUser(fresh);
           persistSession(fresh);
         }
-      } catch {
-        // keep cached session when offline
+      } catch (error) {
+        if (isAuthRequiredError(error)) {
+          setUser(null);
+          clearSession();
+        }
+      } finally {
+        setLoading(false);
       }
     })();
   }, []);

@@ -20,11 +20,7 @@ import {
   Bookings,
   EmailLog,
 } from './pages';
-
-// Authentication is intentionally disabled in the deployed web app.
-const ProtectedRoute = ({ children }) => children;
-
-const PublicRoute = ({ children }) => children;
+import { ProtectedRoute, PublicRoute } from './components/AppRouteGuards';
 
 function App() {
   return (

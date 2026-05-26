@@ -4,12 +4,13 @@
  */
 
 import React, { useState, useMemo, useCallback, useContext } from 'react';
-import { useVehicles } from '../hooks';
+import { useVehicles, useMobileSidebar } from '../hooks';
 import { useAuth } from '../context/AuthContext';
 import { useFeedback } from '../context/FeedbackContext';
 import { useLogReport } from '../context/LogReportContext';
 import * as DamageReportExports from '../context/DamageReportContext';
 import { ProfileMenu, VehicleCard, Modal, ConfirmModal, DamageReportForm } from '../components';
+import MobileNavToggle from '../components/MobileNavToggle';
 import '../styles/pages/RenterDashboard.css';
 import { normalizePhotos } from '../utils/photoUtils';
 
@@ -538,6 +539,7 @@ const useDamageContextHook = DamageReportExports.useDamageReport
 
 function RenterDashboard() {
   const { user } = useAuth();
+  const { open: sidebarOpen, toggle: toggleSidebar, close: closeSidebar } = useMobileSidebar();
   const { vehicles, toggleSavedCar, isCarSaved, savedCars, addRentalRecord, getUserRentals, requestReturn } = useVehicles();
   const { reports, refresh, postComment, editCheckin } = useLogReport();
 
@@ -756,10 +758,20 @@ function RenterDashboard() {
     feedback: 'Share your experience with the vehicle owner',
   }[activeNav];
 
+  const selectNav = (nav, onSelect) => {
+    setActiveNav(nav);
+    onSelect?.();
+    closeSidebar();
+  };
+
   return (
     <div className="renter-dashboard">
+      {sidebarOpen && (
+        <button type="button" className="sidebar-overlay" onClick={closeSidebar} aria-label="Close menu" />
+      )}
+
       {/* Sidebar - Similar to Admin */}
-      <aside className="renter-sidebar">
+      <aside className={`renter-sidebar${sidebarOpen ? ' open' : ''}`}>
         <div className="sidebar-brand">
           <svg width="55" height="55" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="auth-logo-svg" aria-hidden="true">
             <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
@@ -769,22 +781,22 @@ function RenterDashboard() {
           </svg> CarRental
         </div>
         <nav className="sidebar-nav">
-          <button className={`nav-item ${activeNav === 'browse' ? 'active' : ''}`} onClick={() => setActiveNav('browse')}>
+          <button className={`nav-item ${activeNav === 'browse' ? 'active' : ''}`} onClick={() => selectNav('browse')}>
             Browse
           </button>
-          <button className={`nav-item ${activeNav === 'favorites' ? 'active' : ''}`} onClick={() => setActiveNav('favorites')}>
+          <button className={`nav-item ${activeNav === 'favorites' ? 'active' : ''}`} onClick={() => selectNav('favorites')}>
             Favorites {savedCars.length > 0 && `(${savedCars.length})`}
           </button>
-          <button className={`nav-item ${activeNav === 'rentals' ? 'active' : ''}`} onClick={() => setActiveNav('rentals')}>
+          <button className={`nav-item ${activeNav === 'rentals' ? 'active' : ''}`} onClick={() => selectNav('rentals')}>
             My Rentals
           </button>
-          <button className={`nav-item ${activeNav === 'logs' ? 'active' : ''}`} onClick={() => { setActiveNav('logs'); refreshLogs(); }}>
+          <button className={`nav-item ${activeNav === 'logs' ? 'active' : ''}`} onClick={() => selectNav('logs', refreshLogs)}>
             Log Book {logCount > 0 && <span className="nav-badge">{logCount}</span>}
           </button>
-          <button className={`nav-item ${activeNav === 'damage-reports' ? 'active' : ''}`} onClick={() => setActiveNav('damage-reports')}>
+          <button className={`nav-item ${activeNav === 'damage-reports' ? 'active' : ''}`} onClick={() => selectNav('damage-reports')}>
             Damage Reports {renterDamageReports.length > 0 && <span className="nav-badge" style={{background: '#f59e0b'}}>{renterDamageReports.length}</span>}
           </button>
-          <button className={`nav-item ${activeNav === 'feedback' ? 'active' : ''}`} onClick={() => setActiveNav('feedback')}>
+          <button className={`nav-item ${activeNav === 'feedback' ? 'active' : ''}`} onClick={() => selectNav('feedback')}>
             Feedback
           </button>
         </nav>
@@ -795,8 +807,11 @@ function RenterDashboard() {
         {/* Header - Similar to Admin */}
         <div className="renter-header">
           <div className="renter-heading">
-            <h1>{currentTitle}</h1>
-            <p className="renter-subtitle">{currentSubtitle}</p>
+            <MobileNavToggle open={sidebarOpen} onToggle={toggleSidebar} />
+            <div>
+              <h1>{currentTitle}</h1>
+              <p className="renter-subtitle">{currentSubtitle}</p>
+            </div>
           </div>
           <div className="user-info">
             <span className="welcome-text">Welcome, {userName}</span>

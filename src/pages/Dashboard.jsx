@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { useAuth, useVehicles } from '../hooks';
+import { useAuth, useVehicles, useMobileSidebar } from '../hooks';
 import { useFeedback } from '../context/FeedbackContext';
 import { ProfileMenu, VehicleCard, Modal, ConfirmModal, DamageReportInbox } from '../components';
+import MobileNavToggle from '../components/MobileNavToggle';
 import { useLogReport } from '../context/LogReportContext';
 import OwnerLogReport from '../components/ui/OwnerLogReport';
 import * as DamageReportExports from '../context/DamageReportContext';
@@ -61,6 +62,7 @@ const useDamageContextHook = DamageReportExports.useDamageReport
 
 function Dashboard() {
   const { user } = useAuth();
+  const { open: sidebarOpen, toggle: toggleSidebar, close: closeSidebar } = useMobileSidebar();
   const {
     vehicles, addVehicle, updateVehicle, deleteVehicle,
     getStats, rentalHistory, approveBooking, rejectBooking, acceptReturn,
@@ -499,10 +501,19 @@ function Dashboard() {
     </form>
   );
 
+  const selectTab = (tab) => {
+    setActiveTab(tab);
+    closeSidebar();
+  };
+
   return (
     <div className="dashboard">
+      {sidebarOpen && (
+        <button type="button" className="sidebar-overlay" onClick={closeSidebar} aria-label="Close menu" />
+      )}
+
       {/* Sidebar */}
-      <aside className="dashboard-sidebar">
+      <aside className={`dashboard-sidebar${sidebarOpen ? ' open' : ''}`}>
         <div className="sidebar-brand">
           <svg width="55" height="55" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="auth-logo-svg" aria-hidden="true">
             <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
@@ -514,33 +525,33 @@ function Dashboard() {
         <nav className="sidebar-nav">
           <button 
             className={`nav-item ${activeTab === 'vehicles' ? 'active' : ''}`}
-            onClick={() => setActiveTab('vehicles')}
+            onClick={() => selectTab('vehicles')}
           >
             My Vehicles
           </button>
           <button 
             className={`nav-item ${activeTab === 'rentals' ? 'active' : ''}`}
-            onClick={() => setActiveTab('rentals')}
+            onClick={() => selectTab('rentals')}
           >
             Rental History
           </button>
           <button 
             className={`nav-item ${activeTab === 'logs' ? 'active' : ''}`}
-            onClick={() => setActiveTab('logs')}
+            onClick={() => selectTab('logs')}
           >
             Log Book
             {logReportCount > 0 && <span className="nav-badge">{logReportCount}</span>}
           </button>
           <button 
             className={`nav-item ${activeTab === 'feedback' ? 'active' : ''}`}
-            onClick={() => setActiveTab('feedback')}
+            onClick={() => selectTab('feedback')}
           >
             Feedback
             {ownerFeedbacks.length > 0 && <span className="nav-badge" style={{ background: '#3b82f6', boxShadow: '0 2px 6px rgba(59,130,246,.4)' }}>{ownerFeedbacks.length}</span>}
           </button>
           <button 
             className={`nav-item ${activeTab === 'damage-reports' ? 'active' : ''}`}
-            onClick={() => setActiveTab('damage-reports')}
+            onClick={() => selectTab('damage-reports')}
           >
             Damage Reports
             {ownerDamageReports.filter(r => ['submitted', 'under_review', 'new'].includes(r.status)).length > 0 && (
@@ -557,6 +568,7 @@ function Dashboard() {
         {/* Header */}
         <div className="dashboard-header">
           <div className="header-content">
+            <MobileNavToggle open={sidebarOpen} onToggle={toggleSidebar} />
             <div className="header-info">
               <h1>
                 {activeTab === 'vehicles' && 'My Vehicles'}
