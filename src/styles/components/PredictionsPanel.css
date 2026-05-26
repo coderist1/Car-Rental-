@@ -1,0 +1,260 @@
+.predictions-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.predictions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.predictions-subtitle {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.predictions-tabs {
+  display: flex;
+  gap: 8px;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 10px;
+}
+
+.predictions-tab {
+  border: none;
+  background: transparent;
+  color: #64748b;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.predictions-tab.active {
+  background: white;
+  color: #0f172a;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.predictions-error {
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  font-size: 14px;
+}
+
+.predictions-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.predictions-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.predictions-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.predictions-form-grid--wide {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.predictions-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: #475569;
+}
+
+.predictions-field input {
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+}
+
+.predictions-checkboxes {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.predictions-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #334155;
+}
+
+.predictions-results {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.predictions-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.predictions-stat {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.predictions-stat-label {
+  display: block;
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.predictions-stat strong {
+  font-size: 22px;
+  color: #0f172a;
+}
+
+.demand-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  min-height: 260px;
+  padding: 20px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow-x: auto;
+}
+
+.demand-chart-bar-wrap {
+  flex: 0 0 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  height: 220px;
+}
+
+.demand-chart-bar {
+  width: 100%;
+  max-width: 36px;
+  min-height: 8px;
+  border-radius: 8px 8px 4px 4px;
+  background: linear-gradient(180deg, #3F9B84 0%, #2d7a67 100%);
+  transition: height 0.25s ease;
+}
+
+.demand-chart-value {
+  font-size: 11px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.demand-chart-label {
+  font-size: 11px;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.cancellation-result {
+  padding: 24px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cancellation-badge {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.cancellation-badge.low {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.cancellation-badge.high {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.cancellation-meter-track {
+  width: 100%;
+  height: 12px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.cancellation-meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+
+.cancellation-meter-fill.low {
+  background: linear-gradient(90deg, #34d399, #059669);
+}
+
+.cancellation-meter-fill.high {
+  background: linear-gradient(90deg, #f87171, #dc2626);
+}
+
+.cancellation-meter-label {
+  display: block;
+  margin-top: 8px;
+  font-size: 14px;
+  color: #475569;
+}
+
+.cancellation-note {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .predictions-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .predictions-form-grid,
+  .predictions-form-grid--wide {
+    grid-template-columns: 1fr;
+  }
+}

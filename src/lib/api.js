@@ -156,6 +156,37 @@ export async function apiRequest(path, options = {}) {
         return { user };
       }
 
+      if (resource === 'predict_demand') {
+        const start = body?.start_date || new Date().toISOString().slice(0, 10);
+        const end = body?.end_date || start;
+        const startDate = new Date(`${start}T00:00:00`);
+        const endDate = new Date(`${end}T00:00:00`);
+        const predictions = [];
+        let total = 0;
+        for (let cursor = new Date(startDate); cursor <= endDate; cursor.setDate(cursor.getDate() + 1)) {
+          const predicted = 8 + (cursor.getDay() % 3) * 4;
+          predictions.push({ date: cursor.toISOString().slice(0, 10), predicted_bookings: predicted });
+          total += predicted;
+        }
+        return {
+          predictions,
+          total_predicted_bookings: total,
+          number_of_days: predictions.length,
+          source: 'mock',
+          message: 'Mock demand forecast generated',
+        };
+      }
+
+      if (resource === 'predict') {
+        const online = body?.online_booking === 1;
+        const score = online ? 0.32 : 0.48;
+        return {
+          label: score >= 0.5 ? 'Cancelled' : 'Not Cancelled',
+          score,
+          message: 'Mock cancellation estimate generated',
+        };
+      }
+
       if (resource === 'me') {
         if (method.toUpperCase() === 'PATCH') {
           const user = ensureUser();

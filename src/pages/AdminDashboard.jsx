@@ -4,6 +4,7 @@ import { useAuth, useVehicles } from '../hooks';
 import { useLogReport } from '../context/LogReportContext';
 import * as DamageReportExports from '../context/DamageReportContext';
 import { Modal, ConfirmModal } from '../components';
+import PredictionsPanel from '../components/PredictionsPanel';
 import '../styles/pages/AdminDashboard.css';
 import { normalizePhotos } from '../utils/photoUtils';
 
@@ -419,6 +420,12 @@ const renderVehiclesPanel = () => (
     </div>
   );
 
+  const renderPredictionsPanel = () => (
+    <div className="admin-panel">
+      <PredictionsPanel />
+    </div>
+  );
+
   const panels = {
     users: renderUsersPanel,
     vehicles: renderVehiclesPanel,
@@ -427,7 +434,8 @@ const renderVehiclesPanel = () => (
     disputes: renderDisputesPanel,
     'damage-reports': renderDamageReportsPanel,
     logs: renderLogsPanel,
-    analytics: renderAnalyticsPanel
+    analytics: renderAnalyticsPanel,
+    predictions: renderPredictionsPanel,
   };
 
   const navItems = [
@@ -438,7 +446,8 @@ const renderVehiclesPanel = () => (
     { id: 'disputes', label: 'Disputes' },
     { id: 'damage-reports', label: 'Damage Reports' },
     { id: 'logs', label: 'Audit Log' },
-    { id: 'analytics', label: 'Analytics' }
+    { id: 'analytics', label: 'Analytics' },
+    { id: 'predictions', label: 'Predictions' },
   ];
 
   return (
