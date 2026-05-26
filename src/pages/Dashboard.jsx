@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useAuth, useVehicles, useMobileSidebar } from '../hooks';
 import { useFeedback } from '../context/FeedbackContext';
-import { ProfileMenu, VehicleCard, Modal, ConfirmModal, DamageReportInbox } from '../components';
+import { ProfileMenu, VehicleCard, Modal, ConfirmModal, DamageReportInbox, EmptyState } from '../components';
 import MobileNavToggle from '../components/MobileNavToggle';
 import { useLogReport } from '../context/LogReportContext';
 import OwnerLogReport from '../components/ui/OwnerLogReport';
@@ -98,6 +98,8 @@ function Dashboard() {
   const [confirmRemovePhoto, setConfirmRemovePhoto] = useState(false);
   const [viewingPhoto, setViewingPhoto] = useState(null);
   const [discardConfirm, setDiscardConfirm] = useState({ open: false, nextVehicle: null, closeMode: null });
+  const [recordingRentalId, setRecordingRentalId] = useState(null);
+  const [toast, setToast] = useState({ open: false, title: '', message: '', variant: 'success' });
 
   const { feedback, getFeedbackForOwner, refreshFeedback } = useFeedback();
 
@@ -362,35 +364,78 @@ function Dashboard() {
     }
   };
 
-    const handleRecordToLogBook = (rental) => {
-    createCheckin({
-      rentalId: rental.id,
-      vehicleId: rental.vehicleId,
-      vehicleName: rental.vehicleName,
-      ownerName: userName,
-    });
-    const newLoggedIds = [...loggedRentalIds, String(rental.id)];
-    setLoggedRentalIds(newLoggedIds);
-    localStorage.setItem('loggedRentalIds', JSON.stringify(newLoggedIds));
+    const handleRecordToLogBook = async (rental) => {
+    if (isAlreadyLogged(rental.id)) return;
+
+    setRecordingRentalId(rental.id);
+    try {
+      await createCheckin({
+        rentalId: rental.id,
+        vehicleId: rental.vehicleId,
+        vehicleName: rental.vehicleName,
+        ownerName: userName,
+      });
+      const newLoggedIds = [...loggedRentalIds, String(rental.id)];
+      setLoggedRentalIds(newLoggedIds);
+      localStorage.setItem('loggedRentalIds', JSON.stringify(newLoggedIds));
+      setToast({
+        open: true,
+        title: 'Recorded in Log Book',
+        message: `Check-in record created for ${rental.vehicleName}.`,
+        variant: 'success',
+      });
+    } catch (err) {
+      const message = String(err?.message || '');
+      setToast({
+        open: true,
+        title: 'Could not record booking',
+        message: message.includes('Unable to connect')
+          ? 'Could not reach the server. Please check your connection and try again.'
+          : message || 'Failed to save the log entry. Please try again.',
+        variant: 'error',
+      });
+    } finally {
+      setRecordingRentalId(null);
+    }
   };
 
   const handleApproveBooking = async (rentalId) => {
     try {
       await approveBooking(rentalId);
-      alert('Booking approved');
+      setToast({
+        open: true,
+        title: 'Booking approved',
+        message: 'The rental request has been approved.',
+        variant: 'success',
+      });
     } catch (err) {
       console.error('Approve booking failed:', err);
-      alert('Failed to approve booking. See console for details.');
+      setToast({
+        open: true,
+        title: 'Approval failed',
+        message: err?.message || 'Could not approve this booking. Please try again.',
+        variant: 'error',
+      });
     }
   };
 
   const handleRejectBooking = async (rentalId) => {
     try {
       await rejectBooking(rentalId);
-      alert('Booking rejected');
+      setToast({
+        open: true,
+        title: 'Booking rejected',
+        message: 'The rental request has been declined.',
+        variant: 'success',
+      });
     } catch (err) {
       console.error('Reject booking failed:', err);
-      alert('Failed to reject booking. See console for details.');
+      setToast({
+        open: true,
+        title: 'Rejection failed',
+        message: err?.message || 'Could not reject this booking. Please try again.',
+        variant: 'error',
+      });
     }
   };
 
@@ -666,11 +711,11 @@ function Dashboard() {
           {activeTab === 'rentals' && (
             <div className="panel" style={{ background: 'transparent', boxShadow: 'none', padding: 0 }}>
               {ownerRentals.length === 0 ? (
-                <div className="empty-state" style={{ background: '#fff', borderRadius: 16, border: '1px dashed #cbd5e1', padding: '60px 20px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)' }}>
-                  <div style={{ fontSize: 48, marginBottom: 16 }}>📜</div>
-                  <h3 style={{ fontSize: 18, color: '#334155', margin: '0 0 8px', fontWeight: 700 }}>No rental history</h3>
-                  <p style={{ color: '#64748b', margin: 0, fontSize: 14 }}>Your vehicle rental history will appear here once bookings are made.</p>
-                </div>
+                <EmptyState
+                  icon="📜"
+                  title="No rental history"
+                  description="Your vehicle rental history will appear here once bookings are made."
+                />
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   {ownerRentals.slice().reverse().map((rental) => {
@@ -720,56 +765,59 @@ function Dashboard() {
 
                         <div style={{ height: 1, background: '#f1f5f9', margin: '4px 0' }} />
 
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 10 }}>
+                        <div className="rental-card-actions">
                           {rental.status === 'pending' && (
                             <>
-                              <button onClick={() => handleRejectBooking(rental.id)} style={{ padding: '8px 16px', background: '#fff', border: '1px solid #e2e8f0', color: '#64748b', fontSize: 13, fontWeight: 600, borderRadius: 8, cursor: 'pointer', transition: 'all 0.2s' }}
-                                onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = '#fca5a5'; }}
-                                onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#64748b'; e.currentTarget.style.borderColor = '#e2e8f0'; }}>
+                              <button type="button" className="btn btn-secondary btn-sm" onClick={() => handleRejectBooking(rental.id)}>
                                 Reject
                               </button>
-                              <button onClick={() => handleApproveBooking(rental.id)} style={{ padding: '8px 20px', background: '#0d9488', border: 'none', color: '#fff', fontSize: 13, fontWeight: 600, borderRadius: 8, cursor: 'pointer', boxShadow: '0 2px 4px rgb(13 148 136 / 0.2)', transition: 'all 0.2s' }}
-                                onMouseEnter={e => e.currentTarget.style.background = '#0f766e'}
-                                onMouseLeave={e => e.currentTarget.style.background = '#0d9488'}>
+                              <button type="button" className="btn btn-primary btn-sm" onClick={() => handleApproveBooking(rental.id)}>
                                 Approve
                               </button>
                             </>
                           )}
 
                           {rental.status === 'return_requested' && (
-                            <button onClick={async () => {
+                            <button
+                              type="button"
+                              className="btn btn-primary btn-sm"
+                              onClick={async () => {
                                 try {
                                   await acceptReturn(rental.id);
-                                  alert('Return accepted');
+                                  setToast({
+                                    open: true,
+                                    title: 'Return accepted',
+                                    message: 'The vehicle return has been confirmed.',
+                                    variant: 'success',
+                                  });
                                 } catch (err) {
                                   console.error('Accept return failed:', err);
-                                  alert('Failed to accept return. See console for details.');
+                                  setToast({
+                                    open: true,
+                                    title: 'Return failed',
+                                    message: err?.message || 'Could not accept the return. Please try again.',
+                                    variant: 'error',
+                                  });
                                 }
-                              }} style={{ padding: '8px 20px', background: '#2563eb', border: 'none', color: '#fff', fontSize: 13, fontWeight: 600, borderRadius: 8, cursor: 'pointer', boxShadow: '0 2px 4px rgb(37 99 235 / 0.2)', transition: 'all 0.2s' }}
-                              onMouseEnter={e => e.currentTarget.style.background = '#1d4ed8'}
-                              onMouseLeave={e => e.currentTarget.style.background = '#2563eb'}>
+                              }}
+                            >
                               Accept Return
                             </button>
                           )}
 
                           {(rental.status === 'active' || rental.status === 'approved') && (
                             <button
+                              type="button"
+                              className={`btn btn-sm ${logged ? 'btn-success' : 'btn-outline'}`}
                               onClick={() => handleRecordToLogBook(rental)}
-                              disabled={logged}
-                              style={{
-                                display: 'inline-flex', alignItems: 'center', gap: 6,
-                                background: logged ? '#f0fdf4' : '#fff',
-                                color: logged ? '#059669' : '#0d9488',
-                                border: logged ? '1px solid #bbf7d0' : '1px solid #0d9488',
-                                cursor: logged ? 'default' : 'pointer',
-                                fontSize: 13, fontWeight: 600, borderRadius: 8, padding: '8px 16px',
-                                transition: 'all 0.2s', boxShadow: logged ? 'none' : '0 1px 2px rgb(13 148 136 / 0.05)'
-                              }}
-                              onMouseEnter={e => { if (!logged) { e.currentTarget.style.background = '#f0fdfa'; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
-                              onMouseLeave={e => { if (!logged) { e.currentTarget.style.background = '#fff'; e.currentTarget.style.transform = 'none'; } }}
+                              disabled={logged || recordingRentalId === rental.id}
                             >
                               <BookIcon />
-                              {logged ? 'Recorded in Log Book' : 'Record to Log Book'}
+                              {recordingRentalId === rental.id
+                                ? 'Recording…'
+                                : logged
+                                  ? 'Recorded in Log Book'
+                                  : 'Record to Log Book'}
                             </button>
                           )}
                         </div>
@@ -797,11 +845,11 @@ function Dashboard() {
           {activeTab === 'feedback' && (
             <div className="panel" style={{ background: 'transparent', boxShadow: 'none', padding: 0 }}>
               {ownerFeedbacks.length === 0 ? (
-                <div className="empty-state" style={{ background: '#fff', borderRadius: 16, border: '1px dashed #cbd5e1', padding: '60px 20px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)' }}>
-                  <div style={{ fontSize: 48, marginBottom: 16 }}>⭐</div>
-                  <h3 style={{ fontSize: 18, color: '#334155', margin: '0 0 8px', fontWeight: 700 }}>No feedback yet</h3>
-                  <p style={{ color: '#64748b', margin: 0, fontSize: 14 }}>Feedback submitted by your renters will appear here.</p>
-                </div>
+                <EmptyState
+                  icon="⭐"
+                  title="No feedback yet"
+                  description="Feedback submitted by your renters will appear here."
+                />
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   {ownerFeedbacks.slice().reverse().map(f => (
@@ -828,11 +876,11 @@ function Dashboard() {
           {activeTab === 'damage-reports' && (
             <div className="panel" style={{ background: 'transparent', boxShadow: 'none', padding: 0 }}>
               {ownerDamageReports.length === 0 ? (
-                <div className="empty-state" style={{ background: '#fff', borderRadius: 16, border: '1px dashed #cbd5e1', padding: '60px 20px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)' }}>
-                  <div style={{ fontSize: 48, marginBottom: 16 }}>📸</div>
-                  <h3 style={{ fontSize: 18, color: '#334155', margin: '0 0 8px', fontWeight: 700 }}>No damage reports</h3>
-                  <p style={{ color: '#64748b', margin: 0, fontSize: 14 }}>There are no damage reports for your vehicles.</p>
-                </div>
+                <EmptyState
+                  icon="📸"
+                  title="No damage reports"
+                  description="There are no damage reports for your vehicles."
+                />
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   {ownerDamageReports.slice().reverse().map(r => {
@@ -1095,6 +1143,23 @@ function Dashboard() {
         size="large"
       >
         {viewingPhoto && <img src={viewingPhoto} alt="Damage" style={{ width: '100%', maxHeight: '80vh', objectFit: 'contain', borderRadius: 8 }} />}
+      </Modal>
+
+      <Modal
+        isOpen={toast.open}
+        onClose={() => setToast((prev) => ({ ...prev, open: false }))}
+        title={toast.title}
+        footer={
+          <button
+            type="button"
+            className={`btn ${toast.variant === 'error' ? 'btn-danger' : 'btn-primary'}`}
+            onClick={() => setToast((prev) => ({ ...prev, open: false }))}
+          >
+            OK
+          </button>
+        }
+      >
+        <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>{toast.message}</p>
       </Modal>
 
     </div>

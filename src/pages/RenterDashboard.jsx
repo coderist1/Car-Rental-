@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { useFeedback } from '../context/FeedbackContext';
 import { useLogReport } from '../context/LogReportContext';
 import * as DamageReportExports from '../context/DamageReportContext';
-import { ProfileMenu, VehicleCard, Modal, ConfirmModal, DamageReportForm } from '../components';
+import { ProfileMenu, VehicleCard, Modal, ConfirmModal, DamageReportForm, EmptyState } from '../components';
 import MobileNavToggle from '../components/MobileNavToggle';
 import '../styles/pages/RenterDashboard.css';
 import { normalizePhotos } from '../utils/photoUtils';
@@ -920,11 +920,11 @@ function RenterDashboard() {
           {activeNav === 'damage-reports' && (
             <div className="panel" style={{ background: 'transparent', boxShadow: 'none', padding: 0 }}>
               {renterDamageReports.length === 0 ? (
-                <div className="empty-state" style={{ background: '#fff', borderRadius: 16, border: '1px dashed #cbd5e1', padding: '60px 20px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)' }}>
-                  <div style={{ fontSize: 48, marginBottom: 16 }}>📸</div>
-                  <h3 style={{ fontSize: 18, color: '#334155', margin: '0 0 8px', fontWeight: 700 }}>No damage reports</h3>
-                  <p style={{ color: '#64748b', margin: 0, fontSize: 14 }}>You haven't submitted any damage reports.</p>
-                </div>
+                <EmptyState
+                  icon="📸"
+                  title="No damage reports"
+                  description="You haven't submitted any damage reports."
+                />
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   {renterDamageReports.slice().reverse().map(r => {
@@ -1162,9 +1162,11 @@ function RenterDashboard() {
 
               <h3 style={{ margin: '0 0 16px', color: '#0f172a', fontSize: 18 }}>Your Past Feedback</h3>
               {myFeedbacks.length === 0 ? (
-                <div className="empty-state" style={{ background: '#fff', borderRadius: 16, border: '1px dashed #cbd5e1', padding: '40px 20px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)' }}>
-                  <p style={{ color: '#64748b', margin: 0 }}>You haven't submitted any feedback yet.</p>
-                </div>
+                <EmptyState
+                  icon="⭐"
+                  title="No feedback yet"
+                  description="You haven't submitted any feedback yet."
+                />
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   {myFeedbacks.slice().reverse().map(f => (

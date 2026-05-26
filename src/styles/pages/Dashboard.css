@@ -1184,6 +1184,28 @@ body {
   justify-content: flex-end;
 }
 
+.rental-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.rental-card-actions .btn-outline {
+  border-color: #0d9488;
+  color: #0d9488;
+}
+
+.rental-card-actions .btn-outline:hover:not(:disabled) {
+  background: #0d9488;
+  color: #fff;
+}
+
+.rental-card-actions .btn-success {
+  cursor: default;
+}
+
 .text-muted {
   color: var(--g400);
   font-size: 12px;
