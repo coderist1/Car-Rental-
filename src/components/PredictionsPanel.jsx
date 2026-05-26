@@ -19,6 +19,13 @@ function formatShortDate(isoDate) {
   });
 }
 
+function labelStep(count) {
+  if (count <= 10) return 1;
+  if (count <= 20) return 2;
+  if (count <= 35) return 3;
+  return Math.ceil(count / 10);
+}
+
 export default function PredictionsPanel() {
   const {
     demandResult,
@@ -59,6 +66,11 @@ export default function PredictionsPanel() {
     return Math.max(...demandResult.predictions.map((item) => item.predicted_bookings), 1);
   }, [demandResult]);
 
+  const dailyAverage = useMemo(() => {
+    if (!demandResult) return 0;
+    return Math.round(demandResult.total_predicted_bookings / Math.max(demandResult.number_of_days, 1));
+  }, [demandResult]);
+
   const handleDemandSubmit = (event) => {
     event.preventDefault();
     clearError();
@@ -73,19 +85,23 @@ export default function PredictionsPanel() {
 
   const riskPercent = cancellationResult ? Math.round(cancellationResult.score * 100) : 0;
   const isHighRisk = cancellationResult?.label === 'Cancelled';
+  const barCount = demandResult?.predictions?.length || 0;
+  const step = labelStep(barCount);
 
   return (
     <div className="predictions-panel">
-      <div className="predictions-header">
-        <div>
-          <h2 className="panel-title">AI Predictions</h2>
+      <header className="predictions-header">
+        <div className="predictions-heading">
+          <h2 className="predictions-title">AI Predictions</h2>
           <p className="predictions-subtitle">
             Forecast rental demand and estimate booking cancellation risk.
           </p>
         </div>
-        <div className="predictions-tabs">
+        <div className="predictions-tabs" role="tablist" aria-label="Prediction views">
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'demand'}
             className={`predictions-tab ${activeTab === 'demand' ? 'active' : ''}`}
             onClick={() => setActiveTab('demand')}
           >
@@ -93,13 +109,15 @@ export default function PredictionsPanel() {
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'cancellation'}
             className={`predictions-tab ${activeTab === 'cancellation' ? 'active' : ''}`}
             onClick={() => setActiveTab('cancellation')}
           >
             Cancellation Risk
           </button>
         </div>
-      </div>
+      </header>
 
       {error && (
         <div className="predictions-error" role="alert">
@@ -109,8 +127,8 @@ export default function PredictionsPanel() {
 
       {activeTab === 'demand' && (
         <div className="predictions-section">
-          <form className="predictions-form" onSubmit={handleDemandSubmit}>
-            <div className="predictions-form-grid">
+          <form className="predictions-form predictions-form--inline" onSubmit={handleDemandSubmit}>
+            <div className="predictions-form-fields">
               <label className="predictions-field">
                 <span>Start date</span>
                 <input
@@ -131,45 +149,71 @@ export default function PredictionsPanel() {
                 />
               </label>
             </div>
-            <button type="submit" className="btn btn-primary" disabled={loadingDemand}>
-              {loadingDemand ? 'Generating forecast…' : 'Generate Forecast'}
+            <button type="submit" className="btn btn-primary predictions-submit" disabled={loadingDemand}>
+              {loadingDemand ? 'Generating…' : 'Generate Forecast'}
             </button>
           </form>
+
+          {loadingDemand && !demandResult && (
+            <div className="predictions-loading">Loading forecast…</div>
+          )}
 
           {demandResult && (
             <div className="predictions-results">
               <div className="predictions-summary">
                 <div className="predictions-stat">
                   <span className="predictions-stat-label">Forecast period</span>
-                  <strong>{demandResult.number_of_days} days</strong>
+                  <strong>{demandResult.number_of_days}</strong>
+                  <span className="predictions-stat-unit">days</span>
                 </div>
                 <div className="predictions-stat">
-                  <span className="predictions-stat-label">Total predicted bookings</span>
+                  <span className="predictions-stat-label">Total bookings</span>
                   <strong>{demandResult.total_predicted_bookings.toLocaleString()}</strong>
                 </div>
                 <div className="predictions-stat">
                   <span className="predictions-stat-label">Daily average</span>
-                  <strong>
-                    {Math.round(demandResult.total_predicted_bookings / Math.max(demandResult.number_of_days, 1))}
-                  </strong>
+                  <strong>{dailyAverage}</strong>
                 </div>
-                <div className="predictions-stat">
+                <div className="predictions-stat predictions-stat--source">
                   <span className="predictions-stat-label">Data source</span>
-                  <strong>{demandResult.source?.replace('_', ' ') || 'model'}</strong>
+                  <strong title={demandResult.source}>{demandResult.source?.replace(/_/g, ' ') || 'model'}</strong>
                 </div>
               </div>
 
-              <div className="demand-chart">
-                {demandResult.predictions.map((item) => (
-                  <div key={item.date} className="demand-chart-bar-wrap" title={`${item.date}: ${item.predicted_bookings} bookings`}>
-                    <div
-                      className="demand-chart-bar"
-                      style={{ height: `${(item.predicted_bookings / chartMax) * 100}%` }}
-                    />
-                    <span className="demand-chart-value">{item.predicted_bookings}</span>
-                    <span className="demand-chart-label">{formatShortDate(item.date)}</span>
-                  </div>
-                ))}
+              <div className="demand-chart-card">
+                <div className="demand-chart-head">
+                  <h3>Daily demand</h3>
+                  <span>{formatShortDate(demandResult.predictions[0]?.date)} – {formatShortDate(demandResult.predictions[barCount - 1]?.date)}</span>
+                </div>
+                <div
+                  className="demand-chart"
+                  style={{ '--bar-count': barCount }}
+                  role="img"
+                  aria-label={`Demand forecast chart for ${barCount} days`}
+                >
+                  {demandResult.predictions.map((item, index) => {
+                    const heightPct = Math.max(6, (item.predicted_bookings / chartMax) * 100);
+                    const showLabel = index % step === 0 || index === barCount - 1;
+                    return (
+                      <div
+                        key={item.date}
+                        className="demand-chart-bar-wrap"
+                        title={`${item.date}: ${item.predicted_bookings} bookings`}
+                      >
+                        <span className="demand-chart-value">{item.predicted_bookings}</span>
+                        <div className="demand-chart-bar-track">
+                          <div
+                            className="demand-chart-bar"
+                            style={{ height: `${heightPct}%` }}
+                          />
+                        </div>
+                        <span className={`demand-chart-label ${showLabel ? '' : 'demand-chart-label--hidden'}`}>
+                          {formatShortDate(item.date)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}
@@ -253,8 +297,8 @@ export default function PredictionsPanel() {
               </label>
             </div>
 
-            <button type="submit" className="btn btn-primary" disabled={loadingCancellation}>
-              {loadingCancellation ? 'Analyzing booking…' : 'Predict Cancellation'}
+            <button type="submit" className="btn btn-primary predictions-submit" disabled={loadingCancellation}>
+              {loadingCancellation ? 'Analyzing…' : 'Predict Cancellation'}
             </button>
           </form>
 
