@@ -84,7 +84,7 @@ function ChangePassword() {
     setLoading(true);
 
     try {
-      const result = changePassword(formData.currentPassword, formData.newPassword);
+      const result = await changePassword(formData.currentPassword, formData.newPassword);
       
       if (result.success) {
         setSuccess(true);

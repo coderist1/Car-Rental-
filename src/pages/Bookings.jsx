@@ -6,7 +6,7 @@ import '../styles/pages/Bookings.css';
 
 function Bookings() {
   const { user } = useAuth();
-  const { rentalHistory, getUserRentals, vehicles } = useVehicles();
+  const { rentalHistory, getUserRentals, vehicles, cancelBooking, deleteBooking } = useVehicles();
   const navigate = useNavigate();
   
   const [activeTab, setActiveTab] = useState('all');
@@ -240,14 +240,37 @@ function Bookings() {
                 </div>
               )}
 
-              {/* Add actions section for Damage Reporting */}
               <div style={{ marginTop: '16px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {rental.status === 'pending' && (
+                  <button
+                    className="btn btn-danger btn-sm"
+                    onClick={async () => {
+                      if (window.confirm('Cancel this booking request?')) {
+                        await cancelBooking(rental.id);
+                      }
+                    }}
+                  >
+                    Cancel Booking
+                  </button>
+                )}
                 {['active', 'approved', 'completed', 'return_requested', 'returned'].includes(rental.status) && (
                   <button 
                     className="btn btn-secondary btn-sm" 
                     onClick={() => handleReportDamage(rental)}
                   >
                     📸 Report Damage
+                  </button>
+                )}
+                {rental.status === 'cancelled' && (
+                  <button
+                    className="btn btn-danger btn-sm"
+                    onClick={async () => {
+                      if (window.confirm('Remove this cancelled booking from your list?')) {
+                        await deleteBooking(rental.id);
+                      }
+                    }}
+                  >
+                    Remove
                   </button>
                 )}
               </div>

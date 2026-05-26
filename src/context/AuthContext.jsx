@@ -255,10 +255,19 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const changePassword = () => ({
-    success: false,
-    error: 'Password change endpoint is not configured on the backend yet.',
-  });
+  const changePassword = async (currentPassword, newPassword) => {
+    if (!user) return { success: false, error: 'Not authenticated' };
+
+    try {
+      await apiRequest('/api/me/change-password/', {
+        method: 'POST',
+        body: { currentPassword, newPassword },
+      });
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message || 'Password change failed' };
+    }
+  };
 
   const getRegisteredUsers = () => users;
 

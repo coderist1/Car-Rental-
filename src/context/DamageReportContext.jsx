@@ -1,32 +1,18 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { realtimeManager, apiRequest } from '../lib/api';
+import {
+  fromApiDamageReport,
+  toApiDamagePayload,
+  toApiDamagePatch,
+} from '../utils/damageReportUtils';
 
 const DamageReportContext = createContext(null);
 
 const DAMAGE_REPORT_BASE_PATHS = ['/api/damage-reports/', '/api/damage_reports/'];
-let damageReportsApiAvailable = null;
+const LOG_REPORT_BASE_PATHS = ['/api/logreports/', '/api/log-reports/'];
 
 function normalizeDamageReport(r) {
-  if (!r) return r;
-  return {
-    ...r,
-    id: r.id ?? r._id ?? r.pk,
-    bookingId: r.bookingId ?? r.booking_id ?? r.booking,
-    vehicleId: r.vehicleId ?? r.vehicle_id ?? r.vehicle,
-    renterId: r.renterId ?? r.renter_id ?? r.renter,
-    ownerId: r.ownerId ?? r.owner_id ?? r.owner,
-    vehicleName: r.vehicleName ?? r.vehicle_name ?? 'Vehicle',
-    renterName: r.renterName ?? r.renter_name ?? '',
-    ownerName: r.ownerName ?? r.owner_name ?? '',
-    status: r.status || 'submitted',
-    severity: r.severity || 'minor',
-    discoveredDate: r.discoveredDate ?? r.discovered_date,
-    reportedDate: r.reportedDate ?? r.reported_date,
-    acknowledgedDate: r.acknowledgedDate ?? r.acknowledged_date,
-    resolvedDate: r.resolvedDate ?? r.resolved_date,
-    estimatedRepairCost: r.estimatedRepairCost ?? r.estimated_repair_cost,
-    fuelLevel: r.fuelLevel ?? r.fuel_level,
-  };
+  return fromApiDamageReport(r);
 }
 
 function normalizeReportsResponse(data) {
@@ -53,36 +39,42 @@ function isNotFoundError(error) {
 }
 
 async function requestDamageReport(resourcePath = '', options = {}) {
-  if (damageReportsApiAvailable === false) {
-    throw new Error('Damage reports API unavailable');
-  }
-
   let lastError = null;
 
   for (const basePath of DAMAGE_REPORT_BASE_PATHS) {
     try {
-      const response = await apiRequest(`${basePath}${resourcePath}`, options);
-      damageReportsApiAvailable = true;
-      return response;
+      return await apiRequest(`${basePath}${resourcePath}`, options);
     } catch (error) {
       lastError = error;
-      if (!isNotFoundError(error)) {
-        damageReportsApiAvailable = true;
-        throw error;
-      }
+      if (!isNotFoundError(error)) throw error;
     }
   }
 
-  damageReportsApiAvailable = false;
   throw lastError || new Error('Damage report request failed');
 }
 
-function readLocalDamageReports() {
-  const localData = localStorage.getItem('car_rental_damage_reports_v2');
-  if (!localData) return [];
+async function patchLogReport(reportId, body) {
+  let lastError = null;
 
+  for (const basePath of [...DAMAGE_REPORT_BASE_PATHS, ...LOG_REPORT_BASE_PATHS]) {
+    try {
+      return await apiRequest(`${basePath}${reportId}/`, {
+        method: 'PATCH',
+        body,
+      });
+    } catch (error) {
+      lastError = error;
+      if (!isNotFoundError(error)) throw error;
+    }
+  }
+
+  throw lastError || new Error('Failed to update damage report');
+}
+
+function readLocalDamageReports() {
   try {
-    return JSON.parse(localData);
+    const localData = localStorage.getItem('car_rental_damage_reports_v2');
+    return localData ? JSON.parse(localData) : [];
   } catch {
     return [];
   }
@@ -92,13 +84,16 @@ function writeLocalDamageReports(nextReports) {
   localStorage.setItem('car_rental_damage_reports_v2', JSON.stringify(nextReports));
 }
 
+function isDamagePayload(payload) {
+  return payload?.type === 'damage' || payload?.customLabels?.title;
+}
+
 export function DamageReportProvider({ children }) {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const didInitialize = useRef(false);
 
-  // Load all damage reports
   const loadReports = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -106,118 +101,122 @@ export function DamageReportProvider({ children }) {
       const data = await requestDamageReport();
       setReports(normalizeReportsResponse(data));
     } catch (e) {
-      if (isNotFoundError(e) || damageReportsApiAvailable === false) {
-        setReports(readLocalDamageReports());
-      } else {
-        console.error('Error loading damage reports:', e);
-        setError(e.message);
-        setReports(readLocalDamageReports());
-      }
+      console.error('Error loading damage reports:', e);
+      setError(e.message);
+      setReports(readLocalDamageReports().map(normalizeDamageReport));
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Initial load
   useEffect(() => {
     if (didInitialize.current) return;
     didInitialize.current = true;
     loadReports();
   }, [loadReports]);
 
-  // Subscribe to real-time updates
   useEffect(() => {
     realtimeManager.connect();
 
-    const unsubscribeCreate = realtimeManager.on('damage_reported', ({ payload }) => {
+    const handleRealtime = ({ payload }) => {
+      if (!isDamagePayload(payload)) return;
       setReports((prev) => upsertReport(prev, payload));
-    });
+    };
 
-    const unsubscribeUpdate = realtimeManager.on('damage_updated', ({ id, payload }) => {
-      setReports((prev) => upsertReport(prev.filter((r) => String(r.id) !== String(id)), payload));
-    });
-
-    const unsubscribeDelete = realtimeManager.on('damage_deleted', ({ id }) => {
+    const handleDelete = ({ id, payload }) => {
+      if (payload && !isDamagePayload(payload)) return;
       setReports((prev) => prev.filter((r) => String(r.id) !== String(id)));
-    });
+    };
+
+    const unsubCreate = realtimeManager.on('logreport_created', handleRealtime);
+    const unsubUpdate = realtimeManager.on('logreport_updated', ({ payload }) => handleRealtime({ payload }));
+    const unsubDelete = realtimeManager.on('logreport_deleted', handleDelete);
+    const unsubLegacyCreate = realtimeManager.on('damage_reported', handleRealtime);
+    const unsubLegacyUpdate = realtimeManager.on('damage_updated', ({ payload }) => handleRealtime({ payload }));
+    const unsubLegacyDelete = realtimeManager.on('damage_deleted', handleDelete);
 
     return () => {
-      unsubscribeCreate();
-      unsubscribeUpdate();
-      unsubscribeDelete();
+      unsubCreate();
+      unsubUpdate();
+      unsubDelete();
+      unsubLegacyCreate();
+      unsubLegacyUpdate();
+      unsubLegacyDelete();
     };
   }, []);
 
-  // Create damage report
-  const createDamageReport = useCallback(async (formData) => {
+  const createDamageReport = useCallback(async (input, user = null, photoItems = []) => {
+    const payload = toApiDamagePayload(input, user, photoItems);
+
     try {
       const createdReport = await requestDamageReport('', {
         method: 'POST',
-        body: formData,
+        body: payload,
       });
       setReports((prev) => {
         const next = upsertReport(prev, createdReport);
         writeLocalDamageReports(next);
         return next;
       });
-      return createdReport;
+      return normalizeDamageReport(createdReport);
     } catch (error) {
-      if (!isNotFoundError(error) && damageReportsApiAvailable !== false) {
-        console.error('Error creating damage report:', error);
-      }
-      // Local fallback
-      const newReport = {
-        id: 'DR-' + Date.now(),
-        status: 'submitted',
+      console.error('Error creating damage report:', error);
+      const fallback = normalizeDamageReport({
+        id: `DR-${Date.now()}`,
+        ...payload,
+        ...payload.customLabels,
+        status: payload.customLabels?.status || 'submitted',
         createdAt: new Date().toISOString(),
-        photos: []
-      };
-      if (formData && typeof formData.entries === 'function') {
-        const previews = formData.getAll('photoPreviews');
-        const photoFiles = formData.getAll('photos');
-        
-        if (previews && previews.length > 0) {
-          newReport.photos = previews;
-        } else if (photoFiles && photoFiles.length > 0) {
-          newReport.photos = photoFiles.map(val => typeof val === 'string' ? val : (val instanceof File ? URL.createObjectURL(val) : val));
-        }
-
-        for (let [key, value] of formData.entries()) {
-          if (key !== 'photos' && key !== 'photoPreviews') {
-            newReport[key] = value;
-          }
-        }
-      } else if (typeof formData === 'object') {
-        Object.assign(newReport, formData);
-      }
+      });
       setReports((prev) => {
-        const next = [newReport, ...prev];
+        const next = [fallback, ...prev];
         writeLocalDamageReports(next);
         return next;
       });
-      return newReport;
+      return fallback;
     }
   }, []);
 
-  // Update damage report (for drafts)
   const updateDamageReport = useCallback(async (id, updates) => {
+    const existing = reports.find((r) => String(r.id) === String(id));
+    const mergedCustom = {
+      bookingId: existing?.bookingId,
+      title: existing?.title,
+      description: existing?.description,
+      severity: existing?.severity,
+      status: existing?.status,
+      location: existing?.location,
+      ownerId: existing?.ownerId,
+      ownerName: existing?.ownerName,
+      renterId: existing?.renterId,
+      estimatedRepairCost: existing?.estimatedRepairCost,
+      discoveredDate: existing?.discoveredDate,
+      discoveryType: existing?.type,
+      acknowledgedDate: existing?.acknowledgedDate,
+      resolvedDate: existing?.resolvedDate,
+      resolutionNotes: existing?.resolutionNotes,
+      ...(updates.customLabels || {}),
+    };
+
+    if (updates.status !== undefined) mergedCustom.status = updates.status;
+    if (updates.acknowledgedDate !== undefined) mergedCustom.acknowledgedDate = updates.acknowledgedDate;
+    if (updates.resolvedDate !== undefined) mergedCustom.resolvedDate = updates.resolvedDate;
+    if (updates.resolutionNotes !== undefined) mergedCustom.resolutionNotes = updates.resolutionNotes;
+
+    const patchBody = toApiDamagePatch({ ...updates, customLabels: mergedCustom });
+
     try {
-      const updatedReport = await requestDamageReport(`${id}/`, {
-        method: 'PATCH',
-        body: updates,
-      });
+      const updatedReport = await patchLogReport(id, patchBody);
       setReports((prev) => {
         const next = upsertReport(prev.filter((r) => String(r.id) !== String(id)), updatedReport);
         writeLocalDamageReports(next);
         return next;
       });
-      return updatedReport;
+      return normalizeDamageReport(updatedReport);
     } catch (error) {
-      if (!isNotFoundError(error) && damageReportsApiAvailable !== false) {
-        console.error(`Error updating damage report ${id}:`, error);
-      }
-      setReports(prev => {
-        const next = prev.map(r => String(r.id) === String(id) ? { ...r, ...updates } : r);
+      console.error(`Error updating damage report ${id}:`, error);
+      setReports((prev) => {
+        const next = prev.map((r) => (String(r.id) === String(id) ? normalizeDamageReport({ ...r, ...updates }) : r));
         writeLocalDamageReports(next);
         return next;
       });
@@ -225,124 +224,59 @@ export function DamageReportProvider({ children }) {
     }
   }, []);
 
-  // Delete damage report
   const deleteDamageReport = useCallback(async (id) => {
     try {
       await requestDamageReport(`${id}/`, { method: 'DELETE' });
-      setReports((prev) => {
-        const next = prev.filter((r) => String(r.id) !== String(id));
-        writeLocalDamageReports(next);
-        return next;
-      });
     } catch (error) {
-      if (!isNotFoundError(error) && damageReportsApiAvailable !== false) {
-        console.error(`Error deleting damage report ${id}:`, error);
-      }
-      setReports((prev) => {
-        const next = prev.filter((r) => String(r.id) !== String(id));
-        writeLocalDamageReports(next);
-        return next;
-      });
+      console.error(`Error deleting damage report ${id}:`, error);
     }
+
+    setReports((prev) => {
+      const next = prev.filter((r) => String(r.id) !== String(id));
+      writeLocalDamageReports(next);
+      return next;
+    });
   }, []);
 
-  // Upload photo to report
-  const uploadPhotoToReport = useCallback(async (reportId, photoFormData) => {
-    try {
-      const result = await requestDamageReport(`${reportId}/photos/`, {
-        method: 'POST',
-        body: photoFormData,
-      });
-      return result;
-    } catch (error) {
-      console.error(`Error uploading photo to report ${reportId}:`, error);
-      const photo = photoFormData.get ? photoFormData.get('image') || photoFormData.get('photo') : null;
-      const url = photo instanceof File ? URL.createObjectURL(photo) : photo;
-      if (url) {
-        setReports(prev => {
-          const next = prev.map(r => String(r.id) === String(reportId) ? { ...r, photos: [...(r.photos || []), url] } : r);
-          writeLocalDamageReports(next);
-          return next;
-        });
-      }
-      return { url };
-    }
-  }, []);
+  const uploadPhotoToReport = useCallback(async (reportId, photoUrl) => {
+    const existing = reports.find((r) => String(r.id) === String(reportId));
+    const photos = [...(existing?.photos || []), photoUrl].filter(Boolean);
+    return updateDamageReport(reportId, { photos });
+  }, [reports, updateDamageReport]);
 
-  // Owner acknowledges report
   const acknowledgeReport = useCallback(async (reportId) => {
-    try {
-      const updatedReport = await requestDamageReport(`${reportId}/acknowledge/`, {
-        method: 'POST',
-      });
-      setReports((prev) => {
-        const next = upsertReport(prev.filter((r) => String(r.id) !== String(reportId)), updatedReport);
-        writeLocalDamageReports(next);
-        return next;
-      });
-      return updatedReport;
-    } catch (error) {
-      if (!isNotFoundError(error) && damageReportsApiAvailable !== false) {
-        console.error(`Error acknowledging report ${reportId}:`, error);
-      }
-      setReports(prev => {
-        const next = prev.map(r => String(r.id) === String(reportId) ? { ...r, status: 'acknowledged', acknowledgedDate: new Date().toISOString() } : r);
-        writeLocalDamageReports(next);
-        return next;
-      });
-      return { id: reportId, status: 'acknowledged' };
-    }
-  }, []);
+    return updateDamageReport(reportId, {
+      status: 'acknowledged',
+      acknowledgedDate: new Date().toISOString(),
+    });
+  }, [updateDamageReport]);
 
-  // Owner resolves report
   const resolveReport = useCallback(async (reportId, resolutionNotes = '') => {
-    try {
-      const updatedReport = await requestDamageReport(`${reportId}/resolve/`, {
-        method: 'POST',
-        body: { resolutionNotes },
-      });
-      setReports((prev) => {
-        const next = upsertReport(prev.filter((r) => String(r.id) !== String(reportId)), updatedReport);
-        writeLocalDamageReports(next);
-        return next;
-      });
-      return updatedReport;
-    } catch (error) {
-      if (!isNotFoundError(error) && damageReportsApiAvailable !== false) {
-        console.error(`Error resolving report ${reportId}:`, error);
-      }
-      setReports(prev => {
-        const next = prev.map(r => String(r.id) === String(reportId) ? { ...r, status: 'resolved', resolvedDate: new Date().toISOString(), resolutionNotes } : r);
-        writeLocalDamageReports(next);
-        return next;
-      });
-      return { id: reportId, status: 'resolved' };
-    }
-  }, []);
+    return updateDamageReport(reportId, {
+      status: 'resolved',
+      resolvedDate: new Date().toISOString(),
+      resolutionNotes,
+    });
+  }, [updateDamageReport]);
 
-  // Get reports for a specific vehicle (owner view)
   const getVehicleReports = useCallback((vehicleId) => {
     return reports.filter((r) => Number(r.vehicleId) === Number(vehicleId));
   }, [reports]);
 
-  // Get reports for a specific rental (renter view)
   const getBookingReports = useCallback((bookingId) => {
     return reports.filter((r) => Number(r.bookingId) === Number(bookingId));
   }, [reports]);
 
-  // Get unreviewed reports for owner
   const getUnreviewedReports = useCallback((ownerId) => {
     return reports.filter(
-      (r) => Number(r.ownerId) === Number(ownerId) && r.status === 'submitted'
+      (r) => String(r.ownerId) === String(ownerId) && r.status === 'submitted'
     );
   }, [reports]);
 
-  // Filter reports by status
   const getReportsByStatus = useCallback((status) => {
     return reports.filter((r) => r.status === status);
   }, [reports]);
 
-  // Filter reports by severity
   const getReportsBySeverity = useCallback((severity) => {
     return reports.filter((r) => r.severity === severity);
   }, [reports]);
@@ -380,6 +314,5 @@ export function useDamageReports() {
   return context;
 }
 
-// Backwards-compatible aliases
 export const useDamageReport = useDamageReports;
 export const useDamageReportContext = useDamageReports;

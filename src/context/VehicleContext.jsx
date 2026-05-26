@@ -284,6 +284,33 @@ export function VehicleProvider({ children }) {
     if (vehicleId && !Number.isNaN(vehicleId)) await updateVehicle(vehicleId, { status: 'available' });
   };
 
+  const deleteBooking = async (recordId) => {
+    try {
+      await apiRequest(`/api/bookings/${recordId}/`, { method: 'DELETE' });
+      setRentalHistory((prev) => prev.filter((b) => Number(b.id) !== Number(recordId)));
+      return true;
+    } catch (error) {
+      console.error(`Error deleting booking ${recordId}:`, error);
+      throw error;
+    }
+  };
+
+  const cancelBooking = async (recordId) => {
+    const record = rentalHistory.find((r) => Number(r.id) === Number(recordId));
+    if (!record) return null;
+
+    const updated = await updateRentalStatus(recordId, 'cancelled', {
+      endDate: new Date().toISOString(),
+    });
+
+    const vehicleId = Number(record.vehicleId ?? record.vehicle);
+    if (vehicleId && !Number.isNaN(vehicleId)) {
+      await updateVehicle(vehicleId, { status: 'available', available: true });
+    }
+
+    return updated;
+  };
+
   const clearRentalHistory = async () => {
     // This operation might be complex or not directly supported by a single API call
     // if it means deleting all bookings for a user.
@@ -344,6 +371,8 @@ export function VehicleProvider({ children }) {
     rejectBooking,
     requestReturn,
     acceptReturn,
+    deleteBooking,
+    cancelBooking,
     clearRentalHistory,
     getStats,
     getUserRentals,

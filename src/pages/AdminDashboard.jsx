@@ -15,7 +15,7 @@ const useDamageContextHook = DamageReportExports.useDamageReport
 
 function AdminDashboard() {
   const { user, getRegisteredUsers, updateUser, deleteUser, logout } = useAuth();
-  const { vehicles, rentalHistory, deleteVehicle } = useVehicles();
+  const { vehicles, rentalHistory, deleteVehicle, approveBooking, rejectBooking, deleteBooking, updateRentalStatus } = useVehicles();
   const { reports, removeReport } = useLogReport();
   
   const damageContext = useDamageContextHook();
@@ -235,19 +235,63 @@ const renderVehiclesPanel = () => (
       {rentalHistory.length === 0 ? (
         <div className="admin-empty">No rental records</div>
       ) : (
-        <div className="admin-table no-status">
+        <div className="admin-table rentals-table">
           <div className="table-header">
             <div className="th">Vehicle</div>
             <div className="th">Renter</div>
             <div className="th">Owner</div>
+            <div className="th">Status</div>
             <div className="th">Amount</div>
+            <div className="th">Actions</div>
           </div>
           {rentalHistory.slice().reverse().map(r => (
             <div key={r.id} className="table-row">
-              <div className="td">{r.vehicleName}</div>
-              <div className="td">{r.renterName}</div>
-              <div className="td">{r.ownerName}</div>
-              <div className="td">₱{r.amount}/day</div>
+              <div className="td">{r.vehicleName || 'Vehicle'}</div>
+              <div className="td">{r.renterName || '—'}</div>
+              <div className="td">{r.ownerName || '—'}</div>
+              <div className="td">
+                <span className={`role-badge ${r.status || 'pending'}`}>{r.status || 'pending'}</span>
+              </div>
+              <div className="td">₱{Number(r.amount || 0).toLocaleString()}/day</div>
+              <div className="td action-buttons">
+                {r.status === 'pending' && (
+                  <>
+                    <button
+                      className="btn btn-sm btn-primary"
+                      onClick={() => approveBooking(r.id)}
+                    >
+                      Approve
+                    </button>
+                    <button
+                      className="btn btn-sm btn-warning"
+                      onClick={() => rejectBooking(r.id)}
+                    >
+                      Reject
+                    </button>
+                  </>
+                )}
+                {r.status === 'approved' && (
+                  <button
+                    className="btn btn-sm btn-primary"
+                    onClick={() => updateRentalStatus(r.id, 'completed', { endDate: new Date().toISOString() })}
+                  >
+                    Complete
+                  </button>
+                )}
+                <button
+                  className="btn btn-sm btn-danger"
+                  onClick={() => {
+                    setConfirmState({
+                      open: true,
+                      variant: 'danger',
+                      message: 'Delete this rental record?',
+                      onConfirm: () => deleteBooking(r.id),
+                    });
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           ))}
         </div>

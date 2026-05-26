@@ -134,7 +134,7 @@ export function useDamageReportForm() {
         formDataToSend.append('renterName', user.fullName || user.firstName || 'Renter');
       }
 
-      const result = await createDamageReport(formDataToSend);
+      const result = await createDamageReport(formData, user, photos);
 
       // Reset form
       setFormData({
