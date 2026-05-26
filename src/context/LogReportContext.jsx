@@ -1,57 +1,13 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { realtimeManager, apiRequest } from '../lib/api'; // Import apiRequest
+import { realtimeManager, apiRequest } from '../lib/api';
 import {
-  loadLogReports as localLoad,
-  createLogReport as localCreate,
-  updateLogReport as localUpdate,
-  deleteLogReport as localDelete,
-  addCheckout as localAddCheckout,
-  addComment as localAddComment
-} from '../hooks/useLogReport';
+  fromApiReport,
+  toApiPayload,
+  updatesToApiPatch,
+} from '../utils/logReportUtils';
 
 const LogReportContext = createContext(null);
-
-// Keep ONLY the correct URL path that matches your Django urls.py
-const LOG_REPORT_BASE_PATHS = ['/api/logreports/', '/api/reports/']; 
-
-function normalizeReport(r) {
-  if (!r) return r;
-  return {
-    ...r,
-    id: r.id ?? r._id ?? r.pk,
-    vehicleId: r.vehicleId ?? r.vehicle_id ?? r.vehicle,
-    rentalId: r.rentalId ?? r.rental_id ?? r.rental,
-    renterId: r.renterId ?? r.renter_id ?? r.renter,
-    vehicleName: r.vehicleName ?? r.vehicle_name ?? 'Vehicle',
-    ownerName: r.ownerName ?? r.owner_name ?? '',
-    renterName: r.renterName ?? r.renter_name ?? '',
-    startDate: r.startDate ?? r.start_date,
-    endDate: r.endDate ?? r.end_date,
-  };
-}
-
-function normalizeReportsResponse(data) {
-  if (Array.isArray(data)) {
-    return data.map(normalizeReport);
-  }
-
-  if (data && Array.isArray(data.results)) {
-    return data.results.map(normalizeReport);
-  }
-
-  return [];
-}
-
-function upsertReport(list, report) {
-  if (!report) {
-    return list;
-  }
-
-  const normalized = normalizeReport(report);
-  const reportId = String(normalized.id);
-  const next = list.filter((item) => String(item.id) !== reportId);
-  return [...next, normalized];
-}
+const LOG_REPORT_BASE_PATHS = ['/api/logreports/', '/api/log-reports/'];
 
 function isNotFoundError(error) {
   const message = String(error?.message || error || '');
@@ -60,241 +16,164 @@ function isNotFoundError(error) {
 
 async function requestLogReport(resourcePath = '', options = {}) {
   let lastError = null;
-
   for (const basePath of LOG_REPORT_BASE_PATHS) {
     try {
       return await apiRequest(`${basePath}${resourcePath}`, options);
     } catch (error) {
       lastError = error;
-      if (!isNotFoundError(error)) {
-        throw error;
-      }
+      if (!isNotFoundError(error)) throw error;
     }
   }
-
   throw lastError || new Error('Log report request failed');
 }
 
-export function LogReportProvider({ children }) {
-  const [reports, setReports] = useState([]); // Initialize as empty array
+function normalizeReportsResponse(data) {
+  if (!Array.isArray(data)) return [];
+  return data
+    .filter((item) => item.type !== 'feedback' && item.type !== 'damage')
+    .map(fromApiReport);
+}
 
-  // New function to load log reports from API
+function upsertReport(list, report) {
+  if (!report) return list;
+  const normalized = fromApiReport(report);
+  const reportId = String(normalized.id);
+  const next = list.filter((item) => String(item.id) !== reportId);
+  return [...next, normalized];
+}
+
+export function LogReportProvider({ children }) {
+  const [reports, setReports] = useState([]);
+
   const loadReports = useCallback(async () => {
     try {
       const data = await requestLogReport();
       setReports(normalizeReportsResponse(data));
     } catch (e) {
-      if (isNotFoundError(e)) {
-        console.warn('Log reports API not found. Falling back to local storage.');
-        setReports(localLoad());
-      } else {
-        console.error('Error loading log reports:', e);
-        setReports([]);
-      }
+      console.error('Error loading log reports:', e);
+      setReports([]);
     }
   }, []);
 
-  // Initial load of reports
   useEffect(() => {
     loadReports();
   }, [loadReports]);
 
-  // Subscribe to real-time log report updates
   useEffect(() => {
-    // realtimeManager.connect(); // Ensure connection is established
-
-    const unsubscribeReportCreate = realtimeManager.on('logreport_created', ({ payload }) => {
+    const onCreate = ({ payload }) => {
+      if (!payload || payload.type === 'feedback' || payload.type === 'damage') return;
       setReports((prev) => upsertReport(prev, payload));
-    });
-
-    const unsubscribeReportUpdate = realtimeManager.on('logreport_updated', ({ id, payload }) => {
+    };
+    const onUpdate = ({ id, payload }) => {
+      if (payload?.type === 'feedback' || payload?.type === 'damage') return;
       setReports((prev) => upsertReport(prev.filter((r) => String(r.id) !== String(id)), payload));
-    });
-
-    const unsubscribeReportDelete = realtimeManager.on('logreport_deleted', ({ id }) => {
+    };
+    const onDelete = ({ id }) => {
       setReports((prev) => prev.filter((r) => String(r.id) !== String(id)));
-    });
+    };
+
+    const offCreate = realtimeManager.on('logreport_created', onCreate);
+    const offUpdate = realtimeManager.on('logreport_updated', onUpdate);
+    const offDelete = realtimeManager.on('logreport_deleted', onDelete);
 
     return () => {
-      unsubscribeReportCreate();
-      unsubscribeReportUpdate();
-      unsubscribeReportDelete();
+      offCreate();
+      offUpdate();
+      offDelete();
     };
-  }, []); // Dependencies for this useEffect should be empty as it sets up listeners once.
+  }, []);
 
   const createCheckin = useCallback(async (rental) => {
-    try {
-      const newReportData = {
+    const payload = toApiPayload({
       type: 'checkin',
-      vehicleId:   rental.vehicleId,
-      vehicle:     rental.vehicleId,
-      vehicleName: rental.vehicleName,
-      vehicle_name: rental.vehicleName,
-      rentalId:    rental.id,
-      rental:      rental.id,
-      renterName:  rental.renterName,
-      renter_name: rental.renterName,
-      startDate:   rental.startDate,
-      start_date:  rental.startDate,
-      endDate:     rental.endDate,
-      end_date:    rental.endDate,
-      amount:      rental.amount,
-      issues:       [],
-      notes:        '',
-      odometer:     '',
-      fuelLevel:    '',
-      fuel_level:   '',
-      photos:       [],
-      customLabels: {},
-        // Add ownerId if needed by backend
-      };
-      const createdReport = await requestLogReport('', {
-        method: 'POST',
-        body: newReportData,
-      });
-      // The real-time event will update the state, but we can add it directly for immediate feedback
-      setReports((prev) => upsertReport(prev, createdReport));
-      return createdReport;
-    } catch (error) {
-      if (isNotFoundError(error)) {
-        const localReport = localCreate(newReportData);
-        setReports((prev) => upsertReport(prev, localReport));
-        return localReport;
-      }
-      console.error('Error creating checkin report:', error);
-      return null;
-    }
+      rental: {
+        ...rental,
+        rentalId: rental.rentalId ?? rental.id,
+        renterEmail: rental.renterEmail,
+      },
+      checkin: {
+        issues: [],
+        notes: '',
+        odometer: '',
+        fuel: '',
+        photos: [],
+      },
+    });
+
+    const createdReport = await requestLogReport('', { method: 'POST', body: payload });
+    const normalized = fromApiReport(createdReport);
+    setReports((prev) => upsertReport(prev, normalized));
+    return normalized;
   }, []);
 
   const editCheckin = useCallback(async (id, updates) => {
-    try {
-      const updatedReport = await requestLogReport(`${id}/`, {
-        method: 'PATCH',
-        body: updates,
-      });
-      setReports((prev) => upsertReport(prev.filter((r) => String(r.id) !== String(id)), updatedReport));
-      return updatedReport;
-    } catch (error) {
-      if (isNotFoundError(error)) {
-        localUpdate(id, updates);
-        setReports(localLoad());
-        return updates;
-      }
-      console.error(`Error editing checkin report ${id}:`, error);
-      return null;
-    }
-  }, []);
+    const existing = reports.find((r) => String(r.id) === String(id));
+    const patch = updatesToApiPatch({ checkin: updates }, existing);
+    const updatedReport = await requestLogReport(`${id}/`, { method: 'PATCH', body: patch });
+    const normalized = fromApiReport(updatedReport);
+    setReports((prev) => upsertReport(prev.filter((r) => String(r.id) !== String(id)), normalized));
+    return normalized;
+  }, [reports]);
 
   const addCheckoutReport = useCallback(async (checkinId, data) => {
+    let updatedReport;
     try {
-      let updatedReport;
-      try {
-        updatedReport = await requestLogReport(`${checkinId}/checkout/`, {
-          method: 'POST',
-          body: data,
-        });
-      } catch {
-        updatedReport = await requestLogReport(`${checkinId}/`, {
-          method: 'PATCH',
-          body: { checkout: data },
-        });
-      }
-      setReports((prev) => upsertReport(prev.filter((r) => String(r.id) !== String(checkinId)), updatedReport));
-      return updatedReport;
-    } catch (error) {
-      if (isNotFoundError(error)) {
-        localAddCheckout(checkinId, data);
-        setReports(localLoad());
-        return data;
-      }
-      console.error(`Error adding checkout report for checkin ${checkinId}:`, error);
-      return null;
+      updatedReport = await requestLogReport(`${checkinId}/checkout/`, {
+        method: 'POST',
+        body: { ...data, createdAt: new Date().toISOString() },
+      });
+    } catch {
+      updatedReport = await requestLogReport(`${checkinId}/`, {
+        method: 'PATCH',
+        body: { checkout: { ...data, createdAt: new Date().toISOString() } },
+      });
     }
+    const normalized = fromApiReport(updatedReport);
+    setReports((prev) => upsertReport(prev.filter((r) => String(r.id) !== String(checkinId)), normalized));
+    return normalized;
   }, []);
 
   const editCheckout = useCallback(async (checkinId, updates) => {
-    try {
-      const updatedReport = await requestLogReport(`${checkinId}/`, {
-        method: 'PATCH',
-        body: { checkout: updates },
-      });
-      setReports((prev) => upsertReport(prev.filter((r) => String(r.id) !== String(checkinId)), updatedReport));
-      return updatedReport;
-    } catch (error) {
-      if (isNotFoundError(error)) {
-        const all = localLoad();
-        const rep = all.find(r => String(r.id) === String(checkinId));
-        if (rep) {
-          localUpdate(checkinId, { checkout: { ...rep.checkout, ...updates } });
-        }
-        setReports(localLoad());
-        return updates;
-      }
-      console.error(`Error editing checkout for checkin ${checkinId}:`, error);
-      return null;
-    }
+    const updatedReport = await requestLogReport(`${checkinId}/`, {
+      method: 'PATCH',
+      body: { checkout: updates },
+    });
+    const normalized = fromApiReport(updatedReport);
+    setReports((prev) => upsertReport(prev.filter((r) => String(r.id) !== String(checkinId)), normalized));
+    return normalized;
   }, []);
 
   const removeReport = useCallback(async (id) => {
-    try {
-      await requestLogReport(`${id}/`, {
-        method: 'DELETE',
-      });
-      setReports((prev) => prev.filter((r) => String(r.id) !== String(id)));
-    } catch (error) {
-      if (isNotFoundError(error)) {
-        localDelete(id);
-        setReports(localLoad());
-        return;
-      }
-      console.error(`Error removing report ${id}:`, error);
-    }
+    await requestLogReport(`${id}/`, { method: 'DELETE' });
+    setReports((prev) => prev.filter((r) => String(r.id) !== String(id)));
   }, []);
 
   const postComment = useCallback(async (reportId, comment) => {
-    try {
-      let updatedReport;
-      try {
-        updatedReport = await requestLogReport(`${reportId}/comments/`, {
-          method: 'POST',
-          body: comment,
-        });
-      } catch {
-        updatedReport = await requestLogReport(`${reportId}/`, {
-          method: 'PATCH',
-          body: {
-            commentsAppend: {
-              ...comment,
-              createdAt: new Date().toISOString(),
-            },
-          },
-        });
-      }
-      setReports((prev) => upsertReport(prev.filter((r) => String(r.id) !== String(reportId)), updatedReport));
-      return updatedReport;
-    } catch (error) {
-      if (isNotFoundError(error)) {
-        localAddComment(reportId, comment);
-        setReports(localLoad());
-        return comment;
-      }
-      console.error(`Error posting comment for report ${reportId}:`, error);
-      return null;
-    }
+    const payload = {
+      author: comment.author || comment.name || 'Anonymous',
+      message: comment.message || comment.text || '',
+    };
+    const updatedReport = await requestLogReport(`${reportId}/comments/`, {
+      method: 'POST',
+      body: payload,
+    });
+    const normalized = fromApiReport(updatedReport);
+    setReports((prev) => upsertReport(prev.filter((r) => String(r.id) !== String(reportId)), normalized));
+    return normalized;
   }, []);
 
   return (
     <LogReportContext.Provider value={{
       reports,
-      refresh: loadReports, // refresh now triggers a full reload from API
+      refresh: loadReports,
       createCheckin,
       editCheckin,
       addCheckoutReport,
       editCheckout,
       removeReport,
       postComment,
-      getReportsForVehicle: useCallback((vehicleId) => reports.filter(r => String(r.vehicleId || r.vehicle) === String(vehicleId)), [reports]),
-      getReportsForRental: useCallback((rentalId) => reports.filter(r => String(r.rentalId || r.rental) === String(rentalId)), [reports]),
+      getReportsForVehicle: useCallback((vehicleId) => reports.filter((r) => String(r.vehicleId || r.rental?.vehicleId) === String(vehicleId)), [reports]),
+      getReportsForRental: useCallback((rentalId) => reports.filter((r) => String(r.rentalId || r.rental?.rentalId) === String(rentalId)), [reports]),
     }}>
       {children}
     </LogReportContext.Provider>
@@ -304,16 +183,16 @@ export function LogReportProvider({ children }) {
 export function useLogReport() {
   const ctx = useContext(LogReportContext);
   if (!ctx) {
-    console.error('[LogReport] useLogReport() called outside <LogReportProvider>. Add <LogReportProvider> to App.jsx.');
+    console.error('[LogReport] useLogReport() called outside <LogReportProvider>.');
     return {
       reports: [],
       refresh: () => {},
-      createCheckin: () => {},
-      editCheckin: () => {},
-      addCheckoutReport: () => {},
-      editCheckout: () => {},
-      removeReport: () => {},
-      postComment: () => {},
+      createCheckin: async () => null,
+      editCheckin: async () => null,
+      addCheckoutReport: async () => null,
+      editCheckout: async () => null,
+      removeReport: async () => {},
+      postComment: async () => null,
       getReportsForVehicle: () => [],
       getReportsForRental: () => [],
     };

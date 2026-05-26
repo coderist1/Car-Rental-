@@ -2,11 +2,12 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { useAuth } from './AuthContext';
 import { apiRequest, realtimeManager } from '../lib/api';
 import {
-  SAVED_CARS_KEY, // Keep for saved cars, which are local
+  SAVED_CARS_KEY,
   fromApiVehicle,
   toApiVehicle,
   toApiVehiclePatch,
 } from './vehicleUtils';
+import { normalizeBookingRecord } from '../utils/bookingUtils';
 
 const VehicleContext = createContext(null);
 
@@ -17,25 +18,7 @@ export function VehicleProvider({ children }) {
   const [rentalHistory, setRentalHistory] = useState([]);
   const didInitialize = useRef(false);
 
-  const normalizeBooking = useCallback((booking) => {
-    if (!booking) return booking;
-    const rawVehicle = booking.vehicle;
-    // vehicle may be an ID or an object { id, ... }
-    const vehicleIdCandidate = booking.vehicleId ?? (rawVehicle && (rawVehicle.id ?? rawVehicle));
-    const renterCandidate = booking.renterId ?? (booking.renter && (booking.renter.id ?? booking.renter));
-    return {
-      ...booking,
-      id: Number(booking.id ?? booking._id ?? booking.pk),
-      vehicleId: Number(vehicleIdCandidate ?? NaN),
-      renterId: Number(renterCandidate ?? NaN),
-      startDate: booking.startDate ?? booking.start_date,
-      endDate: booking.endDate ?? booking.end_date,
-      amount: Number(booking.amount ?? booking.pricePerDay ?? 0),
-      vehicleName: booking.vehicleName || booking.vehicle_name || booking.carName || booking.vehicle_model || 'Vehicle',
-      ownerName: booking.ownerName || booking.owner_name || booking.owner || '',
-      renterName: booking.renterName || booking.renter_name || booking.renter_full_name || '',
-    };
-  }, []);
+  const normalizeBooking = useCallback((booking) => normalizeBookingRecord(booking), []);
 
   const loadVehicles = useCallback(async () => {
     try {
@@ -267,7 +250,7 @@ export function VehicleProvider({ children }) {
     const record = rentalHistory.find((r) => Number(r.id) === Number(recordId));
     if (!record) return;
 
-    await updateRentalStatus(recordId, 'active');
+    await updateRentalStatus(recordId, 'approved');
     // Prefer normalized `vehicleId` to update vehicle status
     const vehicleId = Number(record.vehicleId ?? (record.vehicle && (record.vehicle.id ?? record.vehicle)));
     if (vehicleId && !Number.isNaN(vehicleId)) {
@@ -285,9 +268,8 @@ export function VehicleProvider({ children }) {
   };
 
   const requestReturn = async (recordId) => {
-    await updateRentalStatus(recordId, 'return_requested', {
-      returnRequested: true,
-      returnRequestedAt: new Date().toISOString(),
+    await updateRentalStatus(recordId, 'completed', {
+      endDate: new Date().toISOString(),
     });
   };
 
@@ -295,9 +277,7 @@ export function VehicleProvider({ children }) {
     const record = rentalHistory.find((r) => Number(r.id) === Number(recordId));
     if (!record) return;
 
-    await updateRentalStatus(recordId, 'returned', {
-      returnAccepted: true,
-      returnAcceptedAt: new Date().toISOString(),
+    await updateRentalStatus(recordId, 'completed', {
       endDate: new Date().toISOString(),
     });
     const vehicleId = Number(record.vehicleId ?? (record.vehicle && (record.vehicle.id ?? record.vehicle)));

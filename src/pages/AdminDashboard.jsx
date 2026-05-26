@@ -66,7 +66,7 @@ function AdminDashboard() {
   const userName = user?.fullName || 'Admin';
 
   const analytics = useMemo(() => {
-    const activeRentals = rentalHistory.filter(r => r.status === 'active').length;
+    const activeRentals = rentalHistory.filter(r => r.status === 'approved' || r.status === 'active').length;
     const openDisputes = reports.length;
     const estimatedRevenue = rentalHistory
       .filter(r => r.status === 'active')

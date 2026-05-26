@@ -6,6 +6,7 @@
 import React, { useState, useMemo, useCallback, useContext } from 'react';
 import { useVehicles } from '../hooks';
 import { useAuth } from '../context/AuthContext';
+import { useFeedback } from '../context/FeedbackContext';
 import { useLogReport } from '../context/LogReportContext';
 import * as DamageReportExports from '../context/DamageReportContext';
 import { ProfileMenu, VehicleCard, Modal, ConfirmModal, DamageReportForm } from '../components';
@@ -561,7 +562,7 @@ function RenterDashboard() {
   const [viewingReport,   setViewingReport]   = useState(null);
   const [logSearchQuery,  setLogSearchQuery]  = useState('');
 
-  const [feedbacks, setFeedbacks] = useState(() => JSON.parse(localStorage.getItem('car_rental_feedbacks') || '[]'));
+  const { feedback, addFeedback, getFeedbackFromUser, refreshFeedback } = useFeedback();
   const [feedbackForm, setFeedbackForm] = useState({ rentalId: '', text: '', rating: 5 });
 
   const [showDamageReportModal, setShowDamageReportModal] = useState(false);
@@ -692,30 +693,37 @@ function RenterDashboard() {
     setInfoMessage('Damage report submitted successfully! The owner will be notified.');
   };
 
-  const submitFeedback = () => {
+  const submitFeedback = async () => {
     const rental = userRentals.find(r => String(r.id) === String(feedbackForm.rentalId));
     if (!rental || !feedbackForm.text) {
       setInfoMessage('Please select a rental and write some feedback.');
       return;
     }
-    const newFeedback = {
-      id: Date.now(),
-      rentalId: rental.id,
-      vehicleId: rental.vehicleId,
-      vehicleName: rental.vehicleName,
-      ownerName: rental.ownerName || rental.owner || 'Unknown',
-      renterName: userName,
-      rating: feedbackForm.rating,
-      text: feedbackForm.text,
-      date: new Date().toISOString()
-    };
-    const updated = [...feedbacks, newFeedback];
-    setFeedbacks(updated);
-    localStorage.setItem('car_rental_feedbacks', JSON.stringify(updated));
-    window.dispatchEvent(new Event('feedback_updated')); // Broadcast sync event
-    setFeedbackForm({ rentalId: '', text: '', rating: 5 });
-    setInfoMessage('Feedback submitted successfully to the owner!');
+    try {
+      await addFeedback({
+        bookingId: rental.id,
+        rentalId: rental.id,
+        vehicleId: rental.vehicleId,
+        vehicleName: rental.vehicleName,
+        ownerName: rental.ownerName || rental.owner || 'Unknown',
+        renterName: userName,
+        fromUserEmail: user?.email,
+        fromUserRole: 'renter',
+        toUserEmail: rental.ownerEmail,
+        toUserRole: 'owner',
+        rating: feedbackForm.rating,
+        message: feedbackForm.text,
+        text: feedbackForm.text,
+      });
+      await refreshFeedback();
+      setFeedbackForm({ rentalId: '', text: '', rating: 5 });
+      setInfoMessage('Feedback saved — visible on web and mobile.');
+    } catch (error) {
+      setInfoMessage(error.message || 'Could not save feedback.');
+    }
   };
+
+  const myFeedbacks = getFeedbackFromUser(user?.email);
 
   const handleSaveSignature = useCallback(async (reportId, signature) => {
     await editCheckin(reportId, {
@@ -879,7 +887,7 @@ function RenterDashboard() {
                         <span className="rental-dates">{new Date(rental.startDate).toLocaleDateString()} → {rental.endDate ? new Date(rental.endDate).toLocaleDateString() : 'Ongoing'}</span>
                       </div>
                       <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
-                        {rental.status === 'active' && (
+                        {(rental.status === 'approved' || rental.status === 'active') && (
                           <button className="btn btn-outline btn-sm" onClick={() => handleRequestReturn(rental)}>Request Return</button>
                         )}
                         {['active', 'return_requested', 'returned', 'completed'].includes(rental.status) && (
@@ -1138,13 +1146,13 @@ function RenterDashboard() {
               </div>
 
               <h3 style={{ margin: '0 0 16px', color: '#0f172a', fontSize: 18 }}>Your Past Feedback</h3>
-              {feedbacks.filter(f => f.renterName === userName).length === 0 ? (
+              {myFeedbacks.length === 0 ? (
                 <div className="empty-state" style={{ background: '#fff', borderRadius: 16, border: '1px dashed #cbd5e1', padding: '40px 20px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)' }}>
                   <p style={{ color: '#64748b', margin: 0 }}>You haven't submitted any feedback yet.</p>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  {feedbacks.filter(f => f.renterName === userName).slice().reverse().map(f => (
+                  {myFeedbacks.slice().reverse().map(f => (
                     <div key={f.id} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16, padding: 20, boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                         <strong style={{ fontSize: 16, color: '#0f172a' }}>{f.vehicleName}</strong>

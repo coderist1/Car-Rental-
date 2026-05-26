@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useAuth, useVehicles } from '../hooks';
+import { useFeedback } from '../context/FeedbackContext';
 import { ProfileMenu, VehicleCard, Modal, ConfirmModal, DamageReportInbox } from '../components';
 import { useLogReport } from '../context/LogReportContext';
 import OwnerLogReport from '../components/ui/OwnerLogReport';
@@ -96,17 +97,7 @@ function Dashboard() {
   const [viewingPhoto, setViewingPhoto] = useState(null);
   const [discardConfirm, setDiscardConfirm] = useState({ open: false, nextVehicle: null, closeMode: null });
 
-  const [feedbacks, setFeedbacks] = useState(() => JSON.parse(localStorage.getItem('car_rental_feedbacks') || '[]'));
-
-  // Listen for new feedback in real-time
-  useEffect(() => {
-    const handleFeedbackSync = () => {
-      setFeedbacks(JSON.parse(localStorage.getItem('car_rental_feedbacks') || '[]'));
-    };
-    window.addEventListener('storage', handleFeedbackSync);
-    window.addEventListener('feedback_updated', handleFeedbackSync);
-    return () => { window.removeEventListener('storage', handleFeedbackSync); window.removeEventListener('feedback_updated', handleFeedbackSync); };
-  }, []);
+  const { feedback, getFeedbackForOwner, refreshFeedback } = useFeedback();
 
   const fileInputRef = useRef(null);
 
@@ -136,8 +127,8 @@ function Dashboard() {
 
   const ownerFeedbacks = useMemo(() => {
     const vehicleIds = ownerVehicles.map(v => v.id);
-    return feedbacks.filter(f => vehicleIds.includes(f.vehicleId) || f.ownerName === userName);
-  }, [feedbacks, ownerVehicles, userName]);
+    return getFeedbackForOwner(user?.email || user?.id, vehicleIds);
+  }, [getFeedbackForOwner, ownerVehicles, user?.email, user?.id]);
 
   const ownerDamageReports = useMemo(() => {
     if (!damageContext || !damageContext.reports) return [];

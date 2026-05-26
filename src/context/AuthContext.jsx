@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { apiRequest, realtimeManager, setAuthToken, clearAuthToken } from '../lib/api';
+import { apiRequest, realtimeManager, setAuthToken, clearAuthToken, getAuthToken } from '../lib/api';
 
 const AuthContext = createContext(null);
 
@@ -46,6 +46,24 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     setLoading(false);
+    if (!initial.user) return;
+    const token = getAuthToken();
+    if (!token && initial.user?.id) {
+      setAuthToken(String(initial.user.id));
+    }
+    realtimeManager.connect();
+
+    (async () => {
+      try {
+        const fresh = await apiRequest('/api/me/');
+        if (fresh?.id) {
+          setUser(fresh);
+          persistSession(fresh);
+        }
+      } catch {
+        // keep cached session when offline
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -187,7 +205,12 @@ export function AuthProvider({ children }) {
     return register({ ...userData, role: 'admin' });
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await apiRequest('/api/logout/', { method: 'POST' });
+    } catch {
+      // ignore
+    }
     clearSession();
     setUser(null);
     realtimeManager.disconnect();
