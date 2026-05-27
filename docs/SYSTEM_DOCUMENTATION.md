@@ -15,6 +15,7 @@ This is a local mirror of the unified system documentation. For the latest versi
 ## Quick Links
 
 - [Full System Documentation](../../fastapi/SYSTEM_DOCUMENTATION.md)
+- [ERD Diagram](https://github.com/coderist1/FastApi/blob/main/docs/erd.png)
 - [Web Getting Started](GETTING_STARTED.md)
 - [Web API Reference](API.md)
 - [Vercel Deployment](DEPLOY_VERCEL.md)
