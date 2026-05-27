@@ -1,8 +1,17 @@
 # Car Rental Web App
 
-React + Vite frontend for the Car Rental System. Works together with the **mobile app** and **one shared FastAPI backend**.
+React + Vite frontend for the Car Rental System (IT323 Final Project).
 
-> Full system docs (architecture, deployment, sync): see [FastAPI README](../fastapi/README.md)
+> **Full system docs:** [FastAPI SYSTEM_DOCUMENTATION.md](../fastapi/SYSTEM_DOCUMENTATION.md)
+
+## Team
+
+| Name | Role |
+|------|------|
+| Polinar, Mathew Jhon K. | Backend, Database, Deployment |
+| Dequino, Lovely C. | Web Application |
+| Baquiro, Coneybelle L. | Mobile Application |
+| Camense, Angela G. | UI/UX, Documentation, Testing |
 
 ## Quick Start
 
